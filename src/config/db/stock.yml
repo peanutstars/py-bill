@@ -1,0 +1,23 @@
+tables:
+-   columns:
+    -   - finance
+        - String16
+        - NotNull
+        - CollateNocase
+    -   - stamp
+        - String24
+        - NotNull
+        - CollateNocase
+        - PrimaryKey
+        - Unique
+    -   - start
+        - Integer
+    -   - end
+        - Integer
+    -   - high
+        - Integer
+    -   - low
+        - Integer
+    -   - volume
+        - Integer
+    name: stock_day
