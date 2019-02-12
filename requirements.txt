@@ -3,7 +3,7 @@ chardet==3.0.4
 hexdump==3.3
 html2text==2018.1.9
 idna==2.7
-PyYAML==3.13
+pyyaml>=4.2b1
 requests==2.20.0
 urllib3==1.24
 pysp>=0.0.3
