@@ -3,7 +3,10 @@
 import hexdump
 import unittest
 
+from pysp.sjson import SJson
+
 from core.interface import Http
+
 
 EXAMPLE_TEXT = '''
 # Example Domain
@@ -41,9 +44,37 @@ SOFTWARE.
 
 class TestInterface(unittest.TestCase):
 
-    def test_http(self):
+    def test_http_get(self):
         text = Http.get('http://example.com', text=True)
         self.assertTrue(text.strip() == EXAMPLE_TEXT)
 
         text = Http.get('https://raw.githubusercontent.com/peanutstars/py-support-package/master/LICENSE')
         self.assertTrue(text.strip() == LICENSE_HTML)
+
+    def test_krx(self):
+        Http.DEBUG = True
+        params = {
+            'bld':  'COM/finder_srtisu',
+            'name': 'form',
+        }
+        url = 'http://short.krx.co.kr/contents/COM/GenerateOTP.jspx'
+        code = Http.get(url, params=params)
+        print(f'KRX KEY: {code}')
+        self.assertTrue(len(code) == 108)
+
+        params = {
+            # 'isuCd':    None,
+            'no':       'SRT2',
+            'mktsel':   'ALL',
+            'pagePath': '/contents/COM/FinderSrtIsu.jsp',
+            'code':     code,
+            # 'pageFirstCall': 'Y',
+        }
+        kwargs = {
+            'params': params,
+            'json': True
+        }
+        url = 'https://short.krx.co.kr/contents/SRT/99/SRT99000001.jspx'
+        jdata = Http.post(url, **kwargs)
+        self.assertTrue(type(jdata) is dict)
+        # print(SJson.to_serial(jdata, indent=2))

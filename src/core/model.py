@@ -3,5 +3,12 @@
 import collections
 
 
-ServiceProvider = collections.namedtuple('ServiceProvider', 'name codename code')
-StockDay = collections.namedtuple('StockDay', 'finance stamp start end high low volume')
+ServiceProvider = collections.namedtuple(
+                    'ServiceProvider',
+                    'name codename code')
+StockDay = collections.namedtuple(
+                    'StockDay',
+                    'finance stamp start end high low volume')
+StockDayInvestor = collections.namedtuple(
+                    'StockDayInvestor',
+                    'stamp foreigner frate institute person')
