@@ -12,3 +12,5 @@ tables:
       - [frate, Float]
       - [institute, Integer]
       - [person, Integer]
+      - [short, Integer]
+      - [shortamount, Integer]

@@ -5,7 +5,8 @@ import unittest
 
 from pysp.sjson import SJson
 
-from core.interface import Http
+from core.connect import Http, FDaum, FNaver, FKrx
+from core.model import *
 
 
 EXAMPLE_TEXT = '''
@@ -42,7 +43,9 @@ SOFTWARE.
 '''.strip()
 
 
-class TestInterface(unittest.TestCase):
+class TestConnect(unittest.TestCase):
+    spd = ServiceProvider(name='daum', codename='카카오', code='035720')
+    spn = ServiceProvider(name='naver', codename='카카오', code='035720')
 
     def test_http_get(self):
         text = Http.get('http://example.com', text=True)
@@ -51,30 +54,39 @@ class TestInterface(unittest.TestCase):
         text = Http.get('https://raw.githubusercontent.com/peanutstars/py-support-package/master/LICENSE')
         self.assertTrue(text.strip() == LICENSE_HTML)
 
-    def test_krx(self):
-        Http.DEBUG = True
-        params = {
-            'bld':  'COM/finder_srtisu',
-            'name': 'form',
-        }
-        url = 'http://short.krx.co.kr/contents/COM/GenerateOTP.jspx'
-        code = Http.get(url, params=params)
-        print(f'KRX KEY: {code}')
-        self.assertTrue(len(code) == 108)
+    def test_fspdaum_day(self):
+        # FDaum.DEBUG = True
+        page = 1
+        chunk = FDaum.get_chunk('day', code=self.spd.code, page=page)
+        # data  = FDaum.do_parser('day', chunk)
+        self.assertTrue(len(chunk) == 10)
 
+    def test_fspnaver_day(self):
+        # FNaver.DEBUG = True
+        page = 1
+        chunk = FNaver.get_chunk('day', code=self.spd.code, page=page)
+        # data  = FNaver.do_parser('day', chunk)
+        self.assertTrue(len(chunk) == 10)
+
+    def test_fspnaver_dayinvestor(self):
+        # FNaver.DEBUG = True
+        page = 1
+        chunk = FNaver.get_chunk('dayinvestor', code=self.spn.code, page=page)
+        # data  = FNaver.do_parser('dayinvestor', chunk)
+        self.assertTrue(len(chunk) == 20)
+
+    def test_krx_list(self):
+        # Http.DEBUG = True
+        chunk = FKrx.get_chunk('list')
+        self.assertTrue(type(chunk) == dict)
+        # print(SJson.to_serial(chunk, indent=2))
         params = {
-            # 'isuCd':    None,
-            'no':       'SRT2',
-            'mktsel':   'ALL',
-            'pagePath': '/contents/COM/FinderSrtIsu.jsp',
-            'code':     code,
-            # 'pageFirstCall': 'Y',
+            'fcode': 'KR7035720002',
+            'scode': 'A035720',
+            # 'sdate': '20170101',
+            # 'edate': '20190215',
+            'page':  1
         }
-        kwargs = {
-            'params': params,
-            'json': True
-        }
-        url = 'https://short.krx.co.kr/contents/SRT/99/SRT99000001.jspx'
-        jdata = Http.post(url, **kwargs)
-        self.assertTrue(type(jdata) is dict)
-        # print(SJson.to_serial(jdata, indent=2))
+        chunk = FKrx.get_chunk('shortstock', **params)
+        self.assertTrue(type(chunk) == list)
+        # print(SJson.to_serial(chunk, indent=2))

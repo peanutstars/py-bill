@@ -12,3 +12,6 @@ StockDay = collections.namedtuple(
 StockDayInvestor = collections.namedtuple(
                     'StockDayInvestor',
                     'stamp foreigner frate institute person')
+StockDayShort = collections.namedtuple(
+                    'StockDayShort',
+                    'stamp short shortamount')
