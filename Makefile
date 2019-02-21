@@ -2,7 +2,7 @@ SHELL   := /bin/bash
 VERSION := $(shell cat VERSION)
 NULL    := /dev/null
 STAMP   := $(shell date +%Y%m%d-%H%M)
-ZIP_FILE:= $(shell basename $(PWD))-$(STAMP).zip
+ZIP_FILE:= $(shell basename $(CURDIR))-$(STAMP).zip
 
 REQUIRE_TXT	:= requirements.txt
 
@@ -26,7 +26,7 @@ clean:
 	@(find . -name __pycache__ -exec rm -rf {} \; 2>$(NULL) || true)
 
 zip: clean
-	@(7z a ../$(ZIP_FILE) ../$(shell basename $(PWD)))
+	@(7z a ../$(ZIP_FILE) ../$(shell basename $(CURDIR)))
 
 
 .PHONY: test freeze setup clean zip

@@ -1,0 +1,42 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8">
+            <h2>Account Information</h2>
+            <div class="row">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Content</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th>User Name</th>
+                    <td>{{ user.username}}</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <th>E-mail</th>
+                    <td>{{ user.email}}</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <th>Registered Date</th>
+                    <td>{{ user.registered_date }}</td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+        </div>
+        <div class="col-md-2"></div>
+    </div>
+{% endblock %}
+
+{% block bodyscript %}
+{% endblock %}

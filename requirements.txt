@@ -1,5 +1,6 @@
 certifi==2018.10.15
 chardet==3.0.4
+flask-debugtoolbar>=0.10.1
 hexdump==3.3
 html2text==2018.1.9
 idna==2.7

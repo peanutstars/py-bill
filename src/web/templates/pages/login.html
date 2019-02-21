@@ -1,0 +1,24 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <div class="row">
+    <div class="col-md-4"></div>
+    <div class="col-md-4">
+        <h2>Login</h2>
+        {% from "parts/_formhelpers.html" import render_field %}
+        <form method="POST" action="{{ url_for('login' )}}" id="loginform">
+            {{ form.csrf_token }}
+            {{ form.h_next }}
+            <div class="form-group">
+                {{render_field(form.email, class_="form-control")}}
+            </div>
+            <div class="form-group">
+                {{render_field(form.password, class_="form-control")}}
+            </div>
+        </form>
+        <a href="{{ url_for('register') }}" class="btn btn-primary">Register</a>
+        <button type="submit" form="loginform" class="btn btn-default pull-right">Login</button>
+    </div>
+    <div class="col-md-4"></div>
+  </div>
+{% endblock %}
