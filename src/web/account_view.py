@@ -73,12 +73,12 @@ def account_register():
             db.session().commit()
         except Exception as e:
             flash('Already used E-mail address.', 'warning')
-            return render_template('pages/register.html', form=form)
+            return render_template('pages/account_register.html', form=form)
         flash(f'You, {username} are now registered and can log in', 'success')
         return redirect(url_for('account_login'))
     elif form.csrf_token.errors:
         flash('You have submitted an invalid CSRF token', 'danger')
-    return render_template('pages/register.html', form=form)
+    return render_template('pages/account_register.html', form=form)
 
 @app.route('/account/login', methods=['GET', 'POST'])
 def account_login():
@@ -96,7 +96,7 @@ def account_login():
         flash('Invalid E-mail Address or Password', 'warning')
     elif form.csrf_token.errors:
         flash('Invalid CSRF token', 'danger')
-    return render_template('pages/login.html', form=form)
+    return render_template('pages/account_login.html', form=form)
 
 @app.route('/account/logout')
 @login_required
@@ -129,4 +129,4 @@ def account_password():
                 flash('Invalid the Current Password', 'danger')
     elif form.csrf_token.errors:
         flash('Invalid CSRF token', 'danger')
-    return render_template('pages/password.html', form=form)
+    return render_template('pages/account_password.html', form=form)

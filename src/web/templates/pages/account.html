@@ -1,47 +1,48 @@
 {% extends 'layout.html' %}
 
 {% block body %}
-    <div class="row">
-        <div class="col-md-2"></div>
-        <div class="col-md-8">
-          <h2>Account Information</h2>
-          <div class="row">
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Content</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <th>User Name</th>
-                  <td>{{ user.username }}</td>
-                  <td>
-                    <a href="{{ url_for('account_password') }}" class="btn btn-default">Change Password</a>
-                  </td>
-                </tr>
-                <tr>
-                  <th>E-mail</th>
-                  <td>{{ user.email}}</td>
-                  <td></td>
-                </tr>
-                <tr>
-                  <th>Registered Date</th>
-                  <td>{{ user.registered_date }}</td>
-                  <td></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div class="col-md-2"></div>
+  <div class="row">
+    <div class="col-md-2"></div>
+    <div class="col-md-8">
+      <h2>Account Information</h2>
+      <div class="row">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Content</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>User Name</th>
+              <td>{{ user.username }}</td>
+              <td>
+                <a href="{{ url_for('account_password') }}" class="btn btn-default">Change Password</a>
+              </td>
+            </tr>
+            <tr>
+              <th>E-mail</th>
+              <td>{{ user.email}}</td>
+              <td></td>
+            </tr>
+            <tr>
+              <th>Registered Date</th>
+              <td>{{ user.registered_date }}</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-    {% if session.user_id == '1' %}
-    <div class="row">
-      <div class="col-md-2"></div>
-      <div class="col-md-8">
+    <div class="col-md-2"></div>
+  </div>
+  {% if session.user_id == '1' %}
+  <div class="row">
+    <div class="col-md-2"></div>
+    <div class="col-md-8">
+      <div class="row">
         <h2>Users Information</h2>
         <table class="table table-hover">
           <thead>
@@ -64,9 +65,10 @@
           </tbody>
         </table>
       </div>
-      <div class="col-md-2"></div>
     </div>
-    {% endif %}
+    <div class="col-md-2"></div>
+  </div>
+  {% endif %}
 {% endblock %}
 
 {% block bodyscript %}
