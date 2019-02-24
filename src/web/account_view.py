@@ -33,6 +33,7 @@ class RegisterForm(FormCSRF):
                 EqualTo('confirm', message='Passwords do not match')])
     confirm = PasswordField('Confirm Password')
 
+
 class LoginForm(FormCSRF):
     email = StringField('E-mail Address', [
                 InputRequired(), Length(min=5, max=64)])
@@ -40,6 +41,15 @@ class LoginForm(FormCSRF):
                 InputRequired(), Length(max=32)])
     h_next = HiddenField()
 
+
+class PasswordForm(FormCSRF):
+    passwd_cur = PasswordField('Current', [InputRequired(), Length(max=32)])
+    passwd_new = PasswordField('New', [
+                    DataRequired(),
+                    Length(min=5, max=32),
+                    EqualTo('passwd_confirm',
+                    message='Do not match Password')])
+    passwd_confirm = PasswordField('Confirm')
 
 # @login_manager.user_loader
 def load_user(user_id):
@@ -50,7 +60,7 @@ def load_user(user_id):
 
 # Register
 @app.route('/account/register', methods=['GET', 'POST'])
-def register():
+def account_register():
     form = RegisterForm(request.form)
     if request.method == 'POST' and form.validate():
         email = form.email.data
@@ -65,13 +75,13 @@ def register():
             flash('Already used E-mail address.', 'warning')
             return render_template('pages/register.html', form=form)
         flash(f'You, {username} are now registered and can log in', 'success')
-        return redirect(url_for('login'))
+        return redirect(url_for('account_login'))
     elif form.csrf_token.errors:
         flash('You have submitted an invalid CSRF token', 'danger')
     return render_template('pages/register.html', form=form)
 
 @app.route('/account/login', methods=['GET', 'POST'])
-def login():
+def account_login():
     form = LoginForm(request.form)
     if request.method == 'GET':
         form.h_next.data = request.args.get('next')
@@ -90,7 +100,7 @@ def login():
 
 @app.route('/account/logout')
 @login_required
-def logout():
+def account_logout():
     username = session['username']
     session.clear()
     flash(f'Logged out - Bye {username} !', 'success')
@@ -100,4 +110,23 @@ def logout():
 @login_required
 def account():
     user = User.query.get(int(session['user_id']))
-    return render_template('pages/account.html', user=user)
+    users = User.query.all() if int(session['user_id']) == 1 else None
+    return render_template('pages/account.html', user=user, users=users)
+
+@app.route('/account/password', methods=['GET', 'POST'])
+@login_required
+def account_password():
+    form = PasswordForm(request.form)
+    if request.method == 'POST' and form.validate():
+        user = User.query.get(int(session['user_id']))
+        if user:
+            if check_password_hash(user.password, form.passwd_cur.data):
+                user.password = generate_password_hash(form.passwd_new.data)
+                db.session().commit()
+                flash('Changed Password', 'success')
+                return redirect(url_for('account'))
+            else:
+                flash('Invalid the Current Password', 'danger')
+    elif form.csrf_token.errors:
+        flash('Invalid CSRF token', 'danger')
+    return render_template('pages/password.html', form=form)

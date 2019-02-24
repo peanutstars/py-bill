@@ -18,7 +18,7 @@ setup:
 
 test:
 	# python setup.py test
-	PYTHONPATH=$(PROJECT_ROOT)/src python -m unittest discover -p "test*.py"
+	PYTHONPATH=$(CURDIR)/src python -m unittest discover -p "test*.py"
 
 clean:
 	@rm -rf build pysp.egg-info .eggs *.sqlite
