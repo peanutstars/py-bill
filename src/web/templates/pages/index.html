@@ -1,14 +1,29 @@
 {% extends 'layout.html' %}
 
-
-
 {% block body %}
-  <div class="jumbotron text-center">
-    <h1>Welcome To FlaskApp</h1>
-    <p class="lead">This application is built on the Python Flask framework and is the focus for the "Python Flask From Scratch" YouTube series</p>
-    {% if session.user_id == NULL %}
-      <a href="{{ url_for('account_register') }}" class="btn btn-primary btn-lg">Register</a>
-      <a href="{{ url_for('account_login') }}" class="btn btn-success btn-lg">Login</a>
-    {% endif %}
-  </div>
+<div id="view-bookmark"></div>
+{% endblock %}
+
+{% block bodyscript %}
+<script type="text/javascript">
+  $(function() {
+    ajax.get('/ajax/bookmark', {}, render_bookmark);
+  });
+  function render_bookmark(resp) {
+    for (var i in resp.bookmark) {
+      var group = resp.bookmark[i];
+      // var html = '<div class="jumbotron">';
+      var html = '<div>';
+      html += '<h3>'+group.name+'</h3>';
+      for (var x in group.list) {
+        var item = group.list[x];
+        html += '<div class="btn-group">'
+        html += '<a href="'+item.link+'" class="btn btn-default btn-space">'+item.title+'</a>'
+        html += '</div>';
+      }
+      html += '</div><p/>';
+      $("#view-bookmark").append(html);
+    }
+  }
+</script>
 {% endblock %}
