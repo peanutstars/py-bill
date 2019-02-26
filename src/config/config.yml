@@ -1,5 +1,5 @@
 
 folder:
-    user:
-        config: /var/pybill/usr/config
-        stock: /var/pybill/usr/stock
+    config:
+    user_config: /var/pybill/config/
+    stock: /var/pybill/stock/

@@ -1,3 +1,10 @@
+var util = {
+  flash: function(message, category) {
+    var msg_block = '<div class="alert alert-'+category+'">'+message+'</div>';
+    $("#body-container").append(msg_block);
+  },
+};
+
 var ajax = {
     get : function(url, params, callback) {
         var opts = {
@@ -26,17 +33,17 @@ var ajax = {
             if (callback && response.success) {
                 callback(response.value);
             } else if (response.success == false) {
-                var emsg = 'URL: ' + opts.url ;
-                emsg += '\nError: ' + response.errmsg ;
-                console.log(emsg) ;
+                var emsg = 'URL@'+opts.type+': '+opts.url;
+                emsg += '<br/>Error: ' + response.errmsg;
+                util.flash(emsg, 'danger');
             }
         } ,
         opts.error = function(response) {
             console.log('Fail\n' + response.errorMsg);
             var emsg = 'Failed(1):' + opts.url;
-            emsg += '\n\n' + response.errorMsg;
-            alert(emsg);
+            emsg += '<br/>' + response.errorMsg;
+            util.flash(emsg, 'danger');
         }
         $.ajax(opts);
     },
-}
+};

@@ -24,7 +24,7 @@ class BillConfig(SConfig, metaclass=SSingleton):
     def init_variables(self):
         stock_yml = f'{self.config_folder}/db/stock.yml'
         self.set_value('_config.db.stock_yml', stock_yml)
-        stock_folder = self.get_value('folder.user.stock', './')
+        stock_folder = self.get_value('folder.stock', './')
         self.set_value('_config.db.stock_folder', stock_folder)
 
 
@@ -41,7 +41,7 @@ class StockItemDB(SSimpleDB):
         bcfg = BillConfig()
         db_file = '{folder}/{code}.sqlite3'.format(
             folder=bcfg.get_value('_config.db.stock_folder'), code=code)
-        SFile.mkdir(db_file)
+        SFile.mkdir(os.path.dirname(db_file))
         db_config = bcfg.get_value('_config.db.stock_yml')
         return cls(db_file=db_file, db_config=db_config)
 

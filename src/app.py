@@ -1,11 +1,14 @@
 import os
 from flask_debugtoolbar import DebugToolbarExtension
 from werkzeug.security import generate_password_hash
+from pysp.sbasic import SFile
 
 from web import app, db, login_manager
 from web.model import User
 from web.index_view import index
 from web.account_view import account
+from core.finance import BillConfig
+
 
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
@@ -18,6 +21,11 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = 'account_login'
+
+bcfg = BillConfig()
+bcfg.set_value('folder.config', cur_dir+'/config/')
+SFile.mkdir(bcfg.get_value('folder.user_config'))
+
 
 if __name__ == '__main__':
     app.debug = True

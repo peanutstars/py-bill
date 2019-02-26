@@ -24,6 +24,6 @@ class TestFinance(unittest.TestCase):
 
     def test_billconfig(self):
         bconfig = BillConfig()
-        cvalue = bconfig.get_value('folder.user.config')
-        self.assertTrue(cvalue == '/var/pybill/usr/config')
+        cvalue = bconfig.get_value('folder.user_config')
+        self.assertTrue(cvalue == '/var/pybill/config/')
         self.assertTrue( bconfig is BillConfig())

@@ -4,9 +4,6 @@
 bookmark:
     - name: Family
       list:
-        - title: Use School
-          link: http://www.useschool.co.kr/
-          icon: false
         - title: Google
           link: http://www.google.com
           icon: true
@@ -32,23 +29,6 @@ bookmark:
           icon: true
         - title: N-Trans
           link: http://translate.naver.com/#/ko/en
-    - name: Kids
-      list:
-        - title: G-MAP
-          link: https://maps.google.com/
-          icon: true
-        - title: 소프트웨어중심 사회
-          link: http://software.kr
-        - title: CORD.ORG
-          link: http://code.org
-        - title: EBS 소프트웨어
-          link: http://home.ebs.co.kr/softare
-        - title: 엔트리
-          link: http://playentry.org
-          icon: true
-        - title: 스크래치
-          link: http://scratch.mit.edu
-          icon: true
     - name: Funny
       list:
         - title: Youtube
@@ -61,36 +41,6 @@ bookmark:
           link: https://www.clien.net
         - title: glassdoor
           link: https://www.glassdoor.com
-
-    - name: Reference Site
-      list:
-        - title: Design Patterns
-          link: https://sourcemaking.com/design_patterns
-          icon: true
-        - title: Stackoverflow
-          link: http://stackoverflow.com/
-          icon: true
-        - title: Tutorials Point
-          link: http://www.tutorialspoint.com
-          icon: true
-        - title: W3 Schools
-          link: http://www.w3schools.com/
-          icon: true
-        - title: Android API
-          link: https://developer.android.com/reference/packages.html
-          icon: true
-        - title: Bash Shell
-          link: http://wiki.kldp.org/HOWTO//html/Adv-Bash-Scr-HOWTO/index.html
-          icon: true
-        - title: Netfilter
-          link: http://www.netfilter.org/
-          icon: true
-        - title: IT eBooks
-          link: http://it-ebooks.info/
-          icon: true
-        - title: Naver D2
-          link: http://d2.naver.com/helloworld
-          icon: true
 
     - name: Cloud Service
       list:
@@ -106,85 +56,4 @@ bookmark:
         - title: GPhoto
           link: https://photos.google.com
           icon: true
-        - title: GitHub/PS
-          link: https://github.com/peanutstars
-          icon: true
-        - title: PS-ZHub
-          link: http://pstarsapp.ddns.net:8080
-          icon: true
-        - title: Color-scripter
-          link: http://colorscripter.com/
-          icon: true
 
-    - name: Work
-      list:
-        - title: Slack
-          link: https://sj-pdt.slack.com/messages
-          icon: true
-        - title: Soft Tool
-          link: http://software.samjin.com/
-        - title: SEC CPC
-          link: http://cpc.sec.samsung.net/CpcGate.jsp
-        - title: SJ Mail
-          link: http://mail.samjin.com
-        - title: Jira
-          link: https://smartthings.atlassian.net/secure/RapidBoard.jspa?rapidView=149&projectKey=SMJN&view=detail
-        - title: Develop
-          link: https://graph.api.smartthings.com/ide/devices
-
-    - name: Python-DOC
-      list:
-        - title: DOC-2.7
-          link: https://docs.python.org/2/contents.html
-          icon: true
-        - title: PyMOTW
-          link: https://pymotw.com/2/genindex.html
-          icon: false
-        - title: Python Potal
-          link: https://www.python.org/doc/
-          icon: false
-
-    - name: Shopping
-      list:
-        - title:  에누리
-          link: http://www.enuri.com/
-          icon: true
-        - title:  쿠팡
-          link: http://www.coupang.com/
-          icon: true
-        - title: 11번가
-          link : http://www.11st.co.kr/
-          icon: true
-        - title: G-Market
-          link: http://www.gmarket.co.kr/
-          icon: true
-        - title: 위메프
-          link: http://www.wemakeprice.com/
-          icon: true
-
-    - name: 금융기관
-      list:
-        - title: Stock
-          link: https://stock.kakao.com/m/my/history
-          icon: true
-        - title: 국민
-          link: https://www.kbstar.com
-          icon: true
-        - title: 신한
-          link: http://www.shinhan.com
-          icon: true
-        - title: 신한C
-          link: https://www.shinhancard.com
-          icon: true
-        - title: 지로
-          link: http://www.giro.or.kr
-          icon: true
-        - title: 신협
-          link: https://openbank.cu.co.kr
-          icon: true
-        - title: 기업
-          link: http://www.kiupbank.co.kr
-          icon: true
-        - title: 하나
-          link: https://www.kebhana.com
-          icon: true

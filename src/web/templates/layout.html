@@ -2,14 +2,15 @@
 
 <html>
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}Title Name{% endblock title %}</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
     <link rel="stylesheet" href="{{ url_for('.static', filename='css/assist.css')}}">
   </head>
   <body>
     {% include 'parts/_navbar.html' %}
-    <div class="container">
+    <div id="body-container" class="container">
       {% include 'parts/_messages.html' %}
       {% block body %}{% endblock %}
     </div>

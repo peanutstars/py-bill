@@ -25,6 +25,6 @@ class Reply:
     @classmethod
     def Fail(cls, **kwargs):
         success = kwargs.get('success', False)
-        errmsg = kwargs.get('emsg', 'Failed')
+        errmsg = kwargs.get('errmsg', 'Failed')
         value = kwargs.get('value', None)
         return jsonify(success=success, errmsg=errmsg, value=value)
