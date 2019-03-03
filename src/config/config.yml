@@ -2,4 +2,5 @@
 folder:
     config:
     user_config: /var/pybill/config/
+    bookmark: /var/pybill/bookmark/
     stock: /var/pybill/stock/

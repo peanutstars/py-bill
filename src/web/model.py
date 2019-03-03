@@ -18,13 +18,13 @@ class Reply:
     @classmethod
     def Success(cls, **kwargs):
         success = kwargs.get('success', True)
-        errmsg = kwargs.get('errmsg', None)
+        message = kwargs.get('message', None)
         value = kwargs.get('value', None)
-        return jsonify(success=success, errmsg=errmsg, value=value)
+        return jsonify(success=success, message=message, value=value)
 
     @classmethod
     def Fail(cls, **kwargs):
         success = kwargs.get('success', False)
-        errmsg = kwargs.get('errmsg', 'Failed')
+        message = kwargs.get('message', 'Failed')
         value = kwargs.get('value', None)
-        return jsonify(success=success, errmsg=errmsg, value=value)
+        return jsonify(success=success, message=message, value=value)

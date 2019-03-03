@@ -1,17 +1,49 @@
 {% extends 'layout.html' %}
 
 {% block body %}
+{% if session.user_id %}
+<div>
+  <div>
+    <span id="btn-group-none" style="float: right;">
+      <button id="edit-button" type="button" class="btn btn-primary btn-space">Edit</button>
+    </span>
+    <span id="btn-group-edit" style="float: right; display: none;">
+      <button id="edit-store-button" type="button" class="btn btn-primary btn-space">Store</button>
+      <button id="edit-cancel-button" type="button" class="btn btn-secondary btn-space">Cancel</button>
+    </span>
+    <textarea id="edit-bookmark" name="edit-bookmark" rows="10" style="width: 100%; display: none;">
+    </textarea>
+  </div>
+</div>
+{% endif %}
 <div id="view-bookmark"></div>
 {% endblock %}
 
 {% block bodyscript %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/3.12.2/js-yaml.js"></script>
+<!-- <script src="https://cdn.ckeditor.com/4.6.2/basic/ckeditor.js"></script> -->
 <script type="text/javascript">
   $(function() {
+    content_bookmark = null;
     ajax.get('/ajax/bookmark', {}, render_bookmark);
+    $('#edit-button').click(function(){
+      if (content_bookmark) {
+        $('#edit-bookmark').text('');
+        $('#edit-bookmark').append(content_bookmark);
+      }
+      util.shows(['#btn-group-edit', '#edit-bookmark'], ['#btn-group-none']);
+    });
+    $('#edit-cancel-button').click(function(){
+      util.shows(['#btn-group-none'],['#btn-group-edit', '#edit-bookmark']);
+    });
+    $('#edit-store-button').click(function(){
+      verify_bookmark_content();
+    });
   });
-  function render_bookmark(resp) {
-    for (var i in resp.bookmark) {
-      var group = resp.bookmark[i];
+  function render_bookmark(json) {
+    $('#view-bookmark').text('');
+    for (var i in json.bookmark) {
+      var group = json.bookmark[i];
       // var html = '<div class="jumbotron">';
       var html = '<div>';
       html += '<h4>'+group.name+'</h4>';
@@ -22,8 +54,26 @@
         html += '</div>';
       }
       html += '</div><p/>';
+      delete json.__include__
       $("#view-bookmark").append(html);
     }
+    content_bookmark = jsyaml.safeDump(json, lineWidth=160)
+    $('#edit-bookmark').text('');
+    $('#edit-bookmark').append(content_bookmark);
+  }
+  function verify_bookmark_content() {
+    var content = $('#edit-bookmark').val();
+    try {
+      json = jsyaml.load(content);
+    } catch (e) {
+      util.flash(e.message, 'danger');
+      return;
+    }
+    render_bookmark(json);
+    ajax.post('/ajax/bookmark', {data: content}, bookmark_store_response);
+  }
+  function bookmark_store_response(resp) {
+    util.shows(['#btn-group-none'],['#btn-group-edit', '#edit-bookmark']);
   }
 </script>
 {% endblock %}
