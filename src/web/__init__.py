@@ -9,5 +9,5 @@ login_manager = LoginManager()
 
 @login_manager.user_loader
 def load_user(user_id):
-    from .account_view import load_user
+    from .view_account import load_user
     return load_user(user_id)

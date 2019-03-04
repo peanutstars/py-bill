@@ -10,7 +10,7 @@
             {{ form.csrf_token }}
             {{ form.h_next }}
             <div class="form-group">
-                {{render_field(form.email, class_="form-control")}}
+                {{render_field(form.email, class_="form-control", autofocus=true)}}
             </div>
             <div class="form-group">
                 {{render_field(form.password, class_="form-control")}}
@@ -21,4 +21,12 @@
     </div>
     <div class="col-md-4"></div>
   </div>
+{% endblock %}
+
+{% block bodyscript %}
+<script type="text/javascript">
+  $(function() {
+
+  });
+</script>
 {% endblock %}

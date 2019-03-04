@@ -5,8 +5,9 @@ from pysp.sbasic import SFile
 
 from web import app, db, login_manager
 from web.model import User
-from web.index_view import index
-from web.account_view import account
+from web.view_index import index
+from web.view_account import account
+from web.view_billdashboard import bill_dashboard
 from core.finance import BillConfig
 
 
@@ -40,4 +41,4 @@ if __name__ == '__main__':
             db.session.add(admin)
             db.session.commit()
 
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port=8888)
