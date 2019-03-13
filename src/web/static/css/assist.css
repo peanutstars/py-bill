@@ -31,9 +31,12 @@ div.alert {
 /* Hide for mobile, show later */
 .sidebar {
   /* display: none; */
-  position: : fixed;
+  overflow-x: hidden;
 }
 @media (min-width: 768px) {
+  body.body-sidebar {
+    padding-left: 180px;
+  }
   .sidebar {
     position: fixed;
     top: 51px;
@@ -46,6 +49,7 @@ div.alert {
     overflow-y: auto; /* Scrollable contents if viewport is shorter than content. */
     background-color: #f8f9f9;
     border-right: 1px solid #eee;
+    min-width: 180px;
   }
 }
 
@@ -62,6 +66,6 @@ div.alert {
 .nav-sidebar > .active > a,
 .nav-sidebar > .active > a:hover,
 .nav-sidebar > .active > a:focus {
-  color: #fff;
-  background-color: #428bca;
+  color: #5D6D7E;
+  background-color: #D5F5E3;
 }
