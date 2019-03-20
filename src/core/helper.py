@@ -4,8 +4,8 @@ from pysp.serror import SDebug
 
 class _LineParser(SDebug):
     # DEBUG = True
-    COLCNT      = 8
-    SEPERATOR   = '|'
+    COLCNT = 8
+    SEPERATOR = '|'
     MARK_CLAUSE = '##'
     MARK_CTITLE = 'Key Word'
 
@@ -43,28 +43,28 @@ class _LineParser(SDebug):
 
 
 class _LP_DaumDay(_LineParser):
-    COLCNT      = 8
-    SEPERATOR   = '|'
+    COLCNT = 8
+    SEPERATOR = '|'
     MARK_CLAUSE = '##'
     MARK_CTITLE = '일자별 주가'
 
 
 class _LP_NaverDay(_LineParser):
-    COLCNT      = 7
-    SEPERATOR   = '|'
+    COLCNT = 7
+    SEPERATOR = '|'
     MARK_CLAUSE = '##'
     MARK_CTITLE = '일별 시세'
 
 
 class _LP_NaverInvestor(_LineParser):
-    COLCNT      = 9
-    SEPERATOR   = '|'
+    COLCNT = 9
+    SEPERATOR = '|'
     MARK_CLAUSE = '##'
     MARK_CTITLE = '순매매 거래량'
 
 
 class Helper:
     class LineParser:
-        DaumDay         = _LP_DaumDay
-        NaverInvestor   = _LP_NaverInvestor
-        NaverDay        = _LP_NaverDay
+        DaumDay = _LP_DaumDay
+        NaverInvestor = _LP_NaverInvestor
+        NaverDay = _LP_NaverDay

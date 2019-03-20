@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import hexdump
 import unittest
 
-from core.finance import DataCollection, BillConfig, FDaum, FNaver
-from core.connect import Http
-from core.model import *
+from pysp.sbasic import SSingleton
+
+from core.cache import FileCache
+from core.finance import DataCollection, BillConfig  # FNaver, FDaum
+from core.model import ServiceProvider
 
 
 class TestFinance(unittest.TestCase):
@@ -21,9 +22,10 @@ class TestFinance(unittest.TestCase):
         f.collect_candle(self.spn)
         f.collect_investor(self.spn)
         f.collect_shortstock(self.spk)
+        del SSingleton._instances[FileCache]
 
     def test_billconfig(self):
         bconfig = BillConfig()
         cvalue = bconfig.get_value('folder.user_config')
         self.assertTrue(cvalue == '/var/pybill/config/')
-        self.assertTrue( bconfig is BillConfig())
+        self.assertTrue(bconfig is BillConfig())

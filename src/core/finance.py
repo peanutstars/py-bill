@@ -3,32 +3,19 @@
 import datetime
 import os
 
-from pysp.sbasic import SSingleton, SFile
+from pysp.sbasic import SFile
 from pysp.sconf import SConfig
-from pysp.serror import SDebug
+# from pysp.serror import SDebug
 from pysp.ssql import SSimpleDB
 
-from core.connect import Http, FDaum, FNaver, FKrx, FUnknown
-from core.model import *
-
-
-
-class BillConfig(SConfig, metaclass=SSingleton):
-    def __init__(self):
-        folder = os.path.dirname(os.path.abspath(__file__))
-        self.config_folder = f'{folder}/../config/'
-        configyml = f'{self.config_folder}/config.yml'
-        super(BillConfig, self).__init__(yml_file=configyml)
-        self.init_variables()
-
-    def init_variables(self):
-        stock_yml = f'{self.config_folder}/db/stock.yml'
-        self.set_value('_config.db.stock_yml', stock_yml)
-        stock_folder = self.get_value('folder.stock', './')
-        self.set_value('_config.db.stock_folder', stock_folder)
+from core.config import BillConfig
+from core.connect import FDaum, FNaver, FKrx, FUnknown
+from core.model import StockDayInvestor, StockDayShort
 
 
 class StockItemDB(SSimpleDB):
+    class Error(Exception):
+        pass
     # SQL_ECHO = True
 
     def __init__(self, **kwargs):
@@ -79,11 +66,14 @@ class StockItemDB(SSimpleDB):
                 'person': d.person,
             }
             if i == 0:
-                columns = ['stamp', 'foreigner', 'frate', 'institute', 'person']
+                cols = ['stamp', 'foreigner', 'frate', 'institute', 'person']
                 options = {
                     'wheres': {'stamp': item.get('stamp')}
                 }
-                rv = self.query('stock_day', *columns, **options)
+                rv = self.query('stock_day', *cols, **options)
+                if not rv:
+                    emsg = 'No Data, day field: {}'.format(item.get('stamp'))
+                    raise StockItemDB.Error(emsg)
                 inv = StockDayInvestor(*rv[0])
                 if inv.foreigner == d.foreigner and inv.person == d.person:
                     return False
@@ -95,6 +85,8 @@ class StockItemDB(SSimpleDB):
             return False
         data = []
         for i, d in enumerate(days):
+            if type(d) is list:
+                d = StockDayShort(*d)
             item = {
                 'stamp': datetime.date(*[int(x) for x in d.stamp.split('/')]),
                 'short':       d.short,

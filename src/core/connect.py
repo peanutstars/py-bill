@@ -4,15 +4,16 @@ import datetime
 import html2text
 import requests
 
-from pysp.serror import SDebug
+from pysp.serror import SCDebug
 from pysp.sjson import SJson
 
 from core.helper import Helper
-from core.model import *
+from core.model import StockDayShort, StockDayInvestor, StockDay
+from core.cache import FileCache
+# from core.finance import BillConfig
 
 
-
-class Http(SDebug):
+class Http(SCDebug):
     DEBUG = True
 
     class Error(Exception):
@@ -50,7 +51,7 @@ class Http(SDebug):
         return cls.do_method(requests.post, url, **kwargs)
 
 
-class FSpHelper(SDebug):
+class FSpHelper(SCDebug):
     class Error(Exception):
         pass
 
@@ -69,8 +70,9 @@ class FSpHelper(SDebug):
 
 
 class FDaum(FSpHelper):
+    BASE_URL = 'http://finance-service.daum.net/item'
     URL = {
-        'day': 'http://finance-service.daum.net/item/quote_yyyymmdd.daum?code={code}&page={page}',
+        'day': BASE_URL+'/quote_yyyymmdd.daum?code={code}&page={page}',
     }
 
     @classmethod
@@ -96,23 +98,23 @@ class FDaum(FSpHelper):
     @classmethod
     def _parse_day(cls, chunk):
         class ColIdx:
-            SEPERATOR   = '|'
-            COL_LENGTH  = 8
-            IDX_STAMP   = 0
-            IDX_START   = 1
-            IDX_END     = 4
-            IDX_HIGH    = 2
-            IDX_LOW     = 3
-            IDX_VOLUME  = 7
+            SEPERATOR = '|'
+            COL_LENGTH = 8
+            IDX_STAMP = 0
+            IDX_START = 1
+            IDX_END = 4
+            IDX_HIGH = 2
+            IDX_LOW = 3
+            IDX_VOLUME = 7
 
         days = []
         day = []
         p = Helper.LineParser.DaumDay()
         for line in chunk.split('\n'):
-            l = line.strip().replace(',','')
-            if not l:
+            _l = line.strip().replace(',', '')
+            if not _l:
                 continue
-            if p.input(l):
+            if p.input(_l):
                 day = [x.strip() for x in p.get_columns()]
                 cls.dprint(day)
                 days.append(StockDay(
@@ -165,23 +167,23 @@ class FNaver(FSpHelper):
     @classmethod
     def _parse_day(cls, chunk):
         class ColIdx:
-            SEPERATOR   = '|'
-            COL_LENGTH  = 7
-            IDX_STAMP   = 0
-            IDX_START   = 3
-            IDX_END     = 1
-            IDX_HIGH    = 4
-            IDX_LOW     = 5
-            IDX_VOLUME  = 6
+            SEPERATOR = '|'
+            COL_LENGTH = 7
+            IDX_STAMP = 0
+            IDX_START = 3
+            IDX_END = 1
+            IDX_HIGH = 4
+            IDX_LOW = 5
+            IDX_VOLUME = 6
 
         days = []
         day = []
         p = Helper.LineParser.NaverDay()
         for line in chunk.split('\n'):
-            l = line.strip().replace(',','')
-            if not l:
+            _l = line.strip().replace(',', '')
+            if not _l:
                 continue
-            if p.input(l):
+            if p.input(_l):
                 day = [x.strip() for x in p.get_columns()]
                 cls.dprint(day)
                 days.append(StockDay(
@@ -200,20 +202,20 @@ class FNaver(FSpHelper):
     @classmethod
     def _parser_investor(cls, chunk):
         class ColIdx:
-            COL_LENGTH      = 9
-            IDX_STAMP       = 0
-            IDX_FOREIGNER   = 6
+            COL_LENGTH = 9
+            IDX_STAMP = 0
+            IDX_FOREIGNER = 6
             IDX_FOREIGN_RATE = 8
-            IDX_INSTITUTE   = 5
+            IDX_INSTITUTE = 5
 
         days = []
         day = []
         p = Helper.LineParser.NaverInvestor()
         for line in chunk.split('\n'):
-            l = line.strip().replace(',','')
-            if not l:
+            _l = line.strip().replace(',', '')
+            if not _l:
                 continue
-            if p.input(l):
+            if p.input(_l):
                 day = [x.strip() for x in p.get_columns()]
                 cls.dprint(day)
                 foreigner = int(day[ColIdx.IDX_FOREIGNER])
@@ -258,6 +260,11 @@ class FKrx(FSpHelper):
 
     @classmethod
     def _get_chunk_list(cls, **kwargs):
+        fcache = FileCache()
+        krxlist = fcache.get_cache(cls.URL['query'])
+        if krxlist is not None:
+            return krxlist
+
         params = {
             'bld':  'COM/finder_srtisu',
             'name': 'form',
@@ -285,22 +292,31 @@ class FKrx(FSpHelper):
         #       "marketName": "KOSDAQ"
         #     },
         #  }
-        return  Http.post(url, **kwargs)
+        krxlist = Http.post(url, **kwargs)
+        fcache.set_cache(cls.URL['query'], krxlist)
+        return krxlist
 
     @classmethod
     def _get_chunk_shortstock(cls, **kwargs):
+        fcache = FileCache()
+        page = kwargs.get('page', 1)
+        now = datetime.datetime.now()
+        delta = datetime.timedelta(days=((page-1)*365))
+        sdate = (now - delta).strftime('%Y%m%d')
+        edate = (now - delta - datetime.timedelta(days=364)).strftime('%Y%m%d')
+
+        keywords = ['krx.short.stock', kwargs.get('fcode'), sdate, edate]
+        cachekey = ','.join(keywords)
+        krxsstock = fcache.get_cache(cachekey)
+        if krxsstock is not None:
+            return krxsstock
+
         params = {
             'bld':  'SRT/02/02010100/srt02010100',
             'name': 'form',
         }
         url = cls.URL.get('otp')
         key = Http.get(url, params=params)
-
-        page = kwargs.get('page', 1)
-        now = datetime.datetime.now()
-        delta = datetime.timedelta(days=((page-1)*365))
-        sdate = (now - delta).strftime('%Y%m%d')
-        edate = (now - delta - datetime.timedelta(days=364)).strftime('%Y%m%d')
 
         cls.dprint(f'####### S:{sdate} E:{edate}')
         params = {
@@ -334,11 +350,13 @@ class FKrx(FSpHelper):
         # }
         if type(data) is dict and 'block1' in data:
             for item in data['block1']:
-                amount = item['str_const_val1'].replace(',','')
+                amount = item['str_const_val1'].replace(',', '')
                 days.append(StockDayShort(
                     stamp=item['trd_dd'],
-                    short=int(item['cvsrtsell_trdvol'].replace(',','')),
+                    short=int(item['cvsrtsell_trdvol'].replace(',', '')),
                     shortamount=None if amount == '-' else int(amount)))
+        fcache.set_cache(cachekey, days, duration=600)
+
         for day in days:
             cls.dprint(day)
         return days
