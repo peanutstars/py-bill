@@ -13,6 +13,7 @@ from core.finance import BillConfig
 def index():
     return render_template('pages/index.html')
 
+
 @app.route('/ajax/bookmark', methods=['GET', 'POST'])
 def ajax_bookmark():
     bcfg = BillConfig()

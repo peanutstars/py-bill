@@ -11,8 +11,8 @@ class TestCache(unittest.TestCase):
     def test_file_cache(self):
         # Create
         cache = FileCache()
-        cache.set_cache('1', 'first', duration=10)
-        cache.set_cache('2', 'second', duration=10)
+        cache.set_cache('1', 'first', duration=6)
+        cache.set_cache('2', 'second', duration=6)
         del SSingleton._instances[FileCache]
         del cache
         # Load from file
@@ -29,3 +29,7 @@ class TestCache(unittest.TestCase):
         self.assertTrue('second' == cache.get_cache('2'))
         del SSingleton._instances[FileCache]
         del cache
+        # Clean up
+        time.sleep(5)
+        FileCache().cleanup()
+        del SSingleton._instances[FileCache]

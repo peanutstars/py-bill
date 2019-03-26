@@ -14,7 +14,6 @@ class User(UserMixin, db.Model):
 
 
 class Reply:
-
     @classmethod
     def Success(cls, **kwargs):
         success = kwargs.get('success', True)

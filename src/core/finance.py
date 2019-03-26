@@ -2,6 +2,10 @@
 
 import datetime
 import os
+import re
+import sqlalchemy
+from dateutil.relativedelta import relativedelta
+from sqlalchemy import and_
 
 from pysp.sbasic import SFile
 from pysp.sconf import SConfig
@@ -10,7 +14,8 @@ from pysp.ssql import SSimpleDB
 
 from core.config import BillConfig
 from core.connect import FDaum, FNaver, FKrx, FUnknown
-from core.model import StockDayInvestor, StockDayShort
+from core.model import (StockDay, StockDayInvestor, StockDayShort,
+                        ServiceProvider, TableData)
 
 
 class StockItemDB(SSimpleDB):
@@ -37,14 +42,16 @@ class StockItemDB(SSimpleDB):
             return False
         data = []
         for i, d in enumerate(days):
+            if type(d) is list:
+                d = StockDay(*d)
             item = {
                 'stamp': datetime.date(*[int(x) for x in d.stamp.split('.')]),
-                'finance': d.finance,
-                'start': d.start,
-                'end': d.end,
-                'high': d.high,
-                'low': d.low,
-                'volume': d.volume,
+                'finance':  d.finance,
+                'start':    d.start,
+                'end':      d.end,
+                'high':     d.high,
+                'low':      d.low,
+                'volume':   d.volume,
             }
             data.append(item)
         param = {
@@ -58,12 +65,14 @@ class StockItemDB(SSimpleDB):
             return False
         data = []
         for i, d in enumerate(days):
+            if type(d) is list:
+                d = StockDayInvestor(*d)
             item = {
                 'stamp': datetime.date(*[int(x) for x in d.stamp.split('.')]),
-                'foreigner': d.foreigner,
-                'frate': d.frate,
-                'institute': d.institute,
-                'person': d.person,
+                'foreigner':    d.foreigner,
+                'frate':        d.frate,
+                'institute':    d.institute,
+                'person':       d.person,
             }
             if i == 0:
                 cols = ['stamp', 'foreigner', 'frate', 'institute', 'person']
@@ -109,16 +118,17 @@ class DataCollection:
     class Error(Exception):
         pass
 
+    PROVIDER = {
+        'daum':     FDaum,
+        'naver':    FNaver,
+        'krx':      FKrx,
+    }
+
     def __init__(self):
         super(DataCollection, self).__init__()
 
     def get_provider(self, sp):
-        PROVIDER = {
-            'daum':     FDaum,
-            'naver':    FNaver,
-            'krx':      FKrx,
-        }
-        return PROVIDER.get(sp.name, FUnknown)
+        return self.PROVIDER.get(sp.name, FUnknown)
 
     def collect_candle(self, sp, **kwargs):
         page = 0
@@ -157,3 +167,79 @@ class DataCollection:
             }
             chunk = provider.get_chunk('shortstock', **params)
             loop = sidb.update_shortstock(chunk)
+
+    @classmethod
+    def factory_provider(cls, code, pname):
+        items = FKrx.get_chunk('list')
+        acode = 'A'+str(code)
+        if pname not in cls.PROVIDER:
+            cls.Error(f'Not Exist Provider Name: {pname}')
+        for item in items:
+            if acode == item['short_code']:
+                return ServiceProvider(name=pname,
+                                       codename=item['codeName'], code=code)
+        raise cls.Error(f'Not Exist Code: {code}')
+
+    def collect(self, code):
+        sp = self.factory_provider(code, 'naver')
+        self.collect_candle(sp)
+        self.collect_investor(sp)
+        sp = self.factory_provider(code, 'krx')
+        self.collect_shortstock(sp)
+
+
+class StockQuery:
+    class Error(Exception):
+        pass
+
+    PATTERN_DATE = re.compile(r'([\d]{4})\D*([\d]{1,2})\D*([\d]{1,2})')
+
+    @classmethod
+    def to_datetime(cls, date):
+        m = cls.PATTERN_DATE.match(date)
+        if m.lastindex == 3:
+            datelist = [int(m.group(x)) for x in range(1, 4)]
+            return datetime.datetime(*datelist)
+        raise cls.Error(f'Unknown Date Format: {date}')
+
+    @classmethod
+    def to_strfdate(cls, odate=None, **kwargs):
+        '''
+            param @ format      String format of date, default is '%Y%m%d'
+        '''
+        format = kwargs.get('format', '%Y-%m-%d')
+        if odate is None:
+            return datetime.datetime.now().strftime(format)
+        if isinstance(odate, datetime.datetime):
+            return odate.strftime(format)
+        raise cls.Error('Unknown object: {}'.format(odate.__class__.__name__))
+
+    @classmethod
+    def raw_data(cls, sidb, **kwargs):
+        '''
+            param @ start_date  Start date, default is current local time.
+                                Format is YYYY-MM-DD, YYYY.MM.DD or YYYYMMDD.
+            param @ months      The past duration time, unit is month.
+                                Default is 3 months.
+            return @            List of list.
+        '''
+        start_date = kwargs.get('start_date', cls.to_strfdate())
+        duration_months = kwargs.get('months', 3) + 3
+        date_end = cls.to_datetime(start_date)
+        date_start = date_end - relativedelta(months=duration_months)
+        # print(date_start, date_end)
+
+        tablename = 'stock_day'
+        colnames = sidb.get_colnames(tablename)
+        table = sidb.get_table(tablename)
+        sql = sqlalchemy.sql.select(table.c).where(
+            and_(cls.to_strfdate(date_start) <= table.c.stamp,
+                 table.c.stamp <= cls.to_strfdate(date_end))).\
+            order_by(table.c.stamp.asc())
+        strsql = sidb.to_sql(sql)
+        try:
+            fields = sidb.session.query(sql).all()
+        except Exception as e:
+            raise cls.Error(f'{e}')
+        return TableData(colnames=colnames,
+                         fields=[list(x) for x in fields], sql=strsql)

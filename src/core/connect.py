@@ -156,13 +156,27 @@ class FNaver(FSpHelper):
 
     @classmethod
     def _get_chunk_day(cls, **kwargs):
-        chunk = Http.get(cls.get_url('day', **kwargs), text=True)
-        return cls._parse_day(chunk)
+        fcache = FileCache()
+        url = cls.get_url('day', **kwargs)
+        cache = fcache.get_cache(url)
+        if cache is not None:
+            return cache
+        chunk = Http.get(url, text=True)
+        data = cls._parse_day(chunk)
+        fcache.set_cache(url, data, duration=600)
+        return data
 
     @classmethod
     def _get_chunk_investor(cls, **kwargs):
-        chunk = Http.get(cls.get_url('dayinvestor', **kwargs), text=True)
-        return cls._parser_investor(chunk)
+        fcache = FileCache()
+        url = cls.get_url('dayinvestor', **kwargs)
+        cache = fcache.get_cache(url)
+        if cache is not None:
+            return cache
+        chunk = Http.get(url, text=True)
+        data = cls._parser_investor(chunk)
+        fcache.set_cache(url, data, duration=600)
+        return data
 
     @classmethod
     def _parse_day(cls, chunk):
@@ -251,7 +265,8 @@ class FKrx(FSpHelper):
     @classmethod
     def get_fullcode(cls, pool, code, default=None):
         short_code = code if code[0] == 'A' else ('A'+code)
-        for item in pool['block1']:
+        # for item in pool['block1']:
+        for item in pool:
             if item['short_code'] == short_code:
                 return item['full_code']
         if default is None:
@@ -293,11 +308,18 @@ class FKrx(FSpHelper):
         #     },
         #  }
         krxlist = Http.post(url, **kwargs)
-        fcache.set_cache(cls.URL['query'], krxlist)
-        return krxlist
+        fcache.set_cache(cls.URL['query'], krxlist['block1'])
+        return krxlist['block1']
 
     @classmethod
     def _get_chunk_shortstock(cls, **kwargs):
+        '''
+            param @ page    page index number, start from 0
+            param @ fcode   full code of stock item in Korea Exchange
+            param @ scode   short code of stock item in Korea Exchange
+
+            return @ list of list or list of StockDayShort
+        '''
         fcache = FileCache()
         page = kwargs.get('page', 1)
         now = datetime.datetime.now()
@@ -305,7 +327,9 @@ class FKrx(FSpHelper):
         sdate = (now - delta).strftime('%Y%m%d')
         edate = (now - delta - datetime.timedelta(days=364)).strftime('%Y%m%d')
 
-        keywords = ['krx.short.stock', kwargs.get('fcode'), sdate, edate]
+        fullcode = kwargs.get('fcode')
+        shortcode = kwargs.get('scode')
+        keywords = ['krx.short.stock', fullcode, shortcode, sdate, edate]
         cachekey = ','.join(keywords)
         krxsstock = fcache.get_cache(cachekey)
         if krxsstock is not None:
@@ -320,8 +344,8 @@ class FKrx(FSpHelper):
 
         cls.dprint(f'####### S:{sdate} E:{edate}')
         params = {
-            'isu_cd':       kwargs.get('fcode'),
-            'isu_srt_cd':   kwargs.get('scode'),
+            'isu_cd':       fullcode,
+            'isu_srt_cd':   shortcode,
             'strt_dd':      edate,
             'end_dd':       sdate,
             'pagePath':     '/contents/SRT/02/02010100/SRT02010100.jsp',

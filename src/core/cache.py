@@ -1,5 +1,6 @@
 
 import codecs
+import glob
 import hashlib
 import os
 import time
@@ -20,12 +21,13 @@ class FileCache(SDebug, metaclass=SSingleton):
         os.makedirs(self.folder, exist_ok=True)
 
     def __del__(self):
-        self.flush_to_file()
+        self.cleanup()
+        self.flush()
 
     def hash(self, key):
         return hashlib.md5(key.encode('utf-8')).hexdigest()
 
-    def flush_to_file(self):
+    def flush(self):
         for k, v in self._cache.items():
             cfpath = self.get_cache_file(k)
             err = False
@@ -35,7 +37,7 @@ class FileCache(SDebug, metaclass=SSingleton):
                 continue
             with codecs.open(cfpath, mode='w', encoding='utf-8') as fd:
                 try:
-                    fd.write(SJson.to_serial(v))
+                    fd.write(SJson.to_serial(v, indent=2))
                 except Exception:
                     err = True
             if err:
@@ -54,10 +56,14 @@ class FileCache(SDebug, metaclass=SSingleton):
         return False
 
     def set_cache(self, key, value, **kwargs):
+        '''
+            param @ duration    duration time, unit is second.
+        '''
         self.remove_expired()
         duration = kwargs.get('duration', self.DURATION)
         self._cache[key] = {
             'key': key,
+            'duration': duration,
             'stamp': time.time() + duration,
             'value': value
         }
@@ -72,7 +78,7 @@ class FileCache(SDebug, metaclass=SSingleton):
                     self._cache[key] = SJson.to_deserial(fd.read())
                 except Exception:
                     self.eprint(f'Cache Read Error key:{key} file:{cfpath}')
-                    os.rename(cfpath, cfpath+'.rerr')
+                    # os.rename(cfpath, cfpath+'.rerr')
                     return None
             os.remove(cfpath)
             return self.get_cache(key)
@@ -82,3 +88,19 @@ class FileCache(SDebug, metaclass=SSingleton):
         cstamp = time.time()
         self._cache = \
             {k: v for k, v in self._cache.items() if v['stamp'] >= cstamp}
+
+    def cleanup(self):
+        cstamp = time.time()
+        for cfpath in glob.glob(self.folder+'/*'):
+            req_del = False
+            with codecs.open(cfpath, encoding='utf-8') as fd:
+                try:
+                    cache = SJson.to_deserial(fd.read())
+                except Exception:
+                    req_del = True
+                    self.eprint(f'Cache Read Error file:{cfpath}')
+                if req_del is False and cache['stamp'] < cstamp:
+                    req_del = True
+            if req_del:
+                # print(f'Delete {cfpath}')
+                os.remove(cfpath)

@@ -78,7 +78,7 @@ class TestConnect(unittest.TestCase):
     def test_krx_list(self):
         # Http.DEBUG = True
         chunk = FKrx.get_chunk('list')
-        self.assertTrue(type(chunk) == dict)
+        self.assertTrue(type(chunk) == list)
         # print(SJson.to_serial(chunk, indent=2))
         params = {
             'fcode': 'KR7035720002',
