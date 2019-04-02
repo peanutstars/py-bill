@@ -45,7 +45,7 @@
     },
     do_ajax : function(opts, callback) {
       opts.success = function(resp) {
-        console.log(JSON.stringify(resp));
+        // console.log(JSON.stringify(resp));
         if (callback && resp.success) {
           callback(resp.value);
           if (resp.message) {

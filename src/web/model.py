@@ -1,6 +1,6 @@
 import datetime
 
-from flask import jsonify
+from flask import jsonify, request
 from flask_login import UserMixin
 from . import db
 
@@ -16,14 +16,25 @@ class User(UserMixin, db.Model):
 class Reply:
     @classmethod
     def Success(cls, **kwargs):
-        success = kwargs.get('success', True)
-        message = kwargs.get('message', None)
-        value = kwargs.get('value', None)
-        return jsonify(success=success, message=message, value=value)
+        data = {}
+        data['success'] = kwargs.get('success', True)
+        data['message'] = kwargs.get('message', None)
+        data['value'] = kwargs.get('value', None)
+        return jsonify(data)
 
     @classmethod
     def Fail(cls, **kwargs):
-        success = kwargs.get('success', False)
-        message = kwargs.get('message', 'Failed')
-        value = kwargs.get('value', None)
-        return jsonify(success=success, message=message, value=value)
+        data = {}
+        data['success'] = kwargs.get('success', False)
+        data['message'] = kwargs.get('message', 'Failed')
+        data['value'] = kwargs.get('value', None)
+        return jsonify(data)
+
+    @classmethod
+    def Data(cls, data):
+        if type(data) is dict:
+            data['request'] = {}
+            data['request']['url'] = request.url
+            data['request']['path'] = request.path
+            data['request']['method'] = request.method
+        return data

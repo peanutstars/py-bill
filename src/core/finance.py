@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import copy
 import datetime
 import os
 import re
@@ -15,7 +16,7 @@ from pysp.ssql import SSimpleDB
 from core.config import BillConfig
 from core.connect import FDaum, FNaver, FKrx, FUnknown
 from core.model import (StockDay, StockDayInvestor, StockDayShort,
-                        ServiceProvider, TableData)
+                        ServiceProvider, QueryData)
 
 
 class StockItemDB(SSimpleDB):
@@ -192,6 +193,47 @@ class StockQuery:
     class Error(Exception):
         pass
 
+    class TradingAccumulator:
+        def __init__(self, items, colnames):
+            '''
+            @param items    It is accumulator List to use,
+                            the first one is not accumulated and
+                            the last one is the tread amount of short stock
+            @param colnames It is the column names of the field.
+            '''
+            self.ilist = []
+            for iname in items:
+                self.ilist.append(colnames.index(iname))
+            self.rows = None
+            self.amount = None
+
+        def update(self, field):
+            if self.rows:
+                rows = [r for i, r in enumerate(field) if i in self.ilist]
+                # print('!!', rows)
+                for i, r in enumerate(rows[:-1]):
+                    if i == 0:
+                        self.rows[i] = rows[i]
+                        continue
+                    self.rows[i] += rows[i]
+                # print('##', self.rows, rows)
+                if rows[-1]:
+                    if self.rows[-1]:
+                        self.rows[-1] += (rows[-1] - self.amount)
+                    else:
+                        self.rows[-1] = (rows[-1] - self.amount)
+                    self.amount = field[self.ilist[-1]]
+                else:
+                    self.rows[-1] = None
+            else:
+                rows = [r for i, r in enumerate(field) if i in self.ilist[:-1]]
+                rows.append(None)
+                # print('##', rows)
+                self.amount = field[self.ilist[-1]]
+                self.rows = rows
+            # print('  ', self.rows)
+            return copy.deepcopy(self.rows)
+
     PATTERN_DATE = re.compile(r'([\d]{4})\D*([\d]{1,2})\D*([\d]{1,2})')
 
     @classmethod
@@ -217,17 +259,25 @@ class StockQuery:
     @classmethod
     def raw_data(cls, sidb, **kwargs):
         '''
-            param @ start_date  Start date, default is current local time.
-                                Format is YYYY-MM-DD, YYYY.MM.DD or YYYYMMDD.
-            param @ months      The past duration time, unit is month.
-                                Default is 3 months.
-            return @            List of list.
+        @param sdate        Start date, default is current local time.
+                            Format is YYYY-MM-DD, YYYY.MM.DD or YYYYMMDD.
+        @param edate        End date, default is current local time.
+                            Format is YYYY-MM-DD, YYYY.MM.DD or YYYYMMDD.
+        @param months       The past duration time, unit is month.
+                            Default is 3 months.
+        @return             List of list.
         '''
-        start_date = kwargs.get('start_date', cls.to_strfdate())
-        duration_months = kwargs.get('months', 3) + 3
+        start_date = kwargs.get('sdate', cls.to_strfdate())
+        end_date = kwargs.get('edate', None)
+        months = kwargs.get('months', 3)
         date_end = cls.to_datetime(start_date)
-        date_start = date_end - relativedelta(months=duration_months)
-        # print(date_start, date_end)
+        if end_date:
+            date_start = cls.to_datetime(end_date)
+        else:
+            date_start = date_end - relativedelta(months=months)
+        if (date_start-date_end).days >= 0:
+            date_start, date_end = date_end, date_start
+        # print('##', date_start, date_end)
 
         tablename = 'stock_day'
         colnames = sidb.get_colnames(tablename)
@@ -241,5 +291,19 @@ class StockQuery:
             fields = sidb.session.query(sql).all()
         except Exception as e:
             raise cls.Error(f'{e}')
-        return TableData(colnames=colnames,
+        return QueryData(colnames=colnames,
                          fields=[list(x) for x in fields], sql=strsql)
+
+    @classmethod
+    def get_investor_trading_trand(cls, sidb, **kwargs):
+        qdata = cls.raw_data(sidb, **kwargs)
+        items = ['stamp', 'foreigner', 'institute', 'person', 'shortamount']
+        tradedata = QueryData(colnames=items, sql=qdata.sql)
+        tacc = cls.TradingAccumulator(tradedata.colnames, qdata.colnames)
+        for field in qdata.fields:
+            fieldacc = tacc.update(field)
+            tradedata.fields.append(fieldacc)
+        # print(tradedata.colnames)
+        # print(tradedata.fields)
+        # print(tradedata.sql)
+        return tradedata

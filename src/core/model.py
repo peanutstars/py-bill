@@ -17,8 +17,15 @@ StockDayShort = collections.namedtuple(
                     'stamp short shortamount')
 
 
-class TableData:
+class QueryData(dict):
     def __init__(self, **kwargs):
-        self.colnames = kwargs.get('colnames', None)
-        self.fields = kwargs.get('fields', None)
+        self.colnames = kwargs.get('colnames', [])
+        self.fields = kwargs.get('fields', [])
         self.sql = kwargs.get('sql', None)
+
+    def to_dict(self):
+        return {
+            'colnames': self.colnames,
+            'fields': self.fields,
+            'sql': self.sql
+        }

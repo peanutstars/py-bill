@@ -1,13 +1,13 @@
 from flask import render_template, flash, redirect, url_for, session, request
-from flask_login import login_user, login_required, logout_user, current_user
+from flask_login import login_user, login_required,  current_user
 from wtforms import Form, StringField, TextAreaField, PasswordField, HiddenField
-from wtforms.validators import InputRequired, Email, Length, EqualTo, DataRequired
+from wtforms.validators import (InputRequired, Email, Length, EqualTo,
+                                DataRequired)
 from wtforms.csrf.session import SessionCSRF
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from .model import User
 from . import app, db, login_manager
-
 
 
 class FormCSRF(Form):
@@ -48,8 +48,9 @@ class PasswordForm(FormCSRF):
                     DataRequired(),
                     Length(min=5, max=32),
                     EqualTo('passwd_confirm',
-                    message='Do not match Password')])
+                            message='Do not match Password')])
     passwd_confirm = PasswordField('Confirm')
+
 
 # @login_manager.user_loader
 def load_user(user_id):
@@ -67,11 +68,11 @@ def account_register():
         username = form.username.data
         password = generate_password_hash(form.password.data)
         new_user = User(username=form.username.data,
-                        email=form.email.data, password=password)
+                        email=email, password=password)
         try:
             db.session().add(new_user)
             db.session().commit()
-        except Exception as e:
+        except Exception:
             flash('Already used E-mail address.', 'warning')
             return render_template('pages/account_register.html', form=form)
         flash(f'You, {username} are now registered and can log in', 'success')
@@ -79,6 +80,7 @@ def account_register():
     elif form.csrf_token.errors:
         flash('You have submitted an invalid CSRF token', 'danger')
     return render_template('pages/account_register.html', form=form)
+
 
 @app.route('/account/login', methods=['GET', 'POST'])
 def account_login():
@@ -98,6 +100,7 @@ def account_login():
         flash('Invalid CSRF token', 'danger')
     return render_template('pages/account_login.html', form=form)
 
+
 @app.route('/account/logout')
 @login_required
 def account_logout():
@@ -106,12 +109,14 @@ def account_logout():
     flash(f'Logged out - Bye {username} !', 'success')
     return redirect(url_for('index'))
 
+
 @app.route('/account')
 @login_required
 def account():
     user = User.query.get(int(session['user_id']))
     users = User.query.all() if int(session['user_id']) == 1 else None
     return render_template('pages/account.html', user=user, users=users)
+
 
 @app.route('/account/password', methods=['GET', 'POST'])
 @login_required
