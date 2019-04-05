@@ -19,13 +19,10 @@ StockDayShort = collections.namedtuple(
 
 class QueryData(dict):
     def __init__(self, **kwargs):
-        self.colnames = kwargs.get('colnames', [])
-        self.fields = kwargs.get('fields', [])
-        self.sql = kwargs.get('sql', None)
+        super(QueryData, self).__init__()
+        self['colnames'] = kwargs.get('colnames', [])
+        self['fields'] = kwargs.get('fields', [])
+        self['sql'] = kwargs.get('sql', None)
 
-    def to_dict(self):
-        return {
-            'colnames': self.colnames,
-            'fields': self.fields,
-            'sql': self.sql
-        }
+    def __getattr__(self, name):
+        return self[name]

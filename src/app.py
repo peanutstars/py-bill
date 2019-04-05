@@ -41,4 +41,4 @@ if __name__ == '__main__':
             db.session.add(admin)
             db.session.commit()
 
-    app.run(host='0.0.0.0', port=8888)
+    app.run(host='0.0.0.0', port=8000)

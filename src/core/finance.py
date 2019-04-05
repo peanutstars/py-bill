@@ -6,7 +6,7 @@ import os
 import re
 import sqlalchemy
 from dateutil.relativedelta import relativedelta
-from sqlalchemy import and_
+from sqlalchemy import and_, Column
 
 from pysp.sbasic import SFile
 from pysp.sconf import SConfig
@@ -128,33 +128,37 @@ class DataCollection:
     def __init__(self):
         super(DataCollection, self).__init__()
 
-    def get_provider(self, sp):
-        return self.PROVIDER.get(sp.name, FUnknown)
+    @classmethod
+    def get_provider(cls, sp):
+        return cls.PROVIDER.get(sp.name, FUnknown)
 
-    def collect_candle(self, sp, **kwargs):
+    @classmethod
+    def collect_candle(cls, sp, **kwargs):
         page = 0
         loop = True
-        provider = self.get_provider(sp)
+        provider = cls.get_provider(sp)
         sidb = StockItemDB.factory(sp.code)
         while loop:
             page += 1
             chunk = provider.get_chunk('day', code=sp.code, page=page)
             loop = sidb.update_candle(chunk)
 
-    def collect_investor(self, sp, **kwargs):
+    @classmethod
+    def collect_investor(cls, sp, **kwargs):
         page = 0
         loop = True
-        provider = self.get_provider(sp)
+        provider = cls.get_provider(sp)
         sidb = StockItemDB.factory(sp.code)
         while loop:
             page += 1
             chunk = provider.get_chunk('dayinvestor', code=sp.code, page=page)
             loop = sidb.update_investor(chunk)
 
-    def collect_shortstock(self, sp, **kwargs):
+    @classmethod
+    def collect_shortstock(cls, sp, **kwargs):
         page = 0
         loop = True
-        provider = self.get_provider(sp)
+        provider = cls.get_provider(sp)
         sidb = StockItemDB.factory(sp.code)
         codepool = provider.get_chunk('list')
         shortcode = 'A'+sp.code
@@ -181,55 +185,83 @@ class DataCollection:
                                        codename=item['codeName'], code=code)
         raise cls.Error(f'Not Exist Code: {code}')
 
-    def collect(self, code):
-        sp = self.factory_provider(code, 'naver')
-        self.collect_candle(sp)
-        self.collect_investor(sp)
-        sp = self.factory_provider(code, 'krx')
-        self.collect_shortstock(sp)
+    @classmethod
+    def get_name_of_code(cls, code):
+        sp = cls.factory_provider(code, 'krx')
+        provider = cls.get_provider(sp)
+        shortcode = 'A'+code
+        for item in provider.get_chunk('list'):
+            if item['short_code'] == shortcode:
+                return item['codeName']
+        return None
+
+    @classmethod
+    def collect(cls, code):
+        sp = cls.factory_provider(code, 'naver')
+        cls.collect_candle(sp)
+        cls.collect_investor(sp)
+        sp = cls.factory_provider(code, 'krx')
+        cls.collect_shortstock(sp)
 
 
 class StockQuery:
     class Error(Exception):
         pass
 
+    class ExceptionEndOfData(Exception):
+        pass
+
     class TradingAccumulator:
-        def __init__(self, items, colnames):
+        def __init__(self, items, colnames, **kwargs):
             '''
-            @param items    It is accumulator List to use,
+            :param items    It is accumulator List to use,
                             the first one is not accumulated and
                             the last one is the tread amount of short stock
-            @param colnames It is the column names of the field.
+            :param colnames It is the column names of the field.
             '''
-            self.ilist = []
+            self.val_ilist = []
+            self.amount_colname = kwargs.get('amount_colname', None)
+            self.amount_idx = len(items) - 1
+            if self.amount_colname is not None:
+                self.amount_idx = items.index(self.amount_colname)
+            # print('amount_idx @', self.amount_idx)
             for iname in items:
-                self.ilist.append(colnames.index(iname))
+                self.val_ilist.append(colnames.index(iname))
             self.rows = None
-            self.amount = None
+            self.amount_value = None
 
         def update(self, field):
             if self.rows:
-                rows = [r for i, r in enumerate(field) if i in self.ilist]
+                rows = [r for i, r in enumerate(field) if i in self.val_ilist]
+                if rows.count(None) >= 2:
+                    raise StockQuery.ExceptionEndOfData()
                 # print('!!', rows)
-                for i, r in enumerate(rows[:-1]):
-                    if i == 0:
+                for i, r in enumerate(rows):
+                    if i == self.amount_idx:
+                        continue
+                    if i == 0 or i > self.amount_idx:
                         self.rows[i] = rows[i]
                         continue
                     self.rows[i] += rows[i]
                 # print('##', self.rows, rows)
-                if rows[-1]:
-                    if self.rows[-1]:
-                        self.rows[-1] += (rows[-1] - self.amount)
+                if rows[self.amount_idx]:
+                    if self.rows[self.amount_idx]:
+                        avalue = rows[self.amount_idx] - self.amount_value
+                        self.rows[self.amount_idx] += avalue
                     else:
-                        self.rows[-1] = (rows[-1] - self.amount)
-                    self.amount = field[self.ilist[-1]]
+                        if self.amount_value:
+                            avalue = rows[self.amount_idx] - self.amount_value
+                        else:
+                            avalue = rows[self.amount_idx]
+                        self.rows[self.amount_idx] = avalue
+                    self.amount_value = field[self.val_ilist[self.amount_idx]]
                 else:
-                    self.rows[-1] = None
+                    self.rows[self.amount_idx] = None
             else:
-                rows = [r for i, r in enumerate(field) if i in self.ilist[:-1]]
-                rows.append(None)
+                rows = [r for i, r in enumerate(field) if i in self.val_ilist]
+                self.amount_value = rows[self.amount_idx]
+                rows[self.amount_idx] = None
                 # print('##', rows)
-                self.amount = field[self.ilist[-1]]
                 self.rows = rows
             # print('  ', self.rows)
             return copy.deepcopy(self.rows)
@@ -247,7 +279,7 @@ class StockQuery:
     @classmethod
     def to_strfdate(cls, odate=None, **kwargs):
         '''
-            param @ format      String format of date, default is '%Y%m%d'
+        :param format       String format of date, default is '%Y%m%d'
         '''
         format = kwargs.get('format', '%Y-%m-%d')
         if odate is None:
@@ -259,13 +291,14 @@ class StockQuery:
     @classmethod
     def raw_data(cls, sidb, **kwargs):
         '''
-        @param sdate        Start date, default is current local time.
+        :param colnames     list of Column name
+        :param sdate        Start date, default is current local time.
                             Format is YYYY-MM-DD, YYYY.MM.DD or YYYYMMDD.
-        @param edate        End date, default is current local time.
+        :param edate        End date, default is current local time.
                             Format is YYYY-MM-DD, YYYY.MM.DD or YYYYMMDD.
-        @param months       The past duration time, unit is month.
+        :param months       The past duration time, unit is month.
                             Default is 3 months.
-        @return             List of list.
+        :return             List of list.
         '''
         start_date = kwargs.get('sdate', cls.to_strfdate())
         end_date = kwargs.get('edate', None)
@@ -280,30 +313,43 @@ class StockQuery:
         # print('##', date_start, date_end)
 
         tablename = 'stock_day'
-        colnames = sidb.get_colnames(tablename)
+        colnames = kwargs.get('colnames', sidb.get_colnames(tablename))
+        columns = [Column(x) for x in colnames]
         table = sidb.get_table(tablename)
-        sql = sqlalchemy.sql.select(table.c).where(
+        sql = sqlalchemy.sql.select(columns).where(
             and_(cls.to_strfdate(date_start) <= table.c.stamp,
                  table.c.stamp <= cls.to_strfdate(date_end))).\
             order_by(table.c.stamp.asc())
-        strsql = sidb.to_sql(sql)
+        sqlquery = sidb.to_sql(sql)
+        # fcache = FileCache()
+
         try:
             fields = sidb.session.query(sql).all()
         except Exception as e:
             raise cls.Error(f'{e}')
         return QueryData(colnames=colnames,
-                         fields=[list(x) for x in fields], sql=strsql)
+                         fields=[list(x) for x in fields], sql=sqlquery)
 
     @classmethod
     def get_investor_trading_trand(cls, sidb, **kwargs):
-        qdata = cls.raw_data(sidb, **kwargs)
-        items = ['stamp', 'foreigner', 'institute', 'person', 'shortamount']
+        '''
+        :param sdate        Start date, default is current local time.
+                            Format is YYYY-MM-DD, YYYY.MM.DD or YYYYMMDD.
+        :param edate        End date, default is current local time.
+                            Format is YYYY-MM-DD, YYYY.MM.DD or YYYYMMDD.
+        :param months       The past duration time, unit is month.
+                            Default is 3 months.
+        :return             List of list.
+        '''
+        items = ['stamp',
+                 'foreigner', 'institute', 'person', 'shortamount', 'end']
+        qdata = cls.raw_data(sidb, colnames=items, **kwargs)
         tradedata = QueryData(colnames=items, sql=qdata.sql)
-        tacc = cls.TradingAccumulator(tradedata.colnames, qdata.colnames)
+        tacc = cls.TradingAccumulator(tradedata.colnames, qdata.colnames,
+                                      amount_colname='shortamount')
         for field in qdata.fields:
-            fieldacc = tacc.update(field)
-            tradedata.fields.append(fieldacc)
-        # print(tradedata.colnames)
-        # print(tradedata.fields)
-        # print(tradedata.sql)
+            try:
+                tradedata.fields.append(tacc.update(field))
+            except StockQuery.ExceptionEndOfData:
+                pass
         return tradedata

@@ -1,0 +1,60 @@
+{% extends 'layout_sidebar.html' %}
+
+{% block body %}
+  <h2>Stock Items</h2>
+  <p>
+  <div id="view-stock-list"></div>
+
+{% endblock %}
+
+{% block bodyscript %}
+<script type="text/javascript">
+  $(function(){
+    _data = {};
+
+    sidebar();
+
+    get_stock_list(render_stock_list);
+  });
+
+  function get_stock_list(cb) {
+    ajax.post('/ajax/stock/list', {}, cb);
+  }
+
+  function get_first_character(word) {
+    var cho_pool = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+    var char = word.charCodeAt(0);
+    if (char < 128)
+      return word[0];
+    char -= 44032;
+    if(char>-1 && char<11172)
+      return cho_pool[Math.floor(char/588)];
+    return word[0];
+  }
+
+  function render_stock_list(list) {
+    var char, pchar=null;
+    var html = '';
+    for (var i in list) {
+      var codename = list[i].codeName;
+      var code = list[i].short_code.substring(1);
+      char = get_first_character(codename);
+      if (char != pchar) {
+        pchar = char;
+        if (html.length > 0) {
+          $("#view-stock-list").append(html);
+        }
+        html = '<h4>'+char+'</h4>';
+      }
+      html += '<div class="btn-group">';
+      html += '<a href="/bill/stock/'+code+'" class="btn btn-default btn-space">'+codename+'</a>'
+      html += '</div>';
+    }
+    $("#view-stock-list").append(html);
+  }
+
+  function sidebar() {
+    $("#sidebar-main").append('<li><a href="/bill/stock/">Stock Index</a></li>');
+  }
+</script>
+{% endblock %}

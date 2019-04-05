@@ -1,0 +1,140 @@
+{% extends 'layout_sidebar.html' %}
+
+{% block body %}
+  <h2>{{ extra_info.codename }}({{ extra_info.code }})</h2>
+  <!-- <div id="chart-candle" style="width: 100%; height: 600px;"></div> -->
+  <div>
+    <h4>Investor Trands</h4>
+    <div class="btn-group">
+      <button type="button" class="btn btn-info button-investor" value="investor3">3 Months</button>
+      <button type="button" class="btn btn-default button-investor" value="investor6">6 Months</button>
+      <button type="button" class="btn btn-default button-investor" value="investor12">1 Year</button>
+      <button type="button" class="btn btn-default button-investor" value="investor24">2 Years</button>
+      <button type="button" class="btn btn-default button-investor" value="investor36">3 Years</button>
+    </div>
+    <div id="chart-investor" style="width: 100%; height: 600px;"></div>
+  </div>
+{% endblock %}
+
+{% block bodyscript %}
+<script type="text/javascript">
+  $(function(){
+    _code = "{{ extra_info.code }}";
+    _data = {investor: 'investor3'};
+
+    sidebar();
+
+    google.charts.load('current', {'packages':['corechart']});
+    // google.charts.setOnLoadCallback(drawChartCandle);
+    google.charts.setOnLoadCallback(drawChartInvestorTrand);
+    //create trigger to resizeEnd event
+    $(window).resize(function() {
+        if(this.resizeTO) clearTimeout(this.resizeTO);
+        this.resizeTO = setTimeout(function() {
+            $(this).trigger('resizeEnd');
+        }, 250);
+    });
+    //redraw graph when window resize is completed
+    $(window).on('resizeEnd', function() {
+        // drawChartCandle();
+        drawChartInvestorTrand();
+    });
+    var months = [3, 6, 12, 24, 36];
+    for (var i in months) {
+      console.log(i);
+        get_stock_item_investor(_code, months[i], collectInvestorTrand);
+    }
+    initButtonInvestor();
+  });
+  function initButtonInvestor() {
+    $(".button-investor").each(function(index){
+      $(this).on("click", function(){
+        // inactived button, set the default
+        $(".button-investor").each(function(index){
+          $(this).removeClass("btn-info").addClass("btn-default");
+        });
+        // activating the selected button
+        $(this).removeClass("btn-default").addClass("btn-info");
+        var key = $(this).val()
+        // console.log(key);
+        _data.investor = key;
+        drawChartInvestorTrand();
+      });
+    });
+  }
+
+  function get_stock_item_investor(code, month, cb) {
+    ajax.post('/ajax/stock/item/'+code+'/investor/'+month, {}, cb)
+  }
+  function collectInvestorTrand(resp) {
+    // console.log(resp);
+    var paths = resp.request.path.split("/");
+    var invkey = 'investor'+paths[paths.length-1];
+    var data = {};
+    data.fields = [];
+    data.colnames = resp.colnames;
+    for (var row of resp.fields) {
+      var date = row.shift();
+      data.fields.push([new Date(date.split('-'))].concat(row));
+    }
+    _data[invkey] = data;
+  }
+  function drawChartInvestorTrand() {
+    var investorData = _data[_data.investor];
+    var data = new google.visualization.DataTable();
+    for (var i in investorData.colnames) {
+      // console.log(investorData.colnames[i]);
+      if (i == 0) {
+        data.addColumn('date', 'X');
+        continue
+      }
+      data.addColumn('number', investorData.colnames[i]);
+    }
+    data.addRows(investorData.fields);
+
+    var options = {
+      legend:'none',
+      width: document.getElementById('chart-investor').offsetWidth,
+      chartArea: {width: '86%', height: '75%'},
+      // hAxis: {format: 'yy.M'},
+      hAxis: {format: 'yy.M.d'},
+      // vAxis: {textPosition: 'none'},
+      vAxis: {0:{}, 1:{}, gridlines: {color: 'transparent'}},
+      colors: ['#F5B041', '#A569BD', '#5DADE2', '#34495E', '#D5DBDB'],
+      series: {
+        4: {type: "area", targetAxisIndex: 1, areaOpacity: 0.25}
+      }
+    };
+    var chart = new google.visualization.LineChart(document.getElementById('chart-investor'));
+    chart.draw(data, options);
+  }
+  function drawChartCandle() {
+    var data = google.visualization.arrayToDataTable([
+      //  low, start, high, end
+      ['Mon', 20, 28, 38, 45],
+      ['Tue', 31, 38, 55, 66],
+      ['Wed', 50, 55, 77, 80],
+      ['Thu', 77, 77, 66, 50],
+      ['Fri', 68, 66, 22, 15]
+      // Treat first row as data as well.
+    ], true);
+
+    var options = {
+      legend:'none',
+      width: document.getElementById('chart-candle').offsetWidth,
+      chartArea: {width: '86%', height: '75%'},
+      candlestick: {
+        risingColor: {stroke: 'red', fill: 'red'},
+        fallingColor: {stroke: 'blue', fill: 'blue'}
+      },
+    };
+
+    var chart = new google.visualization.CandlestickChart(document.getElementById('chart-candle'));
+    chart.draw(data, options);
+  }
+
+  function sidebar() {
+    $("#sidebar-main").append('<li><a href="/bill/stock/">Stock Index</a></li>');
+  }
+</script>
+{% endblock %}

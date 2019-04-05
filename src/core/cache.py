@@ -13,7 +13,11 @@ from core.config import BillConfig
 
 
 class FileCache(SDebug, metaclass=SSingleton):
-    DURATION = 3600
+    class ExceptionNoData(Exception):
+        pass
+
+    DURATION    = 3600
+    NO_DATA     = None
 
     def __init__(self):
         self._cache = {}
@@ -79,10 +83,20 @@ class FileCache(SDebug, metaclass=SSingleton):
                 except Exception:
                     self.eprint(f'Cache Read Error key:{key} file:{cfpath}')
                     # os.rename(cfpath, cfpath+'.rerr')
-                    return None
+                    return self.NO_DATA
             os.remove(cfpath)
             return self.get_cache(key)
-        return None
+        return self.NO_DATA
+
+    def caching(self, key, generate_data, **kwargs):
+        noneable = kwargs.get('nonable', False)
+        data = self.get_cache(key)
+        if data == self.NO_DATA:
+            data = generate_data()
+            if data is None and noneable is False:
+                raise FileCache.ExceptionNone(f'key: {key}')
+            self.set_cache(key, data, **kwargs)
+        return data
 
     def remove_expired(self):
         cstamp = time.time()

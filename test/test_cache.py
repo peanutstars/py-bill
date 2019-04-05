@@ -24,7 +24,7 @@ class TestCache(unittest.TestCase):
         # Expired
         time.sleep(2.1)
         cache = FileCache()
-        self.assertIsNone(cache.get_cache('3'))
+        self.assertTrue(cache.get_cache('3')==cache.NO_DATA)
         self.assertTrue('first' == cache.get_cache('1'))
         self.assertTrue('second' == cache.get_cache('2'))
         del SSingleton._instances[FileCache]

@@ -32,7 +32,7 @@ class Reply:
 
     @classmethod
     def Data(cls, data):
-        if type(data) is dict:
+        if isinstance(data, dict):
             data['request'] = {}
             data['request']['url'] = request.url
             data['request']['path'] = request.path
