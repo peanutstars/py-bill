@@ -5,7 +5,7 @@ import unittest
 
 from pysp.sbasic import SSingleton
 
-from core.cache import FileCache
+from core.cache import FCache
 from core.finance import StockItemDB, DataCollection, BillConfig, StockQuery
 from core.model import ServiceProvider, QueryData
 
@@ -33,7 +33,8 @@ class TestFinance(unittest.TestCase):
 
         f.collect('035720')
         f.collect('030200')
-        del SSingleton._instances[FileCache]
+        f.collect('009150')
+        del SSingleton._instances[FCache]
 
     def test_billconfig(self):
         bconfig = BillConfig()

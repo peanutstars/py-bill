@@ -9,6 +9,7 @@ from .model import Reply
 # from core.finance import BillConfig
 from core.connect import FKrx
 from core.finance import DataCollection, StockItemDB, StockQuery
+from core.manager import Collector
 
 
 @app.route('/bill/dashboard')
@@ -41,6 +42,18 @@ def ajax_stock_list():
 @app.route('/ajax/stock/item/<code>/investor/<month>', methods=['GET', 'POST'])
 @login_required
 def ajax_stock_item_investor(code, month):
-    sidb = StockItemDB.factory(code)
-    tradedata = StockQuery.get_investor_trading_trand(sidb, months=int(month))
-    return Reply.Success(value=Reply.Data(tradedata))
+    collector = Collector()
+    with collector.lock:
+        if collector.is_working(code):
+            return Reply.Fail(message="Not Ready, Still Be Collecting Data.")
+        try:
+            sidb = StockItemDB.factory(code)
+            tdata = StockQuery.get_investor_trading_trand(
+                                                    sidb, months=int(month))
+            if len(tdata.fields) == 0:
+                print('QueryData.fields == 0')
+                raise
+        except Exception:
+            collector.collect(code)
+            return Reply.Fail(message="Requested Collector To Collect Data.")
+        return Reply.Success(value=Reply.Data(tdata))

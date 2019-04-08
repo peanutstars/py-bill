@@ -9,7 +9,7 @@ from pysp.sjson import SJson
 
 from core.helper import Helper
 from core.model import StockDayShort, StockDayInvestor, StockDay
-from core.cache import FileCache
+from core.cache import FCache
 # from core.finance import BillConfig
 
 
@@ -156,27 +156,23 @@ class FNaver(FSpHelper):
 
     @classmethod
     def _get_chunk_day(cls, **kwargs):
-        fcache = FileCache()
+        def gathering():
+            chunk = Http.get(url, text=True)
+            return cls._parse_day(chunk)
+
         url = cls.get_url('day', **kwargs)
-        cache = fcache.get_cache(url)
-        if cache is not None:
-            return cache
-        chunk = Http.get(url, text=True)
-        data = cls._parse_day(chunk)
-        fcache.set_cache(url, data, duration=600)
-        return data
+        return FCache().caching(url, gathering, duration=600,
+                                   cast=StockDay.cast)
 
     @classmethod
     def _get_chunk_investor(cls, **kwargs):
-        fcache = FileCache()
+        def gathering():
+            chunk = Http.get(url, text=True)
+            return cls._parser_investor(chunk)
+
         url = cls.get_url('dayinvestor', **kwargs)
-        cache = fcache.get_cache(url)
-        if cache is not None:
-            return cache
-        chunk = Http.get(url, text=True)
-        data = cls._parser_investor(chunk)
-        fcache.set_cache(url, data, duration=600)
-        return data
+        return FCache().caching(url, gathering, duration=600,
+                                   cast=StockDayInvestor.cast)
 
     @classmethod
     def _parse_day(cls, chunk):
@@ -275,52 +271,48 @@ class FKrx(FSpHelper):
 
     @classmethod
     def _get_chunk_list(cls, **kwargs):
-        fcache = FileCache()
-        krxlist = fcache.get_cache(cls.URL['query'])
-        if krxlist is not None:
-            return krxlist
+        def gathering():
+            params = {
+                'bld':  'COM/finder_srtisu',
+                'name': 'form',
+            }
+            url = cls.URL.get('otp')
+            key = Http.get(url, params=params)
 
-        params = {
-            'bld':  'COM/finder_srtisu',
-            'name': 'form',
-        }
-        url = cls.URL.get('otp')
-        key = Http.get(url, params=params)
+            params = {
+                'no':       'SRT2',
+                'mktsel':   'ALL',
+                'pagePath': '/contents/COM/FinderSrtIsu.jsp',
+                'code':     key,
+            }
+            pkwargs = {
+                'params': params,
+                'json': True
+            }
+            url = cls.URL.get('query')
+            # {
+            #   "block1": [
+            #     {
+            #       "full_code": "KR7060310000",
+            #       "short_code": "A060310",
+            #       "codeName": "3S",
+            #       "marketName": "KOSDAQ"
+            #     },
+            #  }
+            krxlist = Http.post(url, **pkwargs)
+            return krxlist['block1']
 
-        params = {
-            'no':       'SRT2',
-            'mktsel':   'ALL',
-            'pagePath': '/contents/COM/FinderSrtIsu.jsp',
-            'code':     key,
-        }
-        kwargs = {
-            'params': params,
-            'json': True
-        }
-        url = cls.URL.get('query')
-        # {
-        #   "block1": [
-        #     {
-        #       "full_code": "KR7060310000",
-        #       "short_code": "A060310",
-        #       "codeName": "3S",
-        #       "marketName": "KOSDAQ"
-        #     },
-        #  }
-        krxlist = Http.post(url, **kwargs)
-        fcache.set_cache(cls.URL['query'], krxlist['block1'])
-        return krxlist['block1']
+        return FCache().caching(cls.URL['query'], gathering)
 
     @classmethod
     def _get_chunk_shortstock(cls, **kwargs):
         '''
-            param @ page    page index number, start from 0
-            param @ fcode   full code of stock item in Korea Exchange
-            param @ scode   short code of stock item in Korea Exchange
+        :param page     page index number, start from 0
+        :param fcode    full code of stock item in Korea Exchange
+        :param scode    short code of stock item in Korea Exchange
 
-            return @ list of list or list of StockDayShort
+        :return         list of list or list of StockDayShort
         '''
-        fcache = FileCache()
         page = kwargs.get('page', 1)
         now = datetime.datetime.now()
         delta = datetime.timedelta(days=((page-1)*365))
@@ -330,60 +322,58 @@ class FKrx(FSpHelper):
         fullcode = kwargs.get('fcode')
         shortcode = kwargs.get('scode')
         keywords = ['krx.short.stock', fullcode, shortcode, sdate, edate]
-        cachekey = ','.join(keywords)
-        krxsstock = fcache.get_cache(cachekey)
-        if krxsstock is not None:
-            return krxsstock
 
-        params = {
-            'bld':  'SRT/02/02010100/srt02010100',
-            'name': 'form',
-        }
-        url = cls.URL.get('otp')
-        key = Http.get(url, params=params)
+        def gathering():
+            params = {
+                'bld':  'SRT/02/02010100/srt02010100',
+                'name': 'form',
+            }
+            url = cls.URL.get('otp')
+            key = Http.get(url, params=params)
 
-        cls.dprint(f'####### S:{sdate} E:{edate}')
-        params = {
-            'isu_cd':       fullcode,
-            'isu_srt_cd':   shortcode,
-            'strt_dd':      edate,
-            'end_dd':       sdate,
-            'pagePath':     '/contents/SRT/02/02010100/SRT02010100.jsp',
-            'code':         key,
-        }
-        kwargs = {
-            'params': params,
-            'json': True
-        }
-        url = cls.URL.get('query')
-        data = Http.post(url, **kwargs)
-        days = []
-        # {
-        #   "block1": [
-        #     {
-        #       "totCnt": "241",
-        #       "rn": "1",
-        #       "trd_dd": "2019/02/14",
-        #       "isu_cd": "KR7035720002",
-        #       "isu_abbrv": "\uce74\uce74\uc624",
-        #       "cvsrtsell_trdvol": "75,749",
-        #       "str_const_val1": "-",
-        #       "cvsrtsell_trdval": "7,475,106,600",
-        #       "str_const_val2": "-"
-        #     },
-        # }
-        if type(data) is dict and 'block1' in data:
-            for item in data['block1']:
-                amount = item['str_const_val1'].replace(',', '')
-                days.append(StockDayShort(
-                    stamp=item['trd_dd'],
-                    short=int(item['cvsrtsell_trdvol'].replace(',', '')),
-                    shortamount=None if amount == '-' else int(amount)))
-        fcache.set_cache(cachekey, days, duration=600)
+            cls.dprint(f'####### S:{sdate} E:{edate}')
+            params = {
+                'isu_cd':       fullcode,
+                'isu_srt_cd':   shortcode,
+                'strt_dd':      edate,
+                'end_dd':       sdate,
+                'pagePath':     '/contents/SRT/02/02010100/SRT02010100.jsp',
+                'code':         key,
+            }
+            pkwargs = {
+                'params': params,
+                'json': True
+            }
+            url = cls.URL.get('query')
+            data = Http.post(url, **pkwargs)
+            days = []
+            # {
+            #   "block1": [
+            #     {
+            #       "totCnt": "241",
+            #       "rn": "1",
+            #       "trd_dd": "2019/02/14",
+            #       "isu_cd": "KR7035720002",
+            #       "isu_abbrv": "\uce74\uce74\uc624",
+            #       "cvsrtsell_trdvol": "75,749",
+            #       "str_const_val1": "-",
+            #       "cvsrtsell_trdval": "7,475,106,600",
+            #       "str_const_val2": "-"
+            #     },
+            # }
+            if type(data) is dict and 'block1' in data:
+                for item in data['block1']:
+                    amount = item['str_const_val1'].replace(',', '')
+                    days.append(StockDayShort(
+                        stamp=item['trd_dd'],
+                        short=int(item['cvsrtsell_trdvol'].replace(',', '')),
+                        shortamount=None if amount == '-' else int(amount)))
+            for day in days:
+                cls.dprint(day)
+            return days
 
-        for day in days:
-            cls.dprint(day)
-        return days
+        return FCache().caching(','.join(keywords), gathering,
+                                   duration=600, cast=StockDayShort.cast)
 
 
 class FUnknown:

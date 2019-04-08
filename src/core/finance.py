@@ -13,9 +13,10 @@ from pysp.sconf import SConfig
 # from pysp.serror import SDebug
 from pysp.ssql import SSimpleDB
 
+from core.cache import FCache
 from core.config import BillConfig
 from core.connect import FDaum, FNaver, FKrx, FUnknown
-from core.model import (StockDay, StockDayInvestor, StockDayShort,
+from core.model import (StockDayInvestor, StockDayShort,
                         ServiceProvider, QueryData)
 
 
@@ -43,8 +44,6 @@ class StockItemDB(SSimpleDB):
             return False
         data = []
         for i, d in enumerate(days):
-            if type(d) is list:
-                d = StockDay(*d)
             item = {
                 'stamp': datetime.date(*[int(x) for x in d.stamp.split('.')]),
                 'finance':  d.finance,
@@ -66,14 +65,12 @@ class StockItemDB(SSimpleDB):
             return False
         data = []
         for i, d in enumerate(days):
-            if type(d) is list:
-                d = StockDayInvestor(*d)
             item = {
                 'stamp': datetime.date(*[int(x) for x in d.stamp.split('.')]),
                 'foreigner':    d.foreigner,
                 'frate':        d.frate,
                 'institute':    d.institute,
-                'person':       d.person,
+                'person':       d.person, 
             }
             if i == 0:
                 cols = ['stamp', 'foreigner', 'frate', 'institute', 'person']
@@ -84,7 +81,7 @@ class StockItemDB(SSimpleDB):
                 if not rv:
                     emsg = 'No Data, day field: {}'.format(item.get('stamp'))
                     raise StockItemDB.Error(emsg)
-                inv = StockDayInvestor(*rv[0])
+                inv = StockDayInvestor.from_list(*rv[0])
                 if inv.foreigner == d.foreigner and inv.person == d.person:
                     return False
             data.append(item)
@@ -95,8 +92,6 @@ class StockItemDB(SSimpleDB):
             return False
         data = []
         for i, d in enumerate(days):
-            if type(d) is list:
-                d = StockDayShort(*d)
             item = {
                 'stamp': datetime.date(*[int(x) for x in d.stamp.split('/')]),
                 'short':       d.short,
@@ -108,7 +103,7 @@ class StockItemDB(SSimpleDB):
                     'wheres': {'stamp': item.get('stamp')}
                 }
                 rv = self.query('stock_day', *columns, **options)
-                ds = StockDayShort(*rv[0])
+                ds = StockDayShort.from_list(*rv[0])
                 if ds.short is not None:
                     return False
             data.append(item)
@@ -136,9 +131,12 @@ class DataCollection:
     def collect_candle(cls, sp, **kwargs):
         page = 0
         loop = True
+        wstate = kwargs.get('wstate', None)
         provider = cls.get_provider(sp)
         sidb = StockItemDB.factory(sp.code)
         while loop:
+            if wstate and wstate.is_run() is False:
+                break
             page += 1
             chunk = provider.get_chunk('day', code=sp.code, page=page)
             loop = sidb.update_candle(chunk)
@@ -147,9 +145,12 @@ class DataCollection:
     def collect_investor(cls, sp, **kwargs):
         page = 0
         loop = True
+        wstate = kwargs.get('wstate', None)
         provider = cls.get_provider(sp)
         sidb = StockItemDB.factory(sp.code)
         while loop:
+            if wstate and wstate.is_run() is False:
+                break
             page += 1
             chunk = provider.get_chunk('dayinvestor', code=sp.code, page=page)
             loop = sidb.update_investor(chunk)
@@ -158,12 +159,15 @@ class DataCollection:
     def collect_shortstock(cls, sp, **kwargs):
         page = 0
         loop = True
+        wstate = kwargs.get('wstate', None)
         provider = cls.get_provider(sp)
         sidb = StockItemDB.factory(sp.code)
         codepool = provider.get_chunk('list')
         shortcode = 'A'+sp.code
         fullcode = provider.get_fullcode(codepool, shortcode)
         while loop:
+            if wstate and wstate.is_run() is False:
+                break
             page += 1
             params = {
                 'fcode': fullcode,
@@ -196,12 +200,12 @@ class DataCollection:
         return None
 
     @classmethod
-    def collect(cls, code):
+    def collect(cls, code, **kwargs):
         sp = cls.factory_provider(code, 'naver')
-        cls.collect_candle(sp)
-        cls.collect_investor(sp)
+        cls.collect_candle(sp, **kwargs)
+        cls.collect_investor(sp, **kwargs)
         sp = cls.factory_provider(code, 'krx')
-        cls.collect_shortstock(sp)
+        cls.collect_shortstock(sp, **kwargs)
 
 
 class StockQuery:
@@ -214,10 +218,10 @@ class StockQuery:
     class TradingAccumulator:
         def __init__(self, items, colnames, **kwargs):
             '''
-            :param items    It is accumulator List to use,
-                            the first one is not accumulated and
-                            the last one is the tread amount of short stock
-            :param colnames It is the column names of the field.
+            :param items:       It is accumulator List to use,
+                                the first one is not accumulated and
+                                the last one is the tread amount of short stock
+            :param colnames:    It is the column names of the field.
             '''
             self.val_ilist = []
             self.amount_colname = kwargs.get('amount_colname', None)
@@ -291,14 +295,14 @@ class StockQuery:
     @classmethod
     def raw_data(cls, sidb, **kwargs):
         '''
-        :param colnames     list of Column name
-        :param sdate        Start date, default is current local time.
+        :param colnames:    list of Column name
+        :param sdate:       Start date, default is current local time.
                             Format is YYYY-MM-DD, YYYY.MM.DD or YYYYMMDD.
-        :param edate        End date, default is current local time.
+        :param edate:       End date, default is current local time.
                             Format is YYYY-MM-DD, YYYY.MM.DD or YYYYMMDD.
-        :param months       The past duration time, unit is month.
+        :param months:      The past duration time, unit is month.
                             Default is 3 months.
-        :return             List of list.
+        :return:            List of list.
         '''
         start_date = kwargs.get('sdate', cls.to_strfdate())
         end_date = kwargs.get('edate', None)
@@ -321,25 +325,28 @@ class StockQuery:
                  table.c.stamp <= cls.to_strfdate(date_end))).\
             order_by(table.c.stamp.asc())
         sqlquery = sidb.to_sql(sql)
-        # fcache = FileCache()
 
-        try:
-            fields = sidb.session.query(sql).all()
-        except Exception as e:
-            raise cls.Error(f'{e}')
-        return QueryData(colnames=colnames,
-                         fields=[list(x) for x in fields], sql=sqlquery)
+        def gathering():
+            try:
+                fields = sidb.session.query(sql).all()
+            except Exception as e:
+                raise StockQuery.Error(f'{e}')
+            return QueryData(colnames=colnames,
+                             fields=[list(x) for x in fields], sql=sqlquery)
+
+        return FCache().caching(sqlquery, gathering,
+                                duration=900, cast=QueryData.cast)
 
     @classmethod
     def get_investor_trading_trand(cls, sidb, **kwargs):
         '''
-        :param sdate        Start date, default is current local time.
+        :param sdate:       Start date, default is current local time.
                             Format is YYYY-MM-DD, YYYY.MM.DD or YYYYMMDD.
-        :param edate        End date, default is current local time.
+        :param edate:       End date, default is current local time.
                             Format is YYYY-MM-DD, YYYY.MM.DD or YYYYMMDD.
-        :param months       The past duration time, unit is month.
+        :param months:      The past duration time, unit is month.
                             Default is 3 months.
-        :return             List of list.
+        :return:            List of list.
         '''
         items = ['stamp',
                  'foreigner', 'institute', 'person', 'shortamount', 'end']

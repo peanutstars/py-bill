@@ -1,4 +1,5 @@
 
+import atexit
 import codecs
 import glob
 import hashlib
@@ -10,26 +11,45 @@ from pysp.serror import SDebug
 from pysp.sjson import SJson
 
 from core.config import BillConfig
+from core.model import QueryData
 
 
-class FileCache(SDebug, metaclass=SSingleton):
+@atexit.register
+def _cleanup_exit():
+    FCache().cleanup()
+
+
+class FCache(SDebug, metaclass=SSingleton):
     class ExceptionNoData(Exception):
         pass
 
-    DURATION    = 3600
-    NO_DATA     = None
+    DURATION = 3600
+    NO_DATA = None
 
     def __init__(self):
         self._cache = {}
         self.folder = BillConfig().get_value('folder.cache', '/tmp/cache/')
         os.makedirs(self.folder, exist_ok=True)
 
-    def __del__(self):
-        self.cleanup()
-        self.flush()
-
     def hash(self, key):
         return hashlib.md5(key.encode('utf-8')).hexdigest()
+
+    def cleanup(self):
+        cstamp = time.time()
+        for cfpath in glob.glob(self.folder+'/*'):
+            req_del = False
+            with codecs.open(cfpath, encoding='utf-8') as fd:
+                try:
+                    cache = SJson.to_deserial(fd.read())
+                except Exception:
+                    req_del = True
+                    self.eprint(f'Cache Read Error file:{cfpath}')
+                if req_del is False and cache['stamp'] < cstamp:
+                    req_del = True
+            if req_del:
+                self.iprint(f'Delete {cfpath}')
+                os.remove(cfpath)
+        self.flush()
 
     def flush(self):
         for k, v in self._cache.items():
@@ -48,6 +68,9 @@ class FileCache(SDebug, metaclass=SSingleton):
                 self.eprint(f'Cache Write Error key:{k} file:{cfpath}')
                 os.rename(cfpath, cfpath+'.werr')
 
+    def clear(self):
+        self._cache = {}
+
     def get_cache_file(self, key):
         hash = self.hash(key)
         return f'{self.folder}/{hash}'
@@ -61,7 +84,7 @@ class FileCache(SDebug, metaclass=SSingleton):
 
     def set_cache(self, key, value, **kwargs):
         '''
-            param @ duration    duration time, unit is second.
+        :param duration:    duration time, unit is second.
         '''
         self.remove_expired()
         duration = kwargs.get('duration', self.DURATION)
@@ -89,32 +112,30 @@ class FileCache(SDebug, metaclass=SSingleton):
         return self.NO_DATA
 
     def caching(self, key, generate_data, **kwargs):
+        '''
+        :param duration:    duration time, unit is second.
+        :param cast:        a cast function which it call with the cached data.
+        '''
+        cast = kwargs.get('cast', None)
         noneable = kwargs.get('nonable', False)
+        fg_hit = True
         data = self.get_cache(key)
         if data == self.NO_DATA:
+            fg_hit = False
             data = generate_data()
             if data is None and noneable is False:
-                raise FileCache.ExceptionNone(f'key: {key}')
+                raise FCache.ExceptionNone(f'key: {key}')
             self.set_cache(key, data, **kwargs)
+        if cast and hasattr(cast, '__call__'):
+            data = cast(data)
+        # Delete Cache, QueryData.fields is 0
+        if type(data) is QueryData and len(data.fields) == 0:
+            del self._cache[key]
+        # self.DEBUG = True
+        self.dprint(f'Cache@{fg_hit} "{key}"')
         return data
 
     def remove_expired(self):
         cstamp = time.time()
         self._cache = \
             {k: v for k, v in self._cache.items() if v['stamp'] >= cstamp}
-
-    def cleanup(self):
-        cstamp = time.time()
-        for cfpath in glob.glob(self.folder+'/*'):
-            req_del = False
-            with codecs.open(cfpath, encoding='utf-8') as fd:
-                try:
-                    cache = SJson.to_deserial(fd.read())
-                except Exception:
-                    req_del = True
-                    self.eprint(f'Cache Read Error file:{cfpath}')
-                if req_del is False and cache['stamp'] < cstamp:
-                    req_del = True
-            if req_del:
-                # print(f'Delete {cfpath}')
-                os.remove(cfpath)
