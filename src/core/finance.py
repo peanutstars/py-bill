@@ -70,7 +70,7 @@ class StockItemDB(SSimpleDB):
                 'foreigner':    d.foreigner,
                 'frate':        d.frate,
                 'institute':    d.institute,
-                'person':       d.person, 
+                'person':       d.person,
             }
             if i == 0:
                 cols = ['stamp', 'foreigner', 'frate', 'institute', 'person']
@@ -334,7 +334,8 @@ class StockQuery:
             return QueryData(colnames=colnames,
                              fields=[list(x) for x in fields], sql=sqlquery)
 
-        return FCache().caching(sqlquery, gathering,
+        cachekey = sidb.db_file+':'+sqlquery
+        return FCache().caching(cachekey, gathering,
                                 duration=900, cast=QueryData.cast)
 
     @classmethod

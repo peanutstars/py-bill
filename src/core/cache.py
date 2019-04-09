@@ -4,6 +4,7 @@ import codecs
 import glob
 import hashlib
 import os
+import threading
 import time
 
 from pysp.sbasic import SSingleton
@@ -28,6 +29,7 @@ class FCache(SDebug, metaclass=SSingleton):
 
     def __init__(self):
         self._cache = {}
+        self.lock = threading.Lock()
         self.folder = BillConfig().get_value('folder.cache', '/tmp/cache/')
         os.makedirs(self.folder, exist_ok=True)
 
@@ -47,48 +49,56 @@ class FCache(SDebug, metaclass=SSingleton):
                 if req_del is False and cache['stamp'] < cstamp:
                     req_del = True
             if req_del:
-                self.iprint(f'Delete {cfpath}')
+                self.dprint(f'Delete {cfpath}')
                 os.remove(cfpath)
         self.flush()
 
     def flush(self):
-        for k, v in self._cache.items():
-            cfpath = self.get_cache_file(k)
-            err = False
-            if os.path.exists(cfpath):
-                os.remove(cfpath)
-            if v['stamp'] < time.time():
-                continue
-            with codecs.open(cfpath, mode='w', encoding='utf-8') as fd:
-                try:
-                    fd.write(SJson.to_serial(v, indent=2))
-                except Exception:
-                    err = True
-            if err:
-                self.eprint(f'Cache Write Error key:{k} file:{cfpath}')
-                os.rename(cfpath, cfpath+'.werr')
+        with self.lock:
+            for k, v in self._cache.items():
+                cfpath = self.get_cache_file(k)
+                err = False
+                if os.path.exists(cfpath):
+                    os.remove(cfpath)
+                if v['stamp'] < time.time():
+                    continue
+                with codecs.open(cfpath, mode='w', encoding='utf-8') as fd:
+                    try:
+                        fd.write(SJson.to_serial(v, indent=2))
+                    except Exception:
+                        err = True
+                if err:
+                    self.eprint(f'Cache Write Error key:{k} file:{cfpath}')
+                    os.rename(cfpath, cfpath+'.werr')
 
-    def clear(self):
-        self._cache = {}
+    def clear(self, hkey=None):
+        with self.lock:
+            if hkey is None:
+                self._cache = {}
+                return
+            if hkey in self._cache:
+                del self._cache[hkey]
+                return
+        raise KeyError(f'Not Exist HASH Key: {hkey}')
 
-    def get_cache_file(self, key):
-        hash = self.hash(key)
-        return f'{self.folder}/{hash}'
+    def get_cache_file(self, hkey):
+        return f'{self.folder}/{hkey}'
 
-    def is_valid(self, key):
+    def is_valid(self, hkey):
         self.remove_expired()
-        if key in self._cache:
-            if self._cache[key]['stamp'] >= time.time():
-                return True
+        with self.lock:
+            if hkey in self._cache:
+                if self._cache[hkey]['stamp'] >= time.time():
+                    return True
         return False
 
     def set_cache(self, key, value, **kwargs):
         '''
         :param duration:    duration time, unit is second.
         '''
-        self.remove_expired()
         duration = kwargs.get('duration', self.DURATION)
-        self._cache[key] = {
+        hkey = self.hash(key)
+        self._cache[hkey] = {
             'key': key,
             'duration': duration,
             'stamp': time.time() + duration,
@@ -96,17 +106,22 @@ class FCache(SDebug, metaclass=SSingleton):
         }
 
     def get_cache(self, key):
-        if self.is_valid(key):
-            return self._cache[key]['value']
-        cfpath = self.get_cache_file(key)
+        hkey = self.hash(key)
+        self.dprint(f'Cache key: {hkey}@"{key}"')
+        if self.is_valid(hkey):
+            with self.lock:
+                return self._cache[hkey]['value']
+        cfpath = self.get_cache_file(hkey)
         if os.path.exists(cfpath):
+            data = None
             with codecs.open(cfpath, encoding='utf-8') as fd:
                 try:
-                    self._cache[key] = SJson.to_deserial(fd.read())
+                    data = SJson.to_deserial(fd.read())
                 except Exception:
                     self.eprint(f'Cache Read Error key:{key} file:{cfpath}')
-                    # os.rename(cfpath, cfpath+'.rerr')
                     return self.NO_DATA
+            with self.lock:
+                self._cache[hkey] = data
             os.remove(cfpath)
             return self.get_cache(key)
         return self.NO_DATA
@@ -116,6 +131,7 @@ class FCache(SDebug, metaclass=SSingleton):
         :param duration:    duration time, unit is second.
         :param cast:        a cast function which it call with the cached data.
         '''
+        # self.DEBUG = True
         cast = kwargs.get('cast', None)
         noneable = kwargs.get('nonable', False)
         fg_hit = True
@@ -130,12 +146,12 @@ class FCache(SDebug, metaclass=SSingleton):
             data = cast(data)
         # Delete Cache, QueryData.fields is 0
         if type(data) is QueryData and len(data.fields) == 0:
-            del self._cache[key]
-        # self.DEBUG = True
+            self.clear(self.hash(key))
         self.dprint(f'Cache@{fg_hit} "{key}"')
         return data
 
     def remove_expired(self):
         cstamp = time.time()
-        self._cache = \
-            {k: v for k, v in self._cache.items() if v['stamp'] >= cstamp}
+        with self.lock:
+            self._cache = \
+                {k: v for k, v in self._cache.items() if v['stamp'] >= cstamp}
