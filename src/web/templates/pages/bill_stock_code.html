@@ -6,13 +6,13 @@
   <div>
     <h4>Investor Trands</h4>
     <div class="btn-group">
-      <button type="button" class="btn btn-info button-investor" value="investor3">3 Months</button>
-      <button type="button" class="btn btn-default button-investor" value="investor6">6 Months</button>
-      <button type="button" class="btn btn-default button-investor" value="investor12">1 Year</button>
-      <button type="button" class="btn btn-default button-investor" value="investor24">2 Years</button>
-      <button type="button" class="btn btn-default button-investor" value="investor36">3 Years</button>
+      <button type="button" class="btn btn-info button-investor" value="investor3">3Ms</button>
+      <button type="button" class="btn btn-default button-investor" value="investor6">6Ms</button>
+      <button type="button" class="btn btn-default button-investor" value="investor12">1Y</button>
+      <button type="button" class="btn btn-default button-investor" value="investor24">2Ys</button>
+      <button type="button" class="btn btn-default button-investor" value="investor36">3Ys</button>
     </div>
-    <div id="chart-investor" style="width: 100%; height: 500px;"></div>
+    <div id="chart-investor" style="width: 100%; height: 400px;"></div>
   </div>
 {% endblock %}
 
@@ -21,8 +21,6 @@
   $(function(){
     _code = "{{ extra_info.code }}";
     _data = {investor: 'investor3'};
-
-    sidebar();
 
     google.charts.load('current', {'packages':['corechart']});
     // google.charts.setOnLoadCallback(drawChartCandle);
@@ -41,7 +39,6 @@
     });
     var months = [3, 6, 12, 24, 36];
     for (var i in months) {
-      console.log(i);
         get_stock_item_investor(_code, months[i], collectInvestorTrand);
     }
     initButtonInvestor();
@@ -71,27 +68,35 @@
     var paths = resp.request.path.split("/");
     var invkey = 'investor'+paths[paths.length-1];
     var data = {};
+    var endIdx = resp.colnames.indexOf('end');
+    var endmin=99999999, endmax=0;
     data.fields = [];
     data.colnames = resp.colnames;
     for (var row of resp.fields) {
+      endmin = Math.min(endmin, row[endIdx]);
+      endmax = Math.max(endmax, row[endIdx]);
       var date = row.shift();
       data.fields.push([new Date(date.split('-'))].concat(row));
     }
+    data.endmin = parseInt(endmin * 0.95);
+    data.endmax = parseInt(endmax * 1.05);
     _data[invkey] = data;
+    // console.log(endmin, endmax);
   }
   function drawChartInvestorTrand() {
-    var investorData = _data[_data.investor];
+    var invdata = _data[_data.investor];
     var data = new google.visualization.DataTable();
-    for (var i in investorData.colnames) {
-      // console.log(investorData.colnames[i]);
+    for (var i in invdata.colnames) {
+      // console.log(invdata.colnames[i]);
       if (i == 0) {
         data.addColumn('date', 'X');
         continue
       }
-      data.addColumn('number', investorData.colnames[i]);
+      data.addColumn('number', invdata.colnames[i]);
     }
-    data.addRows(investorData.fields);
+    data.addRows(invdata.fields);
 
+    // console.log(invdata);
     var options = {
       legend: { position: 'top' },
       width: document.getElementById('chart-investor').offsetWidth,
@@ -99,7 +104,9 @@
       // hAxis: {format: 'yy.M'},
       hAxis: {format: 'yy.M.d'},
       // vAxis: {textPosition: 'none'},
-      vAxis: {0:{}, 1:{}, gridlines: {color: 'transparent'}},
+      vAxis: {1: {maxValue: invdata.endmax, minValue: invdata.endmin},
+              0: {textPosition: 'none'},
+              gridlines: {color: 'transparent'}},
       colors: ['#F5B041', '#A569BD', '#5DADE2', '#34495E', '#D5DBDB'],
       series: {
         4: {type: "area", targetAxisIndex: 1, areaOpacity: 0.25}
@@ -131,10 +138,6 @@
 
     var chart = new google.visualization.CandlestickChart(document.getElementById('chart-candle'));
     chart.draw(data, options);
-  }
-
-  function sidebar() {
-    $("#sidebar-main").append('<li><a href="/bill/stock/">Stock Index</a></li>');
   }
 </script>
 {% endblock %}

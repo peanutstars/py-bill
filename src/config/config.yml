@@ -1,7 +1,9 @@
 
 folder:
+    base: /var/pybill
     config:
     user_config: /var/pybill/config/
     bookmark: /var/pybill/bookmark/
     stock: /var/pybill/stock/
     cache: /var/pybill/cache/
+    log: /var/pybill/log/

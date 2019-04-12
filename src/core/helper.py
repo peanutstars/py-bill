@@ -1,4 +1,7 @@
 
+import datetime
+import re
+
 from pysp.serror import SDebug
 
 
@@ -61,6 +64,39 @@ class _LP_NaverInvestor(_LineParser):
     SEPERATOR = '|'
     MARK_CLAUSE = '##'
     MARK_CTITLE = '순매매 거래량'
+
+
+class DateTool:
+    class Error(Exception):
+        pass
+
+    PATTERN_DATE = re.compile(r'([\d]{4})\D*([\d]{1,2})\D*([\d]{1,2})')
+
+    @classmethod
+    def to_datetime(cls, strfdate):
+        '''
+        :param strfdate:    It is string format of date.
+                            Forms are YYYYMMDD, YYYY-MM-DD, YYYY MM DD ...
+        :return:            Return the object of datetime.
+        '''
+        m = cls.PATTERN_DATE.match(strfdate)
+        if m.lastindex == 3:
+            datelist = [int(m.group(x)) for x in range(1, 4)]
+            return datetime.datetime(*datelist)
+        raise cls.Error(f'Unknown Date Format: {strfdate}')
+
+    @classmethod
+    def to_strfdate(cls, date=None, **kwargs):
+        '''
+        :param format:      String format of date, default is '%Y-%m-%d'
+        :return:            Return a date string.
+        '''
+        format = kwargs.get('format', '%Y-%m-%d')
+        if date is None:
+            return datetime.datetime.now().strftime(format)
+        if isinstance(date, datetime.datetime):
+            return date.strftime(format)
+        raise cls.Error('Unknown object: {}'.format(date.__class__.__name__))
 
 
 class Helper:

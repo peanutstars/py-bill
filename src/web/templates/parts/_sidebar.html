@@ -9,9 +9,12 @@
 
 <div id="sidebar" class="collapse navbar-collapse col-sm-3 col-md-2 sidebar">
   <ul id="sidebar-main" class="nav nav-sidebar">
-    <!-- <li><a href="">Nav item</a></li> -->
+    <li><a href="/bill/stock/">Stock Index</a></li>
   </ul>
-  <ul id="sidebar-item" class="nav nav-sidebar">
+  <ul id="sidebar-item" class="nav nav-sidebar nav-no-padding">
+    {% for recent in recent_stocks %}
+      <li><a href="/bill/stock/{{ recent.code }}">{{ recent.name }}</a></li>
+    {% endfor %}
   </ul>
   <ul id="sidebar-other" class="nav nav-sidebar">
   </ul>

@@ -3,7 +3,6 @@
 import copy
 import datetime
 import os
-import re
 import sqlalchemy
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import and_, Column
@@ -13,6 +12,7 @@ from pysp.sconf import SConfig
 # from pysp.serror import SDebug
 from pysp.ssql import SSimpleDB
 
+from core.helper import DateTool
 from core.cache import FCache
 from core.config import BillConfig
 from core.connect import FDaum, FNaver, FKrx, FUnknown
@@ -222,6 +222,13 @@ class StockQuery:
                                 the first one is not accumulated and
                                 the last one is the tread amount of short stock
             :param colnames:    It is the column names of the field.
+            --------------------------------------------------------
+            example) amount_colname = 'D'
+                original:               Result:
+                A  B  C  D  E           A  B  C  D  E
+                1, 2, 3, 4, 5           1, 2, 3, N, 5
+                1, 1, 1, 3, 8           2, 3, 4,-1, 8
+               -1, 0, 1, 6, 7           1, 3, 5, 2, 7
             '''
             self.val_ilist = []
             self.amount_colname = kwargs.get('amount_colname', None)
@@ -270,28 +277,6 @@ class StockQuery:
             # print('  ', self.rows)
             return copy.deepcopy(self.rows)
 
-    PATTERN_DATE = re.compile(r'([\d]{4})\D*([\d]{1,2})\D*([\d]{1,2})')
-
-    @classmethod
-    def to_datetime(cls, date):
-        m = cls.PATTERN_DATE.match(date)
-        if m.lastindex == 3:
-            datelist = [int(m.group(x)) for x in range(1, 4)]
-            return datetime.datetime(*datelist)
-        raise cls.Error(f'Unknown Date Format: {date}')
-
-    @classmethod
-    def to_strfdate(cls, odate=None, **kwargs):
-        '''
-        :param format       String format of date, default is '%Y%m%d'
-        '''
-        format = kwargs.get('format', '%Y-%m-%d')
-        if odate is None:
-            return datetime.datetime.now().strftime(format)
-        if isinstance(odate, datetime.datetime):
-            return odate.strftime(format)
-        raise cls.Error('Unknown object: {}'.format(odate.__class__.__name__))
-
     @classmethod
     def raw_data(cls, sidb, **kwargs):
         '''
@@ -304,12 +289,12 @@ class StockQuery:
                             Default is 3 months.
         :return:            List of list.
         '''
-        start_date = kwargs.get('sdate', cls.to_strfdate())
+        start_date = kwargs.get('sdate', DateTool.to_strfdate())
         end_date = kwargs.get('edate', None)
         months = kwargs.get('months', 3)
-        date_end = cls.to_datetime(start_date)
+        date_end = DateTool.to_datetime(start_date)
         if end_date:
-            date_start = cls.to_datetime(end_date)
+            date_start = DateTool.to_datetime(end_date)
         else:
             date_start = date_end - relativedelta(months=months)
         if (date_start-date_end).days >= 0:
@@ -321,8 +306,8 @@ class StockQuery:
         columns = [Column(x) for x in colnames]
         table = sidb.get_table(tablename)
         sql = sqlalchemy.sql.select(columns).where(
-            and_(cls.to_strfdate(date_start) <= table.c.stamp,
-                 table.c.stamp <= cls.to_strfdate(date_end))).\
+            and_(DateTool.to_strfdate(date_start) <= table.c.stamp,
+                 table.c.stamp <= DateTool.to_strfdate(date_end))).\
             order_by(table.c.stamp.asc())
         sqlquery = sidb.to_sql(sql)
 

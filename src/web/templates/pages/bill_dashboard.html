@@ -10,7 +10,7 @@
   $(function(){
     _data = {investor: 'investor3'};
 
-    sidebar();
+    // sidebar();
 
     google.charts.load('current', {'packages':['corechart']});
     google.charts.setOnLoadCallback(drawChartCandle);
@@ -51,8 +51,8 @@
     chart.draw(data, options);
   }
 
-  function sidebar() {
-    $("#sidebar-main").append('<li><a href="/bill/stock/">Stock Index</a></li>');
-  }
+  // function sidebar() {
+  //   $("#sidebar-item").append('<li><a href="/bill/stock/">Stock Index</a></li>');
+  // }
 </script>
 {% endblock %}

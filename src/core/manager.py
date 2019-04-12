@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import atexit
+import datetime
 import glob
 import os
+import time
 import queue
 import threading
+
+from dateutil.relativedelta import relativedelta
 
 from pysp.sbasic import SSingleton
 from pysp.serror import SCDebug
@@ -38,7 +42,7 @@ class _State:
     def is_run(self):
         return self.loop
 
-    def set_work_code(self, code):
+    def set_work_code(self, code=None):
         self.work_code = code
 
     def is_working(self, code):
@@ -49,19 +53,62 @@ class _State:
         return False
 
 
+class _Scheduler(SCDebug):
+    EVENT_COLLECT = "EvtCollect"
+    EVENT_HOUR = "EvtHour"
+    collect_hour = 19
+    collect_min = 15
+
+    class Event:
+        def __init__(self, event, stamp):
+            self.event = event
+            self.stamp = stamp
+
+    @classmethod
+    def next(cls):
+        now = datetime.datetime.now()
+        ecollect = cls.next_collect(now)
+        ehour = cls.next_hour(now)
+        event = ecollect if ecollect.stamp < ehour.stamp else ehour
+        cls.iprint(f'Next Event: {event.event} after {int(time.time()- event.stamp)} second')
+        return event
+
+    @classmethod
+    def next_collect(cls, now=None):
+        if now is None:
+            now = datetime.datetime.now()
+        next = datetime.datetime(now.year, now.month, now.day,
+                                 cls.collect_hour, cls.collect_min)
+        if (next.timestamp() - now.timestamp()) > 0:
+            return cls.Event(cls.EVENT_COLLECT, next.timestamp())
+
+        next = next + relativedelta(days=1)
+        return cls.Event(cls.EVENT_COLLECT, next.timestamp())
+
+    @classmethod
+    def next_hour(cls, now=None):
+        if now is None:
+            now = datetime.datetime.now()
+        next = now + relativedelta(minutes=(60-now.minute),
+                                   seconds=(60-now.second))
+        return cls.Event(cls.EVENT_HOUR, next.timestamp())
+
+
 class Collector(Manager, metaclass=SSingleton):
     DEBUG = True
     INIT_NO_COLLECT = "NO_COLLECT"
     CMD_QUIT = 'quit'
     QUEUE_SIZE = 1000
     QUEUE_TIMEOUT_SEC = 5
+    # class
     State = _State
+    Scheduler = _Scheduler
 
     def __init__(self, *args, **kwargs):
         super(Collector, self).__init__(*args, **kwargs)
         self.stock_folder = BillConfig().get_value('_config.db.stock_folder')
         self._q = queue.Queue()
-        self.state = self.State(threading.Thread(target=self.worker, args=()))
+        self.state = Collector.State(threading.Thread(target=self.worker))
         self.state.thread.start()
         if self.INIT_NO_COLLECT not in args:
             self.collect(None)
@@ -95,8 +142,31 @@ class Collector(Manager, metaclass=SSingleton):
     def is_working(self, code):
         return self.state.is_working(code)
 
+    def _do_event_collect(self):
+        self.collect(None)
+
+    def _do_event_hour(self):
+        self.iprint(f'EVENT HOUR {datetime.datetime.now()} {id(self)}')
+
+    def _worker_event(self):
+        if self.event.stamp < time.time():
+            event = self.Scheduler.next()
+            self.iprint(f'EVENT@{self.event.event}')
+            if self.event.event == self.Scheduler.EVENT_COLLECT:
+                self._do_event_collect()
+            if self.event.event == self.Scheduler.EVENT_HOUR:
+                self._do_event_hour()
+            self.event = event
+
+    def _worker_item(self, item):
+        if item:
+            self.state.set_work_code(item)
+            DataCollection.collect(item, wstate=self.state)
+            self.state.set_work_code()
+
     def worker(self, *args):
         self.dprint("<Collector::worker(begin)>")
+        self.event = self.Scheduler.next()
         while self.state.is_run():
             try:
                 item = self.pop()
@@ -107,9 +177,8 @@ class Collector(Manager, metaclass=SSingleton):
                     self.state.is_run() is False or \
                     item == self.CMD_QUIT:
                 break
-            if item:
-                self.state.set_work_code(item)
-                DataCollection.collect(item, wstate=self.state)
-                self.state.set_work_code(None)
-            # TODO: others
+
+            self._worker_item(item)
+            self._worker_event()
+
         self.dprint("<Collector::worker(end)>")

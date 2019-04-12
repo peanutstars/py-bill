@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import datetime
 import unittest
 
 from pysp.sbasic import SSingleton
@@ -43,17 +42,6 @@ class TestFinance(unittest.TestCase):
         self.assertTrue(bconfig is BillConfig())
 
     def test_stockquery(self):
-        sq = StockQuery()
-        date1_forms = ['2019. 3. 4', '2019.3.4',  '2019-03-04', '20190304']
-        date2_forms = ['2019. 3.14', '2019.3.14', '2019-03-14', '20190314']
-        date1_expected = StockQuery.to_strfdate(datetime.datetime(2019, 3, 4))
-        date2_expected = StockQuery.to_strfdate(datetime.datetime(2019, 3, 14))
-        for form in date1_forms:
-            rv = sq.to_strfdate(sq.to_datetime(form))
-            self.assertEqual(rv, date1_expected)
-        for form in date2_forms:
-            rv = sq.to_strfdate(sq.to_datetime(form))
-            self.assertEqual(rv, date2_expected)
         # get raw data
         code = '035720'
         sidb = StockItemDB.factory(code)

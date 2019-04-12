@@ -12,8 +12,6 @@
   $(function(){
     _data = {};
 
-    sidebar();
-
     get_stock_list(render_stock_list);
   });
 
@@ -51,10 +49,6 @@
       html += '</div>';
     }
     $("#view-stock-list").append(html);
-  }
-
-  function sidebar() {
-    $("#sidebar-main").append('<li><a href="/bill/stock/">Stock Index</a></li>');
   }
 </script>
 {% endblock %}

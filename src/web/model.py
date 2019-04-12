@@ -6,11 +6,24 @@ from . import db
 
 
 class User(UserMixin, db.Model):
+
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(64), unique=True)
     username = db.Column(db.String(32))
     password = db.Column(db.String(100))
     registered_date = db.Column(db.DateTime, default=datetime.datetime.now)
+    stocks = db.relationship('MStock', backref='author', lazy=True)
+
+
+class MStock(db.Model):
+
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(8))
+    name = db.Column(db.String(32))
+    atime = db.Column(db.DateTime, default=datetime.datetime.now)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    __table_args__ = (db.UniqueConstraint('user_id', 'code',
+                                          name='_user_id_code'),)
 
 
 class Reply:
