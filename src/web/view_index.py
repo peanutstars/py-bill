@@ -6,12 +6,14 @@ from pysp.sconf import SYAML
 
 from . import app
 from .model import Reply
+from .view_billdashboard import get_recent_stocks
 from core.finance import BillConfig
 
 
 @app.route('/')
 def index():
-    return render_template('pages/index.html')
+    recent_stocks = get_recent_stocks()
+    return render_template('pages/index.html', recent_stocks=recent_stocks)
 
 
 @app.route('/ajax/bookmark', methods=['GET', 'POST'])

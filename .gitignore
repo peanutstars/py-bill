@@ -1,2 +1,4 @@
 __pycache__
 *.sqlite3
+src/html5
+src/web/static/assets/sass

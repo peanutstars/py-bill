@@ -7,7 +7,8 @@ from wtforms.csrf.session import SessionCSRF
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from .model import User
-from . import app, db, login_manager
+from .view_billdashboard import get_recent_stocks
+from . import app, db
 
 
 class FormCSRF(Form):
@@ -115,7 +116,9 @@ def account_logout():
 def account():
     user = User.query.get(int(session['user_id']))
     users = User.query.all() if int(session['user_id']) == 1 else None
-    return render_template('pages/account.html', user=user, users=users)
+    recent_stocks = get_recent_stocks()
+    return render_template('pages/account.html',
+                           user=user, users=users, recent_stocks=recent_stocks)
 
 
 @app.route('/account/password', methods=['GET', 'POST'])
@@ -134,4 +137,6 @@ def account_password():
                 flash('Invalid the Current Password', 'danger')
     elif form.csrf_token.errors:
         flash('Invalid CSRF token', 'danger')
-    return render_template('pages/account_password.html', form=form)
+    recent_stocks = get_recent_stocks()
+    return render_template('pages/account_password.html',
+                           form=form, recent_stocks=recent_stocks)

@@ -161,8 +161,8 @@ class FNaver(FSpHelper):
             return cls._parse_day(chunk)
 
         url = cls.get_url('day', **kwargs)
-        return FCache().caching(url, gathering, duration=600,
-                                   cast=StockDay.cast)
+        return FCache().caching(url, gathering,
+                                duration=600, cast=StockDay.cast)
 
     @classmethod
     def _get_chunk_investor(cls, **kwargs):
@@ -171,8 +171,8 @@ class FNaver(FSpHelper):
             return cls._parser_investor(chunk)
 
         url = cls.get_url('dayinvestor', **kwargs)
-        return FCache().caching(url, gathering, duration=600,
-                                   cast=StockDayInvestor.cast)
+        return FCache().caching(url, gathering,
+                                duration=600, cast=StockDayInvestor.cast)
 
     @classmethod
     def _parse_day(cls, chunk):
@@ -373,7 +373,7 @@ class FKrx(FSpHelper):
             return days
 
         return FCache().caching(','.join(keywords), gathering,
-                                   duration=600, cast=StockDayShort.cast)
+                                duration=600, cast=StockDayShort.cast)
 
 
 class FUnknown:

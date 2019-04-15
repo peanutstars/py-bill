@@ -1,21 +1,27 @@
-<div class="navbar-header">
-  <button style="float: left;" type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#sidebar" aria-expanded="true" aria-controls="sidebar">
-    <div class="btn btn-default">
-      <i class="glyphicon glyphicon-align-left"></i>
-      <span>Sidebar</span>
-    </div>
-  </button>
-</div>
+  <!-- Search -->
+  <section id="search" class="alt">
+      <form method="post" action="#">
+          <input type="text" name="query" id="query" placeholder="Search" />
+      </form>
+  </section>
 
-<div id="sidebar" class="collapse navbar-collapse col-sm-3 col-md-2 sidebar">
-  <ul id="sidebar-main" class="nav nav-sidebar">
-    <li><a href="/bill/stock/">Stock Index</a></li>
-  </ul>
-  <ul id="sidebar-item" class="nav nav-sidebar nav-no-padding">
-    {% for recent in recent_stocks %}
-      <li><a href="/bill/stock/{{ recent.code }}">{{ recent.name }}</a></li>
-    {% endfor %}
-  </ul>
-  <ul id="sidebar-other" class="nav nav-sidebar">
-  </ul>
-</div>
+  <!-- Menu -->
+  <nav id="menu">
+      <header class="major">
+          <h2>Menu</h2>
+      </header>
+      <ul>
+        {% if session.user_id %}
+          <li><a href="{{ url_for('bill_dashboard' )}}">Bill Dashboard</a></li>
+          <li><a href="{{ url_for('bill_stock' )}}">Stock Index</a></li>
+          <li>
+              <span class="opener active">Recent View</span>
+              <ul>
+                {% for recent in recent_stocks %}
+                  <li><a href="/bill/stock/{{ recent.code }}">{{ recent.name }}</a></li>
+                {% endfor %}
+              </ul>
+          </li>
+        {% endif %}
+      </ul>
+  </nav>

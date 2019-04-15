@@ -1,26 +1,32 @@
 {% extends 'layout.html' %}
 
-{% block body %}
-  <div class="row">
-    <div class="col-md-4"></div>
-    <div class="col-md-4">
-        <h2>Login</h2>
-        {% from "parts/_formhelpers.html" import render_field %}
-        <form method="POST" action="{{ url_for('account_login' )}}" id="loginform">
-            {{ form.csrf_token }}
-            {{ form.h_next }}
-            <div class="form-group">
-                {{render_field(form.email, class_="form-control", autofocus=true)}}
-            </div>
-            <div class="form-group">
-                {{render_field(form.password, class_="form-control")}}
-            </div>
-        </form>
-        <a href="{{ url_for('account_register') }}" class="btn btn-primary">Register</a>
-        <button type="submit" form="loginform" class="btn btn-default pull-right">Login</button>
+{% block content %}
+<section>
+  <header class="main">
+    <h2>Login</h2>
+  </header>
+  {% from "parts/_formhelpers.html" import render_field %}
+  <form method="POST" action="{{ url_for('account_login' )}}" id="loginform">
+    {{ form.csrf_token }}
+    <div class="row gtr-uniform">
+      <div class="col-6 col-12-small">
+        {{render_field(form.email, class_="form-control", autofocus=true, placeholder=form.email.label.text)}}
+      </div>
     </div>
-    <div class="col-md-4"></div>
+    <p/>
+    <div class="row gtr-uniform">
+      <div class="col-6 col-12-small">
+        {{render_field(form.password, class_="form-control", placeholder=form.password.label.text)}}
+      </div>
+    </div>
+  </form>
+  <div class="row gtr-uniform">
+    <div class="col-6 col-12-small">
+      <button type="submit" form="loginform" class="">Login</button>
+      <a href="{{ url_for('account_register') }}" class="button button-gray pull-right">Register</a>
+    </div>
   </div>
+</section>
 {% endblock %}
 
 {% block bodyscript %}

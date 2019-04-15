@@ -1,11 +1,16 @@
-{% extends 'layout_sidebar.html' %}
+{% extends 'layout.html' %}
 
-{% block body %}
-  <h2>Bill Board</h2>
-  <div id="chart-candle" style="width: 100%; height: 500px;"></div>
+{% block content %}
+<section>
+  <header class="main">
+    <h2>Bill Board</h2>
+  </header>
+  <div id="chart-candle" style="width: 100%; height: 400px;"></div>
+</section>
 {% endblock %}
 
 {% block bodyscript %}
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 <script type="text/javascript">
   $(function(){
     _data = {investor: 'investor3'};
@@ -40,7 +45,7 @@
     var options = {
       legend:'none',
       width: document.getElementById('chart-candle').offsetWidth,
-      chartArea: {width: '86%', height: '75%'},
+      chartArea: {width: '85%', height: '75%'},
       candlestick: {
         risingColor: {stroke: 'red', fill: 'red'},
         fallingColor: {stroke: 'blue', fill: 'blue'}

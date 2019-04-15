@@ -65,11 +65,10 @@ if not os.path.exists(db_file):
         db.session.commit()
 
 
-init_logger(app)
+# init_logger(app)
 
 # Manager
 Collector()
-
 
 
 if __name__ == '__main__':

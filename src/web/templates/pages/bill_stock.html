@@ -1,10 +1,13 @@
-{% extends 'layout_sidebar.html' %}
+{% extends 'layout.html' %}
 
-{% block body %}
-  <h2>Stock Items</h2>
+{% block content %}
+<section>
+  <header class="main">
+    <h2>Stock Items</h2>
+  </header>
   <p>
   <div id="view-stock-list"></div>
-
+</section>
 {% endblock %}
 
 {% block bodyscript %}
@@ -41,13 +44,14 @@
         pchar = char;
         if (html.length > 0) {
           $("#view-stock-list").append(html);
+          html = '</ul>';
         }
-        html = '<h4>'+char+'</h4>';
+        html += '<h4>'+char+'</h4>';
+        html += '<ul class="row actions">';
       }
-      html += '<div class="btn-group">';
-      html += '<a href="/bill/stock/'+code+'" class="btn btn-default btn-space">'+codename+'</a>'
-      html += '</div>';
+      html += '<li><a href="{{ url_for('bill_stock' )}}'+code+'" class="button margin-bottom">'+codename+'</a></li>';
     }
+    html += '</ul>';
     $("#view-stock-list").append(html);
   }
 </script>

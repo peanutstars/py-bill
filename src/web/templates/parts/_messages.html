@@ -1,17 +1,18 @@
 <div id="flash-message">
+  <!-- <div class="box box-success">Flash Message<br/>Show detail more</div> -->
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
     {% for category, message in messages %}
-      <div class="alert alert-{{ category }}">{{ message }}</div>
+      <div class="box box-{{ category }}">{{ message }}</div>
     {% endfor %}
   {% endif %}
 {% endwith %}
 
 {% if error %}
-  <div class="alert alert-danger">{{error}}</div>
+  <div class="box box-danger">{{error}}</div>
 {% endif %}
 
 {% if msg %}
-  <div class="alert alert-success">{{msg}}</div>
+  <div class="box box-success">{{msg}}</div>
 {% endif %}
 </div>

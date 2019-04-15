@@ -1,22 +1,28 @@
 {% extends 'layout.html' %}
 
-{% block body %}
+{% block content %}
 {% if session.user_id %}
-<div>
+  <p/>
   <div>
-    <span id="btn-group-none" style="float: right;">
-      <button id="edit-button" type="button" class="btn btn-primary btn-space">Edit</button>
-    </span>
-    <span id="btn-group-edit" style="float: right; display: none;">
-      <button id="edit-store-button" type="button" class="btn btn-primary btn-space">Store</button>
-      <button id="edit-cancel-button" type="button" class="btn btn-secondary btn-space">Cancel</button>
-    </span>
-    <textarea id="edit-bookmark" name="edit-bookmark" rows="10" style="width: 100%; display: none;">
-    </textarea>
+    <div class="row pull-right">
+      <span id="btn-group-none" >
+        <button id="edit-button" type="button" class="button-gray">Edit</button>
+      </span>
+      <span id="btn-group-edit" style="display: none;">
+        <button id="edit-store-button" type="button" class="button-gray">Store</button>
+        <button id="edit-cancel-button" type="button">Cancel</button>
+      </span>
+    </div>
+    <textarea id="edit-bookmark" name="edit-bookmark" class="box-edit" rows="10" style="display: none;"></textarea>
   </div>
-</div>
 {% endif %}
-<div id="view-bookmark"></div>
+
+<section>
+  <header class="main">
+    <h2>Bookmark</h2>
+  </header>
+  <div id="view-bookmark"></div>
+</section>
 {% endblock %}
 
 {% block bodyscript %}
@@ -46,13 +52,14 @@
       var group = json.bookmark[i];
       // var html = '<div class="jumbotron">';
       var html = '<div>';
-      html += '<h4>'+group.name+'</h4>';
+      html += '<h3>'+group.name+'</h3>';
+      html += '<ul class="row actions">'
       for (var x in group.list) {
         var item = group.list[x];
-        html += '<div class="btn-group">'
-        html += '<a href="'+item.link+'" class="btn btn-default btn-space">'+item.title+'</a>'
-        html += '</div>';
+        html += '<li><a href="'+item.link+'" class="button margin-bottom">'+item.title+'</a></li>';
+        // html += '<a href="'+item.link+'" class="btn btn-default btn-space">'+item.title+'</a>'
       }
+      html += '</ul>';
       html += '</div><p/>';
       delete json.__include__
       $("#view-bookmark").append(html);
