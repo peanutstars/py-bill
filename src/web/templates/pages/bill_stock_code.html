@@ -5,6 +5,23 @@
   <header class="main">
     <h2>{{ extra_info.codename }}({{ extra_info.code }})</h2>
   </header>
+  <div class="row gtr-200">
+    <div class="col-6 col-12-medium">
+    </div>
+    <div class="col-6 col-12-medium">
+    </div>
+  </div>
+  <div>
+    <div class="box">
+      <span>52주 최저</span>
+      <span class="pull-right">52주 최고</span>
+      <div class="bar container">
+        <div id="sb_percent" class="bar percent"></div>
+      </div>
+      <span id="sb_high52wPrice" class="pull-right"></span>
+      <span id="sb_low52wPrice"></span>
+    </div>
+  </div>
   <!-- <div id="chart-candle" style="width: 100%; height: 500px;"></div> -->
   <div>
     <h4>Investor Trands</h4>
@@ -27,6 +44,7 @@
     _code = "{{ extra_info.code }}";
     _data = {investor: 'investor3'};
 
+    // Chart
     google.charts.load('current', {'packages':['corechart']});
     // google.charts.setOnLoadCallback(drawChartCandle);
     google.charts.setOnLoadCallback(drawChartInvestorTrand);
@@ -42,13 +60,16 @@
         // drawChartCandle();
         drawChartInvestorTrand();
     });
+
+    // Initialize
+    kakao_stock_brief(_code);
+    initButtonInvestor();
+  });
+  function initButtonInvestor() {
     var months = [3, 6, 12, 24, 36];
     for (var i in months) {
         get_stock_item_investor(_code, months[i], collectInvestorTrand);
     }
-    initButtonInvestor();
-  });
-  function initButtonInvestor() {
     $(".button-investor").each(function(index){
       $(this).on("click", function(){
         // inactived button, set the default
@@ -64,9 +85,24 @@
       });
     });
   }
-
   function get_stock_item_investor(code, month, cb) {
     ajax.post('/ajax/stock/item/'+code+'/investor/'+month, {}, cb)
+  }
+  function kakao_stock_brief(code) {
+    var url = 'https://stock.kakao.com/api/securities/KOREA-A'+code+'.json';
+    ajax.post('/ajax/proxy', {method: 'GET', url: url, datatype: 'json'}, function(resp){
+      // console.log(resp);
+      _data.code = resp.recentSecurity;
+      render_kakao_stock_brief();
+    });
+  }
+  function render_kakao_stock_brief(){
+    console.log(_data.code);
+    var percent = (_data.code.tradePrice-_data.code.low52wPrice)/(_data.code.high52wPrice-_data.code.low52wPrice)*100;
+    console.log(percent);
+    $("#sb_percent").css('width', ''+percent+'%');
+    $("#sb_high52wPrice").text(util.formatNumber(_data.code.high52wPrice));
+    $("#sb_low52wPrice").text(util.formatNumber(_data.code.low52wPrice));
   }
   function collectInvestorTrand(resp) {
     // console.log(resp);

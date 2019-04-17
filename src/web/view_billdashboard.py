@@ -3,14 +3,14 @@
 import datetime
 
 from dateutil.relativedelta import relativedelta
-from flask import render_template, flash, abort, session
+from flask import render_template, flash, abort, session, request
 from flask_login import login_required
 
 from . import app, db
 from .model import MStock, Reply
 # from core.finance import BillConfig
 from core.helper import DateTool
-from core.connect import FKrx
+from core.connect import FKrx, Http
 from core.finance import DataCollection, StockItemDB, StockQuery
 from core.manager import Collector
 
@@ -96,3 +96,27 @@ def ajax_stock_item_investor(code, month):
             collector.collect(code)
             return Reply.Fail(message="Requested Collector To Collect Data.")
         return Reply.Success(value=Reply.Data(tdata))
+
+
+@app.route('/ajax/proxy', methods=['POST'])
+@login_required
+def ajax_proxy():
+    url = request.get_json().get('url')
+    method = request.get_json().get('method', 'GET')
+    datatype = request.get_json().get('datatype', None)
+    # Select a method function
+    http = Http.get
+    if method == 'POST':
+        http = Http.post
+    # Select a data type
+    params = {}
+    if datatype == 'json':
+        params['json'] = True
+    if datatype == 'text':
+        params['text'] = True
+    # Request
+    try:
+        rv = http(url, **params)
+        return Reply.Success(value=rv)
+    except Exception as e:
+        return Reply.Fail(message=str(e))
