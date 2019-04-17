@@ -1,6 +1,7 @@
 @import url(font-awesome.min.css);
-@import url("https://fonts.googleapis.com/css?family=Open+Sans:400,600,400italic,600italic|Roboto+Slab:400,700");
-
+/* @import url("https://fonts.googleapis.com/css?family=Open+Sans:400,600,400italic,600italic|Roboto+Slab:400,700"); */
+@import url("http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,700,900");
+@import url("https://fonts.googleapis.com/css?family=Nanum+Gothic:400,700,800");
 /*
 	Editorial by HTML5 UP
 	html5up.net | @ajlkn
@@ -117,16 +118,16 @@ input, select, textarea {
 
 	body, input, select, textarea {
 		color: #7f888f;
-		font-family: "Open Sans", sans-serif;
-		font-size: 13pt;
+		font-family: "Source Sans Pro", "Nanum Gothic", sans-serif;
+		font-size: 16pt;
 		font-weight: 400;
-		line-height: 1.65;
+		line-height: 1.75;
 	}
 
 		@media screen and (max-width: 1680px) {
 
 			body, input, select, textarea {
-				font-size: 11pt;
+				font-size: 13pt;
 			}
 
 		}
@@ -134,7 +135,7 @@ input, select, textarea {
 		@media screen and (max-width: 1280px) {
 
 			body, input, select, textarea {
-				font-size: 10pt;
+				font-size: 12pt;
 			}
 
 		}
@@ -142,7 +143,7 @@ input, select, textarea {
 		@media screen and (max-width: 360px) {
 
 			body, input, select, textarea {
-				font-size: 9pt;
+				font-size: 11pt;
 			}
 
 		}
@@ -181,7 +182,7 @@ input, select, textarea {
 
 	h1, h2, h3, h4, h5, h6 {
 		color: #3d4449;
-		font-family: "Roboto Slab", serif;
+		/* font-family: "Roboto Slab", serif; */
 		font-weight: 700;
 		line-height: 1.5;
 		margin: 0 0 1em 0;
@@ -1788,7 +1789,7 @@ input, select, textarea {
 	}
 
 	header p {
-		font-family: "Roboto Slab", serif;
+		/* font-family: "Roboto Slab", serif; */
 		font-size: 1em;
 		font-weight: 400;
 		letter-spacing: 0.075em;
@@ -2020,27 +2021,26 @@ input, select, textarea {
 			border-radius: 0;
 			padding: 0;
 		}
-	/* Append Property by hslee */
-	.box-success {
-		margin-top: 1em;
-		margin-bottom: 1em;
-		background: #ABEBC6;
-	}
-	.box-warning {
-		margin-top: 1em;
-		margin-bottom: 1em;
-		background: #F9E79F;
-	}
-	.box-danger {
-		margin-top: 1em;
-		margin-bottom: 1em;
-		background: #F5B7B1;
-	}
-	.box-edit {
-		margin-top: 1em;
-		margin-bottom: 1em;
-		background: #FEF9E7;
-	}
+		.box.gray {
+			background-color: #F8F9F9;
+		}
+		.box.blue,
+		.box.info {
+			background-color: #EBF5FB;
+		}
+		.box.yellow,
+		.box.warning {
+			background-color: #FEF9E7;
+		}
+		.box.green,
+		.box.success {
+			background-color: #E9F7EF;
+		}
+		.box.red,
+		.box.danger {
+			background-color: #FDEDEC;
+		}
+
 
 /* Icon */
 
@@ -2406,6 +2406,7 @@ input, select, textarea {
 	}
 
 	table {
+		border-top: solid 3px rgba(210, 215, 217, 0.75);
 		margin: 0 0 2em 0;
 		width: 100%;
 	}
@@ -2426,9 +2427,10 @@ input, select, textarea {
 
 		table th {
 			color: #3d4449;
-			font-size: 0.9em;
+			background-color: #F2F4F4;
+			font-size: 1em;
 			font-weight: 600;
-			padding: 0 0.75em 0.75em 0.75em;
+			padding: 0.75em 0.75em 0.75em 0.75em;
 			text-align: left;
 		}
 
@@ -2484,23 +2486,21 @@ input, select, textarea {
 		background-color: transparent;
 		border-radius: 0.375em;
 		border: 0;
-		/* box-shadow: inset 0 0 0 2px #f56a6a; */
-		box-shadow: inset 0 0 0 2px #D5DBDB;
-		color: #283747 !important;
+		box-shadow: inset 0 0 0 2px #717D7E;
+		color: #717D7E !important;
 		cursor: pointer;
 		display: inline-block;
-		font-family: "Roboto Slab", serif;
+		/* font-family: "Roboto Slab", serif; */
 		font-size: 0.8em;
 		font-weight: 700;
 		height: 3.5em;
 		letter-spacing: 0.075em;
 		line-height: 3.5em;
-		padding: 0 1.25em;
+		padding: 0 2.25em;
 		text-align: center;
 		text-decoration: none;
-		/* text-transform: uppercase; */
+		text-transform: uppercase;
 		white-space: nowrap;
-		/* margin-bottom: 0.25em; */
 	}
 
 		input[type="submit"]:hover,
@@ -2509,6 +2509,7 @@ input, select, textarea {
 		button:hover,
 		.button:hover {
 			background-color: rgba(245, 106, 106, 0.05);
+			color: #212F3D !important;
 		}
 
 		input[type="submit"]:active,
@@ -2558,7 +2559,7 @@ input, select, textarea {
 		input[type="button"].primary,
 		button.primary,
 		.button.primary {
-			background-color: #ABB2B9;
+			background-color: #f56a6a;
 			box-shadow: none;
 			color: #ffffff !important;
 		}
@@ -2569,6 +2570,7 @@ input, select, textarea {
 			button.primary:hover,
 			.button.primary:hover {
 				background-color: #f67878;
+				color: #212F3D !important;
 			}
 
 			input[type="submit"].primary:active,
@@ -2591,25 +2593,33 @@ input, select, textarea {
 			pointer-events: none;
 			opacity: 0.25;
 		}
-
-	.margin-bottom {
-		margin-bottom: 0.25em;
-	}
-	.button-red {
-		background-color: #F5B7B1;
-	}
-	.button-yellow {
-		background-color: #F9E79F;
-	}
-	.button-green {
-		background-color: #A9DFBF;
-	}
-	.button-gray {
-		background-color: #E5E7E9;
-	}
-	.button-blue {
-		background-color: #AED6F1;
-	}
+		.button.gray {
+			background-color: #E5E7E9;
+			box-shadow: inset 0 0 0 2px #D7DBDD;
+		}
+		.button.blue,
+		.button.info {
+			background-color: #AED6F1;
+			box-shadow: inset 0 0 0 2px #85C1E9;
+		}
+		.button.yellow,
+		.button.warning {
+			background-color: #F9E79F;
+			box-shadow: inset 0 0 0 2px #F7DC6F;
+		}
+		.button.green,
+		.button.success {
+			background-color: #A9DFBF;
+			box-shadow: inset 0 0 0 2px #7DCEA0;
+		}
+		.button.red,
+		.button.danger {
+			background-color: #F5B7B1;
+			box-shadow: inset 0 0 0 2px #F1948A;
+		}
+		.button.bottom {
+			margin-bottom: 0.25em;
+		}
 
 /* Mini Posts */
 
@@ -3355,7 +3365,7 @@ input, select, textarea {
 		#header .logo {
 			border-bottom: 0;
 			color: inherit;
-			font-family: "Roboto Slab", serif;
+			/* font-family: "Roboto Slab", serif; */
 			font-size: 1.125em;
 		}
 
@@ -3514,9 +3524,9 @@ input, select, textarea {
 		-webkit-user-select: none;
 		-ms-user-select: none;
 		user-select: none;
-		color: #3d4449;
-		font-family: "Roboto Slab", serif;
-		font-family: 400;
+		color: #2E4053;
+		/* font-family: "Roboto Slab", serif; */
+		font-size: 11pt;
 		letter-spacing: 0.075em;
 		list-style: none;
 		margin-bottom: 0;
@@ -3530,11 +3540,18 @@ input, select, textarea {
 			cursor: pointer;
 			display: block;
 			font-size: 0.9em;
-			padding: 0.625em 0;
+			padding: 0.125em 0;
+			font-weight: 600;
+		}
+
+		#menu ul ul a {
+			font-weight: 400;
+			padding: 0;
 		}
 
 			#menu ul a:hover, #menu ul span:hover {
-				color: #f56a6a;
+				color: #717D7E !important;
+				background-color: #E5E7E9;
 			}
 
 			#menu ul a.opener, #menu ul span.opener {
@@ -3596,8 +3613,7 @@ input, select, textarea {
 		}
 
 			#menu > ul > li > ul a, #menu > ul > li > ul span {
-				font-size: 0.9em;
-				padding: 0.125em 0;
+				font-size: 0.8em;
 			}
 
 			#menu > ul > li > ul > li {

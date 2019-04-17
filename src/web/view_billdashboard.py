@@ -16,6 +16,8 @@ from core.manager import Collector
 
 
 def get_recent_stocks():
+    if 'user_id' not in session:
+        return []
     now = datetime.datetime.now()
     # to_date = DateTool.to_strfdate(now)
     from_date = DateTool.to_strfdate(now - relativedelta(days=30))

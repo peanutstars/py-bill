@@ -9,11 +9,11 @@
   <div>
     <h4>Investor Trands</h4>
     <div class="btn-group">
-      <button type="button" class="button-gray button-investor" value="investor3">3Ms</button>
-      <button type="button" class="button-investor" value="investor6">6Ms</button>
-      <button type="button" class="button-investor" value="investor12">1Y</button>
-      <button type="button" class="button-investor" value="investor24">2Ys</button>
-      <button type="button" class="button-investor" value="investor36">3Ys</button>
+      <button type="button" class="button gray button-investor" value="investor3">3Ms</button>
+      <button type="button" class="button button-investor" value="investor6">6Ms</button>
+      <button type="button" class="button button-investor" value="investor12">1Y</button>
+      <button type="button" class="button button-investor" value="investor24">2Ys</button>
+      <button type="button" class="button button-investor" value="investor36">3Ys</button>
     </div>
     <div id="chart-investor" style="width: 100%; height: 400px;"></div>
   </div>
@@ -53,10 +53,10 @@
       $(this).on("click", function(){
         // inactived button, set the default
         $(".button-investor").each(function(index){
-          $(this).removeClass("button-gray")
+          $(this).removeClass("gray")
         });
         // activating the selected button
-        $(this).addClass("button-gray");
+        $(this).addClass("gray");
         var key = $(this).val()
         // console.log(key);
         _data.investor = key;

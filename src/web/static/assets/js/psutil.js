@@ -4,7 +4,7 @@
       console.log(category+'@'+message);
       $('#flash-message').text('');
       if (message && category) {
-        var msg_block = '<div class="box box-'+category+'">'+message+'</div>';
+        var msg_block = '<div class="box '+category+'">'+message+'</div>';
         $("#flash-message").append(msg_block);
       }
     },

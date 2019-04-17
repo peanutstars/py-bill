@@ -3,16 +3,16 @@
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
     {% for category, message in messages %}
-      <div class="box box-{{ category }}">{{ message }}</div>
+      <div class="box {{ category }}">{{ message }}</div>
     {% endfor %}
   {% endif %}
 {% endwith %}
 
 {% if error %}
-  <div class="box box-danger">{{error}}</div>
+  <div class="box danger">{{error}}</div>
 {% endif %}
 
 {% if msg %}
-  <div class="box box-success">{{msg}}</div>
+  <div class="box success">{{msg}}</div>
 {% endif %}
 </div>
