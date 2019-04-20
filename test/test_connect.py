@@ -75,6 +75,23 @@ class TestConnect(unittest.TestCase):
         # data  = FNaver.do_parser('dayinvestor', chunk)
         self.assertTrue(len(chunk) == 20)
 
+    def test_fspnaver_current(self):
+        # import logging
+        # import requests
+        # try:
+        #     import http.client as http_client
+        # except ImportError:
+        #     # Python 2
+        #     import httplib as http_client
+        # http_client.HTTPConnection.debuglevel = 1
+        # logging.basicConfig()
+        # logging.getLogger().setLevel(logging.DEBUG)
+        # requests_log = logging.getLogger("requests.packages.urllib3")
+        # requests_log.setLevel(logging.DEBUG)
+        # requests_log.propagate = True
+        # logging.basicConfig(level=logging.DEBUG)
+        FNaver.get_chunk('current', code=self.spn.code)
+
     def test_krx_list(self):
         # Http.DEBUG = True
         chunk = FKrx.get_chunk('list')

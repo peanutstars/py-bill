@@ -101,22 +101,25 @@ def ajax_stock_item_investor(code, month):
 @app.route('/ajax/proxy', methods=['POST'])
 @login_required
 def ajax_proxy():
-    url = request.get_json().get('url')
-    method = request.get_json().get('method', 'GET')
-    datatype = request.get_json().get('datatype', None)
-    # Select a method function
-    http = Http.get
-    if method == 'POST':
-        http = Http.post
-    # Select a data type
-    params = {}
-    if datatype == 'json':
-        params['json'] = True
-    if datatype == 'text':
-        params['text'] = True
+    _data_type = {
+        'json': {'json': True},
+        'text': {'text': True},
+    }
+    reqjson = request.get_json()
+    url = reqjson.get('url')
+    method = reqjson.get('method', 'GET')
+    datatype = reqjson.get('datatype', None)
+    # Init Parameters
+    kwargs = {
+        'headers':  reqjson.get('headers', {}),
+        'params':   reqjson.get('params', {}),
+    }
+    kwargs.update(_data_type.get(datatype, {}))
+    if 'duration' in reqjson:
+        kwargs['duration'] = reqjson.get('duration')
     # Request
-    try:
-        rv = http(url, **params)
-        return Reply.Success(value=rv)
-    except Exception as e:
-        return Reply.Fail(message=str(e))
+    # try:
+    rv = Http.proxy(method, url, **kwargs)
+    return Reply.Success(value=rv)
+    # except Exception as e:
+    #     return Reply.Fail(message=str(e))

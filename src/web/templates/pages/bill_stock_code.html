@@ -5,32 +5,69 @@
   <header class="main">
     <h2>{{ extra_info.codename }}({{ extra_info.code }})</h2>
   </header>
-  <div class="row gtr-200">
-    <div class="col-6 col-12-medium">
+  <!-- Stock Brief Title -->
+  <div class="row">
+    <div class="col-5 col-5-medium">
+      <div><h2 id="sbrf_tradePrice" style="text-align: right; margin: 0; font-size: 2em"></h2></div>
+      <div style="text-align: right; font-weight: 600;" id="sbrf_change" class="stock text">
+        <span id="sbrf_changePrice"></span>&nbsp;&nbsp;
+        <span id="sbrf_changeRate"></span>
+      </div>
     </div>
-    <div class="col-6 col-12-medium">
+    <div class="col-7 col-7-medium">
+      <img id="sbrf_miniDayChartUrl" style="height: 6.5em;"/>
     </div>
   </div>
-  <div>
+  <!-- Stock Brief -->
+  <div class="row">
+    <div class="col-3 col-6-medium">
+      <div><span>전일</span><span class="pull-right stock text" id="sbrf_prevClosingPrice"></span></div>
+    </div>
+    <div class="col-3 col-6-medium">
+      <div><span>고가</span><span class="pull-right stock text" id="sbrf_highPrice"></span></div>
+    </div>
+    <div class="col-3 col-6-medium">
+      <div><span>시가</span><span class="pull-right stock text" id="sbrf_openingPrice"></span></div>
+    </div>
+    <div class="col-3 col-6-medium">
+      <div><span>저가</span><span class="pull-right stock text" id="sbrf_lowPrice"></span></div>
+    </div>
+
+    <div class="col-3 col-6-medium">
+      <div><span>거래량(주)</span><span class="pull-right stock text" id="sbrf_accTradeVolume"></span></div>
+    </div>
+    <div class="col-3 col-6-medium">
+      <div><span>거래 대금</span><span class="pull-right stock text" id="sbrf_globalAccTradePrice"></span></div>
+    </div>
+    <div class="col-3 col-6-medium">
+      <div><span>시가 총액</span><span class="pull-right stock text" id="sbrf_totalMarketValue"></span></div>
+    </div>
+    <div class="col-3 col-6-medium">
+      <div><span>외국인 비중</span><span class="pull-right stock text" id="sbrf_foreignRatio"></span></div>
+    </div>
+
+  </div>
+  <!-- Stock Bar of 52 Weeks -->
+  <div calss="row">
     <div class="box">
       <span>52주 최저</span>
       <span class="pull-right">52주 최고</span>
       <div class="bar container">
-        <div id="sb_percent" class="bar percent"></div>
+        <div id="sbrf_percent" class="bar percent"></div>
       </div>
-      <span id="sb_high52wPrice" class="pull-right"></span>
-      <span id="sb_low52wPrice"></span>
+      <span id="sbrf_high52wPrice" class="pull-right"></span>
+      <span id="sbrf_low52wPrice"></span>
     </div>
   </div>
   <!-- <div id="chart-candle" style="width: 100%; height: 500px;"></div> -->
   <div>
     <h4>Investor Trands</h4>
     <div class="btn-group">
-      <button type="button" class="button gray button-investor" value="investor3">3Ms</button>
-      <button type="button" class="button button-investor" value="investor6">6Ms</button>
-      <button type="button" class="button button-investor" value="investor12">1Y</button>
-      <button type="button" class="button button-investor" value="investor24">2Ys</button>
-      <button type="button" class="button button-investor" value="investor36">3Ys</button>
+      <button type="button" class="button bottom small gray button-investor" value="investor3">3Ms</button>
+      <button type="button" class="button bottom small button-investor" value="investor6">6Ms</button>
+      <button type="button" class="button bottom small button-investor" value="investor12">1Y</button>
+      <button type="button" class="button bottom small button-investor" value="investor24">2Ys</button>
+      <button type="button" class="button bottom small button-investor" value="investor36">3Ys</button>
     </div>
     <div id="chart-investor" style="width: 100%; height: 400px;"></div>
   </div>
@@ -62,7 +99,7 @@
     });
 
     // Initialize
-    kakao_stock_brief(_code);
+    stock.kakao_brief(_code, render_kakao_stock_brief);
     initButtonInvestor();
   });
   function initButtonInvestor() {
@@ -90,19 +127,35 @@
   }
   function kakao_stock_brief(code) {
     var url = 'https://stock.kakao.com/api/securities/KOREA-A'+code+'.json';
-    ajax.post('/ajax/proxy', {method: 'GET', url: url, datatype: 'json'}, function(resp){
+    var params = {method: 'GET', url: url, datatype: 'json', duration: 90}
+    ajax.post('/ajax/proxy', params, function(resp){
       // console.log(resp);
       _data.code = resp.recentSecurity;
       render_kakao_stock_brief();
     });
   }
-  function render_kakao_stock_brief(){
-    console.log(_data.code);
-    var percent = (_data.code.tradePrice-_data.code.low52wPrice)/(_data.code.high52wPrice-_data.code.low52wPrice)*100;
-    console.log(percent);
-    $("#sb_percent").css('width', ''+percent+'%');
-    $("#sb_high52wPrice").text(util.formatNumber(_data.code.high52wPrice));
-    $("#sb_low52wPrice").text(util.formatNumber(_data.code.low52wPrice));
+  function render_kakao_stock_brief(data){
+    _data.code = data;
+    console.log(data);
+    $("#sbrf_tradePrice").text(util.formatNumber(data.tradePrice));
+    $("#sbrf_changePrice").text(util.formatNumber(data.changePrice));
+    $("#sbrf_changeRate").text((data.changePriceRate*100).toFixed(3)+'%');
+    $("#sbrf_change").addClass(data.change=='RISE'?'color-up':data.change=='FALL'?'color-down':'');
+    $("#sbrf_miniDayChartUrl").attr('src', data.dayChartUrl);
+
+    var percent = (data.tradePrice-data.low52wPrice)/(data.high52wPrice-data.low52wPrice)*100;
+    $("#sbrf_prevClosingPrice").text(util.formatNumber(data.prevClosingPrice));
+    $("#sbrf_openingPrice").text(util.formatNumber(data.openingPrice)).addClass(stock.text_color(data.prevClosingPrice, data.openingPrice));
+    $("#sbrf_lowPrice").text(util.formatNumber(data.lowPrice)).addClass(stock.text_color(data.prevClosingPrice, data.lowPrice));
+    $("#sbrf_highPrice").text(util.formatNumber(data.highPrice)).addClass(stock.text_color(data.prevClosingPrice, data.highPrice));
+    $("#sbrf_accTradeVolume").text(util.formatNumber(data.accTradeVolume));
+    $("#sbrf_globalAccTradePrice").text(util.formatNumber(data.globalAccTradePrice));
+    $("#sbrf_totalMarketValue").text(util.formatNumber(data.totalMarketValue));
+    $("#sbrf_foreignRatio").text(data.foreignRatio+'%');
+
+    $("#sbrf_percent").css('width', ''+percent+'%');
+    $("#sbrf_high52wPrice").text(util.formatNumber(data.high52wPrice));
+    $("#sbrf_low52wPrice").text(util.formatNumber(data.code.low52wPrice));
   }
   function collectInvestorTrand(resp) {
     // console.log(resp);

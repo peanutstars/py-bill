@@ -23,6 +23,20 @@
       return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
     },
   };
+  stock = {
+    kakao_brief: function(code, cb) {
+      var url = 'https://stock.kakao.com/api/securities/KOREA-A'+code+'.json';
+      var params = {method: 'GET', url: url, datatype: 'json', duration: 90}
+      ajax.post('/ajax/proxy', params, function(resp){cb(resp.recentSecurity);});
+    },
+    text_color: function(pprice, price){
+      if (pprice > price)
+        return 'color-down';
+      if (pprice < price)
+        return 'color-up';
+      return '';
+    }
+  },
   ajax = {
     get : function(url, params, callback) {
       var opts = {

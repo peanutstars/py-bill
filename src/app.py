@@ -17,6 +17,11 @@ from core.finance import BillConfig
 from core.manager import Collector
 
 
+_DEBUG = False
+if 'DEBUG_PYTHON' in os.environ:
+    _DEBUG = True
+
+
 def init_logger(app):
     log_dir = BillConfig().get_value('folder.log')
     log_file = 'web-app-log'
@@ -25,16 +30,14 @@ def init_logger(app):
     log_bytes = 5*1024*1024
     log_count = 10
 
-    handle = RotatingFileHandler(log_dir+log_file,
-                                 maxBytes=log_bytes, backupCount=log_count)
-    handle.setFormatter(logging.Formatter(log_format))
-    handle.setLevel(log_level)
+    hdl = RotatingFileHandler(log_dir+log_file,
+                              maxBytes=log_bytes, backupCount=log_count)
+    hdl.setFormatter(logging.Formatter(log_format))
+    # hdl.setLevel(log_level)
 
     log = logging.getLogger()
+    log.addHandler(hdl)
     log.setLevel(log_level)
-    log.addHandler(handle)
-
-    # app.logger.addHandler(log)
     app.logger.info("===== web application start =====")
 
 
@@ -65,16 +68,18 @@ if not os.path.exists(db_file):
         db.session.commit()
 
 
-# init_logger(app)
+if _DEBUG is False:
+    init_logger(app)
 
 # Manager
 Collector()
 
 
 if __name__ == '__main__':
-    app.debug = True
-    app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
-    DebugToolbarExtension(app)
+    if _DEBUG is True:
+        app.debug = True
+        app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+        DebugToolbarExtension(app)
 
     try:
         app.run(host='0.0.0.0', port=8000, use_reloader=False)

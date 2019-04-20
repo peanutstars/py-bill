@@ -3,6 +3,7 @@
 import unittest
 
 from pysp.sbasic import SSingleton
+from pysp.serror import SDebug
 
 from core.cache import FCache
 from core.finance import StockItemDB, DataCollection, BillConfig, StockQuery
@@ -15,7 +16,8 @@ class TestFinance(unittest.TestCase):
     spk = ServiceProvider(name='krx', codename='카카오', code='035720')
 
     def test_collect_data(self):
-        # FNaver.DEBUG = True
+        log = SDebug()
+        log.DEBUG = True
 
         f = DataCollection()
         # f.collect_candle(self.spd)
@@ -26,9 +28,9 @@ class TestFinance(unittest.TestCase):
         sp = DataCollection.factory_provider('035720', 'naver')
         self.assertTrue(sp.name == 'naver')
         self.assertTrue(sp.codename == '카카오')
-        print(sp)
+        log.dprint(str(sp))
         sp = DataCollection.factory_provider('030200', 'naver')
-        print(sp)
+        log.dprint(str(sp))
 
         f.collect('035720')
         f.collect('030200')
@@ -42,12 +44,15 @@ class TestFinance(unittest.TestCase):
         self.assertTrue(bconfig is BillConfig())
 
     def test_stockquery(self):
+        log = SDebug()
+        log.DEBUG = True
+
         # get raw data
         code = '035720'
         sidb = StockItemDB.factory(code)
         tdata = StockQuery.raw_data(sidb, months=3)
-        print('ColNames:', tdata.colnames)
-        print('SQL:', tdata.sql)
+        log.dprint(f'ColNames: {tdata.colnames}')
+        log.dprint(f'SQL: {tdata.sql}')
         self.assertTrue(len(tdata.fields) > 10)
         for i, field in enumerate(tdata.fields):
             self.assertTrue(len(field) == len(tdata.colnames))
@@ -60,7 +65,7 @@ class TestFinance(unittest.TestCase):
         self.assertTrue(qda.sql == qdb.sql)
         self.assertTrue(len(qda.fields), len(qdb.fields))
         for x, field in enumerate(qda.fields):
-            # print(x, field)
+            # log.dprint(f'{x} {field}')
             for y, c in enumerate(field):
                 self.assertTrue(c == qdb.fields[x][y])
         # StockQuery.TradingAccumulator
@@ -115,12 +120,12 @@ class TestFinance(unittest.TestCase):
         items = ['stamp', 'foreigner', 'institute', 'person', 'shortamount']
         trandata = QueryData(colnames=items)
         # for x, field in enumerate(trandata.fields):
-        #     print(x, field)
+        #     log.dprint(f'{x} {field}')
         tacc = StockQuery.TradingAccumulator(items, qda.colnames)
         for field in qda.fields:
             trandata.fields.append(tacc.update(field))
         for x, field in enumerate(expected):
-            # print(x, field)
+            # log.dprint(f'{x} {field}')
             for y, row in enumerate(field):
                 self.assertTrue(row == trandata.fields[x][y])
 
@@ -128,13 +133,13 @@ class TestFinance(unittest.TestCase):
         items = ['stamp', 'foreigner', 'institute', 'person', 'shortamount']
         trandata = QueryData(colnames=items)
         # for x, field in enumerate(trandata.fields):
-        #     print(x, field)
+        #     log.dprint(f'{x} {field}')
         tacc = StockQuery.TradingAccumulator(items, qda.colnames,
                                              amount_colname='shortamount')
         for field in qda.fields:
             trandata.fields.append(tacc.update(field))
         for x, field in enumerate(expected):
-            print(x, field)
+            log.dprint(f'{x} {field}')
             for y, row in enumerate(field):
                 self.assertTrue(row == trandata.fields[x][y])
 
@@ -149,9 +154,9 @@ class TestFinance(unittest.TestCase):
         for field in qda.fields:
             trandata.fields.append(tacc.update(field))
         # for x, field in enumerate(trandata.fields):
-        #     print(x, field)
+        #     log.dprint(f'{x} {field}')
         for x, field in enumerate(expected_change_columns):
-            print(x, field)
+            log.dprint(f'{x} {field}')
             for y, row in enumerate(field):
                 self.assertTrue(row == trandata.fields[x][y])
 
@@ -160,13 +165,13 @@ class TestFinance(unittest.TestCase):
         trandata = StockQuery.get_investor_trading_trand(
                                 sidb, sdate=start_date, edate=end_date)
         for x, field in enumerate(expected):
-            # print(x, field)
+            # log.dprint(f'{x} {field}')
             for y, row in enumerate(field):
                 self.assertTrue(row == trandata.fields[x][y])
         # Case 2
         trandata = StockQuery.get_investor_trading_trand(
                                 sidb, sdate=start_date, months=1)
         for x, field in enumerate(expected):
-            # print(x, field)
+            # log.dprint(f'{x} {field}')
             for y, row in enumerate(field):
                 self.assertTrue(row == trandata.fields[x][y])

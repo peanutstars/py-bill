@@ -23,9 +23,10 @@ class Http(SCDebug):
     def do_method(cls, method, url, **kwargs):
         text = kwargs.get('text', False)
         json = kwargs.get('json', False)
-        params = kwargs.get('params', None)
+        params = kwargs.get('params', {})
+        headers = kwargs.get('headers', {})
         try:
-            r = method(url, params=params)
+            r = method(url, params=params, headers=headers)
         except requests.exceptions.ConnectionError as e:
             raise cls.Error('Failed To Connect: {err}'.format(err=str(e)))
 
@@ -42,13 +43,43 @@ class Http(SCDebug):
 
     @classmethod
     def get(cls, url, **kwargs):
-        cls.dprint(f'Http.get: {url}')
+        cls.dprint(f'Http.get: {url} {kwargs}')
         return cls.do_method(requests.get, url, **kwargs)
 
     @classmethod
     def post(cls, url, **kwargs):
         cls.dprint(f'Http.post: {url}')
         return cls.do_method(requests.post, url, **kwargs)
+
+    @classmethod
+    def _proxy_key(cls, method, url, **kwargs):
+        return '.'.join(['proxy', method, url])
+
+    @classmethod
+    def proxy(cls, method, url, **kwargs):
+        '''
+        :param method
+        :param url
+        :param params
+        :param headers
+        :param json
+        :param text
+        :param duration
+        '''
+        def gathering():
+            return _method_func.get(method)(url, **kwargs)
+
+        _method_func = {
+            'GET':  cls.get,
+            'POST': cls.post,
+        }
+        duration = kwargs.get('duration', None)
+        cachekey = cls._proxy_key(method, url, **kwargs)
+        params = {}
+        if duration:
+            params['duration'] = duration
+        params.update()
+        return FCache().caching(cachekey, gathering, **params)
 
 
 class FSpHelper(SCDebug):
@@ -132,25 +163,31 @@ class FDaum(FSpHelper):
 
 
 class FNaver(FSpHelper):
-    BASE_URL = 'https://finance.naver.com/item'
+    BASE_URL1 = 'https://finance.naver.com/item'
+    BASE_URL2 = 'https://m.stock.naver.com/item'
     URL = {
-        'day':          BASE_URL+'/sise_day.nhn?code={code}&page={page}',
-        'dayinvestor': BASE_URL+'/frgn.nhn?code={code}&page={page}'
+        'day':         BASE_URL1+'/sise_day.nhn?code={code}&page={page}',
+        'dayinvestor': BASE_URL1+'/frgn.nhn?code={code}&page={page}',
+        'current':     BASE_URL2+'/main.nhn',
+        'hdr_current': BASE_URL2+'/index.nhn?code={code}&groupId=-1&type=total'
     }
 
     @classmethod
     def get_url(cls, key, **kwargs):
-        code = kwargs.get('code')
-        page = kwargs.get('page', 0)
-        if page > 0:
-            return cls.URL.get(key).format(code=code, page=page)
-        raise cls.Error('Invalied page Range is 0 over.')
+        # code = kwargs.get('code')
+        # page = kwargs.get('page', 0)
+        params = {'code': kwargs.get('code'), 'page': kwargs.get('page', 1)}
+        if key in ['key', 'dayinvestor']:
+            if params['page'] < 0:
+                raise cls.Error('Invalied page Range is 0 over.')
+        return cls.URL.get(key).format(**params)
 
     @classmethod
     def get_chunk(cls, key, **kwargs):
         GET_CHUNK = {
             'day':          cls._get_chunk_day,
             'dayinvestor':  cls._get_chunk_investor,
+            'current':      cls._get_chunk_current,
         }
         return GET_CHUNK.get(key)(**kwargs)
 
@@ -173,6 +210,23 @@ class FNaver(FSpHelper):
         url = cls.get_url('dayinvestor', **kwargs)
         return FCache().caching(url, gathering,
                                 duration=600, cast=StockDayInvestor.cast)
+
+    @classmethod
+    def _get_chunk_current(cls, **kwargs):
+        # TODO : To be worked out later
+        raise NotImplementedError('Not Support')
+        # def gathering():
+        #     headers = {'referer': cls.get_url('hdr_current', **kwargs)}
+        #     chunk = Http.get(url, headers=headers)
+        #     return cls._parser_current(chunk)
+        #
+        # url = cls.get_url('current', **kwargs)
+        # return FCache().caching(url, gathering, duration=0)
+
+    @classmethod
+    def _parser_current(cls, chunk):
+        print(chunk)
+        return ''
 
     @classmethod
     def _parse_day(cls, chunk):
@@ -383,3 +437,25 @@ class FUnknown:
     @classmethod
     def get_chunk(cls, key, **kwargs):
         return cls.Error('Unknown {key} Function')
+
+
+# if __name__ == '__main__':
+#     import logging
+#     import requests
+#     try:
+#         import http.client as http_client
+#     except ImportError:
+#         # Python 2
+#         import httplib as http_client
+#     http_client.HTTPConnection.debuglevel = 1
+#     logging.basicConfig()
+#     logging.getLogger().setLevel(logging.DEBUG)
+#     requests_log = logging.getLogger("requests.packages.urllib3")
+#     requests_log.setLevel(logging.DEBUG)
+#     requests_log.propagate = True
+#
+#     data = Http.get('https://m.stock.naver.com/item/main.nhn',
+#                     # text=True,
+#                     headers={'referer': 'https://m.stock.naver.com/item/index.nhn?code=035720&groupId=-1&type=total',
+#                              'User-Agent': 'curl/7.58.0'})
+#     print(data)
