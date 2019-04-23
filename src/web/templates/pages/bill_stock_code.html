@@ -46,6 +46,19 @@
       <div><span>외국인 비중</span><span class="pull-right stock text" id="sbrf_foreignRatio"></span></div>
     </div>
 
+    <div class="col-3 col-6-medium">
+      <div><span>EPS</span><span class="pull-right stock text" id="sbrf_ownersAdjustedEps"></span></div>
+    </div>
+    <div class="col-3 col-6-medium">
+      <div><span>BPS</span><span class="pull-right stock text" id="sbrf_ownersAdjustedBps"></span></div>
+    </div>
+    <div class="col-3 col-6-medium">
+      <div><span>섹터</span><span class="pull-right stock" id="sbrf_wicsSectorName"></span></div>
+    </div>
+    <div class="col-3 col-6-medium">
+      <div><span>배당(원)</span><span class="pull-right stock text" id="sbrf_commonAdjustedDps"></span></div>
+    </div>
+
   </div>
   <!-- Stock Bar of 52 Weeks -->
   <div calss="row">
@@ -69,7 +82,21 @@
       <button type="button" class="button bottom small button-investor" value="investor24">2Ys</button>
       <button type="button" class="button bottom small button-investor" value="investor36">3Ys</button>
     </div>
-    <div id="chart-investor" style="width: 100%; height: 400px;"></div>
+    <div class="row">
+      <div id="chart-investor" style="width: 100%; height: 400px;"></div>
+    </div>
+    <div class="row">
+      <div class="col-4 col-12-medium">
+        <h4>Investors Trading Amount</h4>
+        <table>
+          <thead>
+            <tr><th>Date</th><th class="align-center" colspan="2">Foreign</th><th>Institute</th><th>Person</th><tr>
+          </thead>
+          <tbody id="tbody-ita">
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </section>
 {% endblock %}
@@ -99,13 +126,16 @@
     });
 
     // Initialize
-    stock.kakao_brief(_code, render_kakao_stock_brief);
+    stock.kakao_brief_stock(_code, render_kakao_brief_stock);
+    stock.kakao_brief_company(_code, render_kakao_brief_company);
+    stock.query_investors_table(_code, 3, render_investors_table);
     initButtonInvestor();
   });
+
   function initButtonInvestor() {
     var months = [3, 6, 12, 24, 36];
     for (var i in months) {
-        get_stock_item_investor(_code, months[i], collectInvestorTrand);
+        stock.query_investors_graph(_code, months[i], collectInvestorTrand);
     }
     $(".button-investor").each(function(index){
       $(this).on("click", function(){
@@ -122,19 +152,7 @@
       });
     });
   }
-  function get_stock_item_investor(code, month, cb) {
-    ajax.post('/ajax/stock/item/'+code+'/investor/'+month, {}, cb)
-  }
-  function kakao_stock_brief(code) {
-    var url = 'https://stock.kakao.com/api/securities/KOREA-A'+code+'.json';
-    var params = {method: 'GET', url: url, datatype: 'json', duration: 90}
-    ajax.post('/ajax/proxy', params, function(resp){
-      // console.log(resp);
-      _data.code = resp.recentSecurity;
-      render_kakao_stock_brief();
-    });
-  }
-  function render_kakao_stock_brief(data){
+  function render_kakao_brief_stock(data){
     _data.code = data;
     console.log(data);
     $("#sbrf_tradePrice").text(util.formatNumber(data.tradePrice));
@@ -149,18 +167,51 @@
     $("#sbrf_lowPrice").text(util.formatNumber(data.lowPrice)).addClass(stock.text_color(data.prevClosingPrice, data.lowPrice));
     $("#sbrf_highPrice").text(util.formatNumber(data.highPrice)).addClass(stock.text_color(data.prevClosingPrice, data.highPrice));
     $("#sbrf_accTradeVolume").text(util.formatNumber(data.accTradeVolume));
-    $("#sbrf_globalAccTradePrice").text(util.formatNumber(data.globalAccTradePrice));
-    $("#sbrf_totalMarketValue").text(util.formatNumber(data.totalMarketValue));
-    $("#sbrf_foreignRatio").text(data.foreignRatio+'%');
+    $("#sbrf_globalAccTradePrice").text(util.formatNumber(Math.ceil(data.globalAccTradePrice/100000000)+' 억'));
+    $("#sbrf_totalMarketValue").text(util.formatNumber(Math.ceil(data.totalMarketValue/100000000))+' 억');
+    $("#sbrf_foreignRatio").text(parseFloat(data.foreignRatio).toFixed(3)+' %');
 
     $("#sbrf_percent").css('width', ''+percent+'%');
     $("#sbrf_high52wPrice").text(util.formatNumber(data.high52wPrice));
-    $("#sbrf_low52wPrice").text(util.formatNumber(data.code.low52wPrice));
+    $("#sbrf_low52wPrice").text(util.formatNumber(data.low52wPrice));
+  }
+  function render_kakao_brief_company(data) {
+      $("#sbrf_ownersAdjustedEps").text(util.formatNumber(parseInt(data.ownersAdjustedEps)));
+      $("#sbrf_ownersAdjustedBps").text(util.formatNumber(parseInt(data.ownersAdjustedBps)));
+      $("#sbrf_commonAdjustedDps").text(util.formatNumber(parseInt(data.commonAdjustedDps)));
+      $("#sbrf_wicsSectorName").css('font-weight', '400').text(data.wicsSectorName);
+  }
+  function render_investors_table(data) {
+    var td_color = function(num, right) {
+      var color = (num > 0) ? 'stock color-up' : ((num < 0) ? 'stock color-down': 'stock');
+      return right ? color+' align-right': color;
+    };
+    var td_number = function(num) {
+      return '<td class="'+td_color(num, true)+'">'+util.formatNumber(parseInt(num/1000))+'</td>';
+    }
+    var td_foreigner = function(num, percent) {
+      return td_number(num)+'<td>'+percent.toFixed(1)+'%</td>';
+    };
+    data.fields.reverse();
+    console.log(data);
+    var str = '';
+    for (var i in data.fields) {
+      var field = data.fields[i];
+      var dates = field[0].split('-');
+      str += '<tr>';
+      str += '<td class="align-right">'+parseInt(dates[1])+'.'+parseInt(dates[2])+'</td>';
+      str += td_foreigner(field[1], field[2]);
+      str += td_number(field[3]);
+      str += td_number(field[4]);
+      str += '</tr>';
+    }
+    $("#tbody-ita").append(str);
   }
   function collectInvestorTrand(resp) {
     // console.log(resp);
     var paths = resp.request.path.split("/");
     var invkey = 'investor'+paths[paths.length-1];
+    var rawinvkey = 'raw-investor'+paths[paths.length-1];
     var data = {};
     var endIdx = resp.colnames.indexOf('end');
     var endmin=99999999, endmax=0;
@@ -171,10 +222,12 @@
       endmax = Math.max(endmax, row[endIdx]);
       var date = row.shift();
       data.fields.push([new Date(date.split('-'))].concat(row));
+      row.unshift(date);
     }
     data.endmin = parseInt(endmin * 0.95);
     data.endmax = parseInt(endmax * 1.05);
     _data[invkey] = data;
+    _data[rawinvkey] = resp;
     // console.log(endmin, endmax);
   }
   function drawChartInvestorTrand() {

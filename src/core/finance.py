@@ -303,6 +303,8 @@ class StockQuery:
 
         tablename = 'stock_day'
         colnames = kwargs.get('colnames', sidb.get_colnames(tablename))
+        if not colnames:
+            colnames = sidb.get_colnames(tablename)
         columns = [Column(x) for x in colnames]
         table = sidb.get_table(tablename)
         sql = sqlalchemy.sql.select(columns).where(
@@ -324,25 +326,35 @@ class StockQuery:
                                 duration=900, cast=QueryData.cast)
 
     @classmethod
+    def raw_data_of_each_colnames(cls, sidb, colnames, **kwargs):
+        '''
+        :param colnames (dict): Column name
+        :param sdate (str):     Start date, default is current local time.
+                                Format is YYYY-MM-DD, YYYY.MM.DD or YYYYMMDD.
+        :param edate (str):     End date, default is current local time.
+                                Format is YYYY-MM-DD, YYYY.MM.DD or YYYYMMDD.
+        :param months (int):    The past duration time, unit is month.
+                                Default is 3 months.
+        :param accmulator (bool): Return the data with operating to accmulate.
+        :return (list):         List of list.
+        '''
+        qdata = cls.raw_data(sidb, colnames=colnames, **kwargs)
+        if kwargs.get('accmulator', False):
+            tradedata = QueryData(colnames=colnames, sql=qdata.sql)
+            tacc = cls.TradingAccumulator(
+                            tradedata.colnames, qdata.colnames,
+                            amount_colname='shortamount')
+            for field in qdata.fields:
+                try:
+                    tradedata.fields.append(tacc.update(field))
+                except StockQuery.ExceptionEndOfData:
+                    pass
+            return tradedata
+        return qdata
+
+    # XXX - Deprecated
+    @classmethod
     def get_investor_trading_trand(cls, sidb, **kwargs):
-        '''
-        :param sdate:       Start date, default is current local time.
-                            Format is YYYY-MM-DD, YYYY.MM.DD or YYYYMMDD.
-        :param edate:       End date, default is current local time.
-                            Format is YYYY-MM-DD, YYYY.MM.DD or YYYYMMDD.
-        :param months:      The past duration time, unit is month.
-                            Default is 3 months.
-        :return:            List of list.
-        '''
-        items = ['stamp',
-                 'foreigner', 'institute', 'person', 'shortamount', 'end']
-        qdata = cls.raw_data(sidb, colnames=items, **kwargs)
-        tradedata = QueryData(colnames=items, sql=qdata.sql)
-        tacc = cls.TradingAccumulator(tradedata.colnames, qdata.colnames,
-                                      amount_colname='shortamount')
-        for field in qdata.fields:
-            try:
-                tradedata.fields.append(tacc.update(field))
-            except StockQuery.ExceptionEndOfData:
-                pass
-        return tradedata
+        colnames = ['stamp',
+                    'foreigner', 'institute', 'person', 'shortamount', 'end']
+        return cls.raw_data_of_each_colnames(sidb, colnames, **kwargs)

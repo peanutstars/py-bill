@@ -70,7 +70,8 @@ class _Scheduler(SCDebug):
         ecollect = cls.next_collect(now)
         ehour = cls.next_hour(now)
         event = ecollect if ecollect.stamp < ehour.stamp else ehour
-        cls.iprint(f'Next Event: {event.event} after {int(time.time()- event.stamp)} second')
+        stamp = int(time.time() - event.stamp)
+        cls.iprint(f'Next Event: {event.event} after {stamp} second')
         return event
 
     @classmethod

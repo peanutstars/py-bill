@@ -78,23 +78,41 @@ def ajax_stock_list():
     return Reply.Success(value=FKrx.get_chunk('list'))
 
 
-@app.route('/ajax/stock/item/<code>/investor/<month>', methods=['GET', 'POST'])
+# Deprecated
+# @app.route('/ajax/stock/item/<code>/investor/<month>', methods=['GET', 'POST'])
+# @login_required
+# def ajax_stock_item_investor(code, month):
+#     collector = Collector()
+#     with collector.lock:
+#         if collector.is_working(code):
+#             return Reply.Fail(message="Not Ready, Still Be Collecting Data.")
+#         try:
+#             sidb = StockItemDB.factory(code)
+#             tdata = StockQuery.get_investor_trading_trand(
+#                                                     sidb, months=int(month))
+#             if len(tdata.fields) == 0:
+#                 raise
+#         except Exception:
+#             collector.collect(code)
+#             return Reply.Fail(message="Collector Is Gathering Data.")
+#         return Reply.Success(value=Reply.Data(tdata))
+
+
+@app.route('/ajax/stock/item/<code>/columns/<month>', methods=['GET', 'POST'])
 @login_required
-def ajax_stock_item_investor(code, month):
+def ajax_stock_query_columns(code, month):
     collector = Collector()
+    # colnames = request.get_json().get('colnames', [])
     with collector.lock:
         if collector.is_working(code):
-            return Reply.Fail(message="Not Ready, Still Be Collecting Data.")
+            return Reply.Fail(message="Not Ready, Still be Collecting Data.")
         try:
             sidb = StockItemDB.factory(code)
-            tdata = StockQuery.get_investor_trading_trand(
-                                                    sidb, months=int(month))
-            if len(tdata.fields) == 0:
-                print('QueryData.fields == 0')
-                raise
+            tdata = StockQuery.raw_data_of_each_colnames(
+                                sidb, months=int(month), **request.get_json())
         except Exception:
             collector.collect(code)
-            return Reply.Fail(message="Requested Collector To Collect Data.")
+            return Reply.Fail(message="Collector is Gathering Data.")
         return Reply.Success(value=Reply.Data(tdata))
 
 
@@ -118,8 +136,8 @@ def ajax_proxy():
     if 'duration' in reqjson:
         kwargs['duration'] = reqjson.get('duration')
     # Request
-    # try:
-    rv = Http.proxy(method, url, **kwargs)
-    return Reply.Success(value=rv)
-    # except Exception as e:
-    #     return Reply.Fail(message=str(e))
+    try:
+        rv = Http.proxy(method, url, **kwargs)
+        return Reply.Success(value=rv)
+    except Exception as e:
+        return Reply.Fail(message=str(e))

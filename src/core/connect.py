@@ -58,13 +58,13 @@ class Http(SCDebug):
     @classmethod
     def proxy(cls, method, url, **kwargs):
         '''
-        :param method
+        :param method   method is GET or POST
         :param url
-        :param params
-        :param headers
-        :param json
-        :param text
-        :param duration
+        :param params   parameters
+        :param headers  Request with http headers
+        :param json     Return a json objeect. It is True or False.
+        :param text     Return a text. It is True of False.
+        :param duration It is the cache's duration time.
         '''
         def gathering():
             return _method_func.get(method)(url, **kwargs)

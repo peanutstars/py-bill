@@ -24,10 +24,29 @@
     },
   };
   stock = {
-    kakao_brief: function(code, cb) {
+    kakao_brief_stock: function(code, cb) {
       var url = 'https://stock.kakao.com/api/securities/KOREA-A'+code+'.json';
       var params = {method: 'GET', url: url, datatype: 'json', duration: 90}
       ajax.post('/ajax/proxy', params, function(resp){cb(resp.recentSecurity);});
+    },
+    kakao_brief_company: function(code, cb) {
+      var url = 'https://stock.kakao.com/api/companies/KOREA-A'+code+'.json';
+      var params = {method: 'GET', url: url, datatype: 'json', duration: 3600}
+      ajax.post('/ajax/proxy', params, function(resp){cb(resp.company);});
+    },
+    query_columns: function(code, months, params, cb) {
+      ajax.post('/ajax/stock/item/'+code+'/columns/'+months, params, cb);
+    },
+    query_investors_graph: function(code, months, cb) {
+      var params = {
+          colnames: ['stamp', 'foreigner', 'institute', 'person', 'shortamount', 'end'],
+          accmulator: true
+        };
+      this.query_columns(code, months, params, cb);
+    },
+    query_investors_table: function(code, months, cb) {
+      var params = {colnames: ['stamp', 'foreigner', 'frate', 'institute', 'person']};
+      this.query_columns(code, months, params, cb);
     },
     text_color: function(pprice, price){
       if (pprice > price)
