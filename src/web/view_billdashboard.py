@@ -110,6 +110,8 @@ def ajax_stock_query_columns(code, month):
             sidb = StockItemDB.factory(code)
             tdata = StockQuery.raw_data_of_each_colnames(
                                 sidb, months=int(month), **request.get_json())
+            if len(tdata.fields) == 0:
+                raise
         except Exception:
             collector.collect(code)
             return Reply.Fail(message="Collector is Gathering Data.")

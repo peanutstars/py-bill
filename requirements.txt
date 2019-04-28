@@ -6,8 +6,7 @@ hexdump==3.3
 html2text==2018.1.9
 SQLAlchemy==1.2.18
 requests==2.20.0
-urllib3==1.24
-pysp>=0.0.5
+pysp>=0.0.7
 python-dateutil==2.8.0
 pyyaml==4.2b4
 Werkzeug==0.14.1

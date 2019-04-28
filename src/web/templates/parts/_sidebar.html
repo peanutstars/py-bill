@@ -18,7 +18,7 @@
               <span class="opener active">Recent View</span>
               <ul>
                 {% for recent in recent_stocks %}
-                  <li><a href="/bill/stock/{{ recent.code }}">{{ recent.name }}</a></li>
+                  <li><a class="recent-stock" href="/bill/stock/{{ recent.code }}">{{ recent.name }}</a></li>
                 {% endfor %}
               </ul>
           </li>

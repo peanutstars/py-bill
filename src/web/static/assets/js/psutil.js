@@ -26,13 +26,19 @@
   stock = {
     kakao_brief_stock: function(code, cb) {
       var url = 'https://stock.kakao.com/api/securities/KOREA-A'+code+'.json';
-      var params = {method: 'GET', url: url, datatype: 'json', duration: 90}
+      var params = {method: 'GET', url: url, datatype: 'json', duration: 90};
       ajax.post('/ajax/proxy', params, function(resp){cb(resp.recentSecurity);});
     },
     kakao_brief_company: function(code, cb) {
       var url = 'https://stock.kakao.com/api/companies/KOREA-A'+code+'.json';
-      var params = {method: 'GET', url: url, datatype: 'json', duration: 3600}
+      var params = {method: 'GET', url: url, datatype: 'json', duration: 3600};
       ajax.post('/ajax/proxy', params, function(resp){cb(resp.company);});
+    },
+    kakao_assets: function(codes, cb) {
+      var url = 'https://stock.kakao.com/api/assets.json';
+      var data = codes.map(function(el){return 'KOREA-A'+el});
+      var params = {method: 'GET', url: url, datatype: 'json', params: {ids: data.join()}, duration: 90};
+      ajax.post('/ajax/proxy', params, function(resp){cb(resp.assets);});
     },
     query_columns: function(code, months, params, cb) {
       ajax.post('/ajax/stock/item/'+code+'/columns/'+months, params, cb);
@@ -45,8 +51,10 @@
       this.query_columns(code, months, params, cb);
     },
     query_investors_table: function(code, months, cb) {
-      var params = {colnames: ['stamp', 'foreigner', 'frate', 'institute', 'person']};
-      this.query_columns(code, months, params, cb);
+      this.query_columns(code, months, {colnames: ['stamp', 'foreigner', 'frate', 'institute', 'person']}, cb);
+    },
+    query_daily_table: function(code, months, cb) {
+      this.query_columns(code, months, {colnames: ['stamp', 'start', 'high', 'low', 'end', 'volume']}, cb);
     },
     text_color: function(pprice, price){
       if (pprice > price)

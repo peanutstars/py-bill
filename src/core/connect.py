@@ -53,18 +53,19 @@ class Http(SCDebug):
 
     @classmethod
     def _proxy_key(cls, method, url, **kwargs):
-        return '.'.join(['proxy', method, url])
+        str_params = str(kwargs.get('params', 'none'))
+        return '.'.join(['proxy', method, url, str_params])
 
     @classmethod
     def proxy(cls, method, url, **kwargs):
         '''
-        :param method   method is GET or POST
-        :param url
-        :param params   parameters
-        :param headers  Request with http headers
-        :param json     Return a json objeect. It is True or False.
-        :param text     Return a text. It is True of False.
-        :param duration It is the cache's duration time.
+        :param method (string): method is GET or POST
+        :param url (string):
+        :param params (dict):   parameters of http's request
+        :param headers (dict):  Request http to append headers
+        :param json (bool):     Return a json objeect.
+        :param text (bool):     Return a text.
+        :param duration (int):  It is the cache's duration time. Unit is msec.
         '''
         def gathering():
             return _method_func.get(method)(url, **kwargs)

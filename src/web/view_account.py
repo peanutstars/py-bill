@@ -1,3 +1,5 @@
+import time
+
 from flask import render_template, flash, redirect, url_for, session, request
 from flask_login import login_user, login_required,  current_user
 from wtforms import Form, StringField, TextAreaField, PasswordField, HiddenField
@@ -96,8 +98,10 @@ def account_login():
                 flash(f'Welcome, {user.username} !', 'success')
                 next = form.h_next.data
                 return redirect(next or url_for('index'))
+        time.sleep(3)
         flash('Invalid E-mail Address or Password', 'warning')
     elif form.csrf_token.errors:
+        time.sleep(3)
         flash('Invalid CSRF token', 'danger')
     return render_template('pages/account_login.html', form=form)
 
