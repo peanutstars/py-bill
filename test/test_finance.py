@@ -162,15 +162,20 @@ class TestFinance(unittest.TestCase):
 
         # get investor trading trand
         # Case 1
-        trandata = StockQuery.get_investor_trading_trand(
-                                sidb, sdate=start_date, edate=end_date)
+        colnames = ['stamp',
+                    'foreigner', 'institute', 'person', 'shortamount', 'end']
+        trandata = StockQuery.raw_data_of_each_colnames(
+                            sidb, colnames, sdate=start_date, edate=end_date,
+                            accmulator=True)
         for x, field in enumerate(expected):
-            # log.dprint(f'{x} {field}')
+            # log.dprint(f'@@ {x} {field}')
             for y, row in enumerate(field):
+                # log.dprint(f'## {y} {row} {trandata.fields[x][y]}')
                 self.assertTrue(row == trandata.fields[x][y])
         # Case 2
-        trandata = StockQuery.get_investor_trading_trand(
-                                sidb, sdate=start_date, months=1)
+        trandata = StockQuery.raw_data_of_each_colnames(
+                            sidb, colnames, sdate=start_date, months=1,
+                            accmulator=True)
         for x, field in enumerate(expected):
             # log.dprint(f'{x} {field}')
             for y, row in enumerate(field):

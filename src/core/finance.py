@@ -351,10 +351,3 @@ class StockQuery:
                     pass
             return tradedata
         return qdata
-
-    # XXX - Deprecated
-    @classmethod
-    def get_investor_trading_trand(cls, sidb, **kwargs):
-        colnames = ['stamp',
-                    'foreigner', 'institute', 'person', 'shortamount', 'end']
-        return cls.raw_data_of_each_colnames(sidb, colnames, **kwargs)
