@@ -56,8 +56,8 @@ class _State:
 class _Scheduler(SCDebug):
     EVENT_COLLECT = "EvtCollect"
     EVENT_HOUR = "EvtHour"
-    collect_hour = 19
-    collect_min = 15
+    collect_hour = 18
+    collect_min = 30
 
     class Event:
         def __init__(self, event, stamp):

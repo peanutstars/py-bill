@@ -1,4 +1,8 @@
 __pycache__
 *.sqlite3
+*.deb
+*.swp
 src/html5
 src/web/static/assets/sass
+dpkg/opt
+dpkg/DEBIAN/control
