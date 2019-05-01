@@ -1,14 +1,14 @@
 import time
 
 from flask import render_template, flash, redirect, url_for, session, request
-from flask_login import login_user, login_required,  current_user
-from wtforms import Form, StringField, TextAreaField, PasswordField, HiddenField
+from flask_login import login_user, login_required  # current_user
+from wtforms import Form, StringField, PasswordField, HiddenField
 from wtforms.validators import (InputRequired, Email, Length, EqualTo,
                                 DataRequired)
 from wtforms.csrf.session import SessionCSRF
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from .model import User
+from .model import User, Reply
 from .view_billdashboard import get_recent_stocks
 from . import app, db
 
@@ -94,8 +94,12 @@ def account_login():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
             if check_password_hash(user.password, form.password.data):
-                login_user(user)
-                flash(f'Welcome, {user.username} !', 'success')
+                if login_user(user):
+                    flash(f'Welcome, {user.username} !', 'success')
+                else:
+                    flash(f'Hi {user.username}, '
+                          'Please wait for permitting by the administrator.',
+                          'warning')
                 next = form.h_next.data
                 return redirect(next or url_for('index'))
         time.sleep(3)
@@ -144,3 +148,30 @@ def account_password():
     recent_stocks = get_recent_stocks()
     return render_template('pages/account_password.html',
                            form=form, recent_stocks=recent_stocks)
+
+
+@app.route('/ajax/account/user', methods=['GET', 'PATCH', 'DELETE'])
+@login_required
+def ajax_account_user():
+    if int(session['user_id']) != 1:
+        return Reply.Fail(message="Not Allow Permittion")
+
+    if request.method == 'GET':
+        params = dict(request.args)
+    else:
+        params = request.get_json()
+    print('@@ ', params)
+    print('@@ ', request.method)
+
+    if type(params) is not dict or 'id' not in params:
+        return Reply.Fail(message="Invalid or Need Parameters")
+    id = params.pop('id')
+    try:
+        if request.method == 'GET':
+            return Reply.Success(value=User.info(id))
+        if request.method == 'PATCH':
+            return Reply.Success(value=User.update(id, **params))
+        if request.method == 'DELETE':
+            return Reply.Success(value=User.delete(id))
+    except Exception as e:
+        return Reply.Fail(message=str(e))

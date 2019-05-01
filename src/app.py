@@ -63,7 +63,8 @@ if not os.path.exists(db_file):
     with app.app_context():
         db.create_all()
         admin = User(email='admin', username='Supervisor',
-                     password=generate_password_hash('admin'))
+                     password=generate_password_hash('admin'),
+                     active=True)
         db.session.add(admin)
         db.session.commit()
 

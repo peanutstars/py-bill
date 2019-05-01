@@ -57,7 +57,7 @@ class _Scheduler(SCDebug):
     EVENT_COLLECT = "EvtCollect"
     EVENT_HOUR = "EvtHour"
     collect_hour = 18
-    collect_min = 30
+    collect_min = 40
 
     class Event:
         def __init__(self, event, stamp):

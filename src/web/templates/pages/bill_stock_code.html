@@ -228,7 +228,7 @@
       return '<td class="'+td_color(num, true)+'">'+util.formatNumber(parseInt(num/1000))+'</td>';
     }
     var td_foreigner = function(num, percent) {
-      return td_number(num)+'<td>'+percent.toFixed(1)+'%</td>';
+      return td_number(num)+'<td>'+parseFloat(percent).toFixed(1)+'%</td>';
     };
     data.fields.reverse();
     // console.log(data);
@@ -238,6 +238,8 @@
         continue;
       var field = data.fields[i];
       var dates = field[0].split('-');
+      if (field[2] == null)
+          continue;
       str += '<tr>';
       str += '<td class="align-right">'+parseInt(dates[1])+'.'+parseInt(dates[2])+'</td>';
       str += td_foreigner(field[1], field[2]);

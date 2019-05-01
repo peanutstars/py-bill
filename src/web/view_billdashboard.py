@@ -21,12 +21,12 @@ def get_recent_stocks():
     now = datetime.datetime.now()
     # to_date = DateTool.to_strfdate(now)
     from_date = DateTool.to_strfdate(now - relativedelta(days=30))
-    recent_stock = MStock.query.filter_by(user_id=session['user_id'])
-    recent_stock = recent_stock.filter(MStock.atime >= from_date)\
-                               .order_by(MStock.atime.desc()).all()
-    # for recent in recent_stock:
+    query = MStock.query.filter_by(user_id=session['user_id'])
+    recents = query.filter(MStock.atime >= from_date)\
+                   .order_by(MStock.atime.desc()).all()
+    # for recent in recents:
     #     print(recent.name, recent.code, recent.atime)
-    return recent_stock
+    return recents
 
 
 def marking_recent_stock(code, name):

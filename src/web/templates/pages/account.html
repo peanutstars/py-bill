@@ -30,7 +30,7 @@
             </tr>
             <tr>
               <th>Registered Date</th>
-              <td>{{ user.registered_date }}</td>
+              <td>{{ user.registered_date.strftime('%Y.%m.%d %H:%M') }}</td>
               <td></td>
             </tr>
           </tbody>
@@ -48,10 +48,12 @@
           <table>
             <thead>
               <tr>
-                <th>Index</th>
+                <th>ID</th>
                 <th>E-mail</th>
                 <th>User Name</th>
+                <th colspan="2">Active</th>
                 <th>Registered Date</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -60,7 +62,22 @@
                 <td>{{ user.id }}</td>
                 <td>{{ user.email }}</td>
                 <td>{{ user.username }}</td>
-                <td>{{ user.registered_date }}</td>
+                <td id="account-active-state-{{ user.id }}">{{ user.active }}</td>
+                <td>
+                  {% if user.id != 1 %}
+                    {% if user.active %}
+                    <button class="button small gray account-inactive" value="{{ user.id }}">D</button>
+                    {% else %}
+                    <button class="button small green account-active" value="{{ user.id }}">A</button>
+                    {% endif %}
+                  {% endif %}
+                </td>
+                <td>{{ user.registered_date.strftime('%Y.%m.%d %H:%M') }}</td>
+                <td>
+                  {% if user.id != 1 %}
+                  <button class="button small red account-delete" value="{{ user.id }}">DEL</button>
+                  {% endif %}
+                </td>
               </tr>
               {% endfor %}
             </tbody>
@@ -72,4 +89,27 @@
 {% endblock %}
 
 {% block bodyscript %}
+<script type="text/javascript">
+  $(function(){
+    account_control()
+  });
+  function account_control(){
+    $(".account-active").each(function(idx){
+      $(this).on('click', function(){
+        ajax.patch('/ajax/account/user', {id: $(this).val(), active: true}, render_reload);
+      });
+    });
+    $(".account-inactive").each(function(idx){
+      $(this).on('click', function(){
+        ajax.patch('/ajax/account/user', {id: $(this).val(), active: false}, render_reload);
+      });
+    });
+    $(".account-delete").each(function(idx){
+      $(this).on('click', function(){
+        ajax.delete('/ajax/account/user', {id: $(this).val()}, render_reload);
+      });
+    });
+  }
+  function render_reload(resp){ location.reload(); }
+</script>
 {% endblock %}

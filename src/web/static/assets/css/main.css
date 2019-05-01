@@ -3654,6 +3654,11 @@ input, select, textarea {
 		margin: 0;
 	}
 
+	/* flash message */
+	.box.flash {
+		margin: 0;
+	}
+
 	/* etc */
 	ul.area {
 		display: flex;
@@ -3664,4 +3669,7 @@ input, select, textarea {
 		display: inline-block;
 		width: 100%;
 		padding: 0;
+	}
+	table .button.small {
+		font-size: 0.6em;
 	}

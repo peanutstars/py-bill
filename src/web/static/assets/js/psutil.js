@@ -87,6 +87,39 @@
       };
       this.do_ajax(opts, callback);
     },
+    put :function(url, params, callback) {
+      var opts = {
+        dataType : 'json',
+        type : 'PUT',
+        contentType: "application/json",
+        async : true,
+        url : url,
+        data : JSON.stringify(params),
+      };
+      this.do_ajax(opts, callback);
+    },
+    patch :function(url, params, callback) {
+      var opts = {
+        dataType : 'json',
+        type : 'PATCH',
+        contentType: "application/json",
+        async : true,
+        url : url,
+        data : JSON.stringify(params),
+      };
+      this.do_ajax(opts, callback);
+    },
+    delete :function(url, params, callback) {
+      var opts = {
+        dataType : 'json',
+        type : 'DELETE',
+        contentType: "application/json",
+        async : true,
+        url : url,
+        data : JSON.stringify(params),
+      };
+      this.do_ajax(opts, callback);
+    },
     do_ajax : function(opts, callback) {
       opts.success = function(resp) {
         // console.log(JSON.stringify(resp));
