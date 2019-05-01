@@ -185,8 +185,10 @@
       $(this).on("click", function() {
         $(".button-candle").each(function(idx){
           $("#"+$(this).val()).hide();
+          $(this).removeClass('gray');
         });
         $("#"+$(this).val()).show();
+        $(this).addClass('gray');
       })
     });
   }
