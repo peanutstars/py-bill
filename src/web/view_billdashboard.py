@@ -7,6 +7,7 @@ from flask import render_template, flash, abort, session, request
 from flask_login import login_required
 
 from . import app, db
+from .account import role_required
 from .model import MStock, Reply
 # from core.finance import BillConfig
 from core.helper import DateTool
@@ -46,6 +47,7 @@ def marking_recent_stock(code, name):
 
 @app.route('/bill/dashboard')
 @login_required
+@role_required('STOCK')
 def bill_dashboard():
     recent_stocks = get_recent_stocks()
     return render_template('pages/bill_dashboard.html',
@@ -55,6 +57,7 @@ def bill_dashboard():
 @app.route('/bill/stock/', defaults={"code": None})
 @app.route('/bill/stock/<code>')
 @login_required
+@role_required('STOCK')
 def bill_stock(code):
     if code is None:
         recent_stocks = get_recent_stocks()
@@ -74,12 +77,14 @@ def bill_stock(code):
 
 @app.route('/ajax/stock/list', methods=['GET', 'POST'])
 @login_required
+@role_required('STOCK')
 def ajax_stock_list():
     return Reply.Success(value=FKrx.get_chunk('list'))
 
 
 @app.route('/ajax/stock/item/<code>/columns/<month>', methods=['GET', 'POST'])
 @login_required
+@role_required('STOCK')
 def ajax_stock_query_columns(code, month):
     collector = Collector()
     # colnames = request.get_json().get('colnames', [])

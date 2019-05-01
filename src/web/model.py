@@ -25,7 +25,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(32))
     password = db.Column(db.String(100))
     active = db.Column(db.Boolean, default=False)
-    # role = db.Column(db.String(32), default="BOOKMARK")
+    role = db.Column(db.String(32), default="BOOKMARK")
     registered_date = db.Column(db.DateTime, default=datetime.datetime.now)
     stocks = db.relationship('MStock', backref='author', lazy=True)
 
@@ -33,8 +33,8 @@ class User(UserMixin, db.Model):
     def is_active(self):
         return self.active
 
-    # def is_permission(self, required):
-    #     return Role.is_permission(required, self.role)
+    def is_permission(self, required):
+        return Role.is_permission(required, self.role)
 
     @classmethod
     def info(cls, id):

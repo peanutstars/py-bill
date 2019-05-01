@@ -21,7 +21,7 @@
 					<header id="header">
 						<a href="/" class="logo">Don't Worry, <strong>Be Happy</strong></a>
 						<ul class="icons">
-							{% if session.user_id %}
+							{% if current_user.is_active %}
 							<li><a href="{{ url_for('account') }}" class="icon fa-user-o"> {{session.username}}</a></li>
 							<li><a href="{{ url_for('account_logout') }}" class="icon fa-sign-out"> Sign Out</a></li>
 							{% else %}

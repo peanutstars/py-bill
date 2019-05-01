@@ -8,6 +8,7 @@ from wtforms.validators import (InputRequired, Email, Length, EqualTo,
 from wtforms.csrf.session import SessionCSRF
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from .account import role_required
 from .model import User, Reply
 from .view_billdashboard import get_recent_stocks
 from . import app, db
@@ -59,6 +60,7 @@ class PasswordForm(FormCSRF):
 def load_user(user_id):
     user = User.query.get(int(user_id))
     session['username'] = user.username
+    # session['role'] = user.role
     return user
 
 
@@ -152,6 +154,7 @@ def account_password():
 
 @app.route('/ajax/account/user', methods=['GET', 'PATCH', 'DELETE'])
 @login_required
+@role_required('ADMIN')
 def ajax_account_user():
     if int(session['user_id']) != 1:
         return Reply.Fail(message="Not Allow Permittion")

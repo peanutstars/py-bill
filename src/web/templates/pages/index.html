@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block content %}
-{% if session.user_id %}
+{% if session.user_id and current_user.is_permission('BOOKMARK') %}
   <p/>
   <div>
     <div class="row pull-right">

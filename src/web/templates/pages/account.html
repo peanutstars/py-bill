@@ -38,7 +38,7 @@
       </div>
     </div>
 
-  {% if session.user_id == '1' %}
+  {% if current_user.is_permission('ADMIN') %}
     <p/>
     <div >
         <header class="main">
@@ -52,6 +52,7 @@
                 <th>E-mail</th>
                 <th>User Name</th>
                 <th colspan="2">Active</th>
+                <th>Role</th>
                 <th>Registered Date</th>
                 <th></th>
               </tr>
@@ -72,6 +73,7 @@
                     {% endif %}
                   {% endif %}
                 </td>
+                <td>{{ user.role }}</td>
                 <td>{{ user.registered_date.strftime('%Y.%m.%d %H:%M') }}</td>
                 <td>
                   {% if user.id != 1 %}
