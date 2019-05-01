@@ -4,5 +4,8 @@ __pycache__
 *.swp
 src/html5
 src/web/static/assets/sass
+src/core/version.py
+src/web/templates/parts/_version.html
 dpkg/opt
 dpkg/DEBIAN/control
+

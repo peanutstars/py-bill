@@ -1,0 +1,8 @@
+#!/bin/bash
+
+DIR_PYBILL=/opt/psapps/pybill
+export PYTHONPATH=$DIR_PYBILL:$PYTHONPATH
+
+cd $DIR_PYBILL
+python3 app.py &
+

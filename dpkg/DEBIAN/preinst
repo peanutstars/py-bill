@@ -1,3 +1,18 @@
 #!/bin/bash
 
 echo "Running PREINST"
+
+DATA_DIR="/var/pybill"
+
+make_data_folder() {
+    local folder
+    for _dir in log bookmark config stock cache
+    do
+        folder="$DATA_DIR/$_dir"
+        [ ! -e "$folder" ] && mkdir -p $folder
+        echo $folder
+    done
+    chown -R www-data:www-data $DATA_DIR/*
+}
+
+make_data_folder

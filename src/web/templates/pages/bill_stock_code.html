@@ -303,36 +303,44 @@
     // console.log(endmin, endmax);
   }
   function drawChartInvestorTrand() {
-    var invdata = _data[_data.investor];
-    var data = new google.visualization.DataTable();
-    for (var i in invdata.colnames) {
-      // console.log(invdata.colnames[i]);
-      if (i == 0) {
-        data.addColumn('date', 'X');
-        continue
+    var _draw = function() {
+      var data = new google.visualization.DataTable();
+      for (var i in invdata.colnames) {
+        // console.log(invdata.colnames[i]);
+        if (i == 0) {
+          data.addColumn('date', 'X');
+          continue
+        }
+        data.addColumn('number', invdata.colnames[i]);
       }
-      data.addColumn('number', invdata.colnames[i]);
-    }
-    data.addRows(invdata.fields);
+      data.addRows(invdata.fields);
 
-    // console.log(invdata);
-    var options = {
-      legend: { position: 'top' },
-      width: document.getElementById('chart-investor').offsetWidth,
-      chartArea: {width: '85%', height: '75%'},
-      // hAxis: {format: 'yy.M'},
-      hAxis: {format: 'yy.M.d'},
-      // vAxis: {textPosition: 'none'},
-      vAxis: {1: {maxValue: invdata.endmax, minValue: invdata.endmin},
-              0: {textPosition: 'none'},
-              gridlines: {color: 'transparent'}},
-      colors: ['#F5B041', '#A569BD', '#5DADE2', '#34495E', '#D5DBDB'],
-      series: {
-        4: {type: "area", targetAxisIndex: 1, areaOpacity: 0.25}
-      }
+      // console.log(invdata);
+      var options = {
+        legend: { position: 'top' },
+        width: document.getElementById('chart-investor').offsetWidth,
+        chartArea: {width: '85%', height: '75%'},
+        // hAxis: {format: 'yy.M'},
+        hAxis: {format: 'yy.M.d'},
+        // vAxis: {textPosition: 'none'},
+        vAxis: {1: {maxValue: invdata.endmax, minValue: invdata.endmin},
+                0: {textPosition: 'none'},
+                gridlines: {color: 'transparent'}},
+        colors: ['#F5B041', '#A569BD', '#5DADE2', '#34495E', '#D5DBDB'],
+        series: {
+          4: {type: "area", targetAxisIndex: 1, areaOpacity: 0.25}
+        }
+      };
+      var chart = new google.visualization.LineChart(document.getElementById('chart-investor'));
+      chart.draw(data, options);
     };
-    var chart = new google.visualization.LineChart(document.getElementById('chart-investor'));
-    chart.draw(data, options);
+    var invdata = _data[_data.investor];
+    if (invdata) {
+      _draw();
+    } else {
+      console.log('Retry to draw chart.')
+      setTimeout(drawChartInvestorTrand, 250);
+    }
   }
   function drawChartCandle() {
     var data = google.visualization.arrayToDataTable([
