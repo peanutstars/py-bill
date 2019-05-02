@@ -5,7 +5,7 @@ VERSION_FILE=$PROJECT_ROOT/VERSION
 DPKG_CONTROL_FILE=$DPKG_DIR/DEBIAN/control
 
 Version=`cat $VERSION_FILE`
-Package="pybill"
+Package="py-bill"
 Architecture="unknown"
 InstalledSize=`du --max-depth=0 $DPKG_DIR | awk '{ print $1 }'`
 
@@ -18,7 +18,7 @@ generateControl() {
 	cat >$DPKG_CONTROL_FILE <<EOF
 Package: $Package
 Version: $Version
-Depends: 
+Depends: nginx
 Priority: optional
 Architecture: $Architecture
 Section: Network

@@ -38,11 +38,13 @@ def marking_recent_stock(code, name):
     else:
         recent = MStock(code=code, name=name, user_id=int(session['user_id']))
     dbss = db.session()
-    try:
-        dbss.add(recent)
-        dbss.commit()
-    except Exception as e:
-        flash(f'DB Error - {e}')
+    if dbss:
+        try:
+            dbss.add(recent)
+            dbss.commit()
+        except Exception as e:
+            dbss.rollback()
+            flash(f'DB Error - {e}')
 
 
 @app.route('/bill/dashboard')

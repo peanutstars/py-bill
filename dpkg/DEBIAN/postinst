@@ -1,3 +1,20 @@
 #!/bin/bash
 
 echo "Running POSTINST"
+
+DATA_DIR="/var/pybill"
+APP_DIR="/opt/psapps/pybill"
+
+required_pip() {
+    pip3 install -r $APP_DIR/requirements.txt
+}
+
+server_start() {
+    systemctl daemon-reload
+    systemctl start uwsgi-py-bill.service
+    systemctl start nginx
+}
+
+###########
+required_pip
+server_start

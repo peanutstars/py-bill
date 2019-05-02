@@ -1,3 +1,13 @@
 #!/bin/bash
 
 echo "Running PRERM"
+
+APP_DIR="/opt/psapps/pybill"
+
+remove_extra() {
+    find $APP_DIR -name __pycache__ -exec rm -rf {} \;
+    echo "Cleaning ..."
+}
+
+########
+remove_extra

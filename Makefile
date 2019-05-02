@@ -50,6 +50,7 @@ version:
 install:
 	@[ ! -e "$(APP_DIR)" ] && mkdir -p $(APP_DIR)
 	@cp -a ./src/* $(APP_DIR)
+	@cp -a $(REQUIRE_TXT) $(APP_DIR)
 
 dpkg: clean version install
 	@[ -e "$(APP_DIR)/html5" ] && rm -rf "$(APP_DIR)/html5"

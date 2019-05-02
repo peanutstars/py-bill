@@ -42,7 +42,8 @@ def init_logger(app):
 
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
-db_file = f'{cur_dir}/db.sqlite3'
+# db_file = f'{cur_dir}/db.sqlite3'
+db_file = '/var/pybill/db.sqlite3'
 
 # Configure Flask
 app.config['SECRET_KEY'] = 'Thisissupposedtobesecret!'

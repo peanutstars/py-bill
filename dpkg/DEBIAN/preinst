@@ -3,6 +3,7 @@
 echo "Running PREINST"
 
 DATA_DIR="/var/pybill"
+APP_DIR="/opt/psapps/pybill"
 
 make_data_folder() {
     local folder
@@ -12,7 +13,16 @@ make_data_folder() {
         [ ! -e "$folder" ] && mkdir -p $folder
         echo $folder
     done
-    chown -R www-data:www-data $DATA_DIR/*
+
+    chown -R www-data:www-data $DATA_DIR
+    chmod -R g+w $DATA_DIR
 }
 
+server_stop() {
+    systemctl stop nginx
+    systemctl stop uwsgi-py-bill.service
+}
+
+##########
 make_data_folder
+server_stop
