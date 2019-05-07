@@ -9,6 +9,10 @@ required_pip() {
     pip3 install -r $APP_DIR/requirements.txt
 }
 
+cleanup_cache() {
+  rm $DATA_DIR/cache/*
+}
+
 server_start() {
     systemctl daemon-reload
     systemctl start uwsgi-py-bill.service
@@ -17,4 +21,5 @@ server_start() {
 
 ###########
 required_pip
+cleanup_cache
 server_start

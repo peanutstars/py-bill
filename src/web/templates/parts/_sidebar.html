@@ -11,7 +11,7 @@
           <h2>Menu</h2>
       </header>
       <ul>
-        {% if session.user_id and current_user.is_permission('STOCK') %}
+        {% if session.user_id and current_user.is_authorized('STOCK') %}
           <li><a href="{{ url_for('bill_dashboard' )}}">Bill Dashboard</a></li>
           <li><a href="{{ url_for('bill_stock' )}}">Stock Index</a></li>
           <li>

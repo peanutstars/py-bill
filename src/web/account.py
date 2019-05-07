@@ -8,7 +8,7 @@ def role_required(required='ADMIN'):
     def decorator(func):
         @wraps(func)
         def wrapper(*arg, **kwargs):
-            if current_user.is_permission(required):
+            if current_user.is_authorized(required):
                 return func(*arg, **kwargs)
             return current_app.login_manager.unauthorized()
         return wrapper

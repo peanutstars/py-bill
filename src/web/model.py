@@ -14,7 +14,7 @@ class Role:
     }
 
     @classmethod
-    def is_permission(cls, required, user):
+    def is_authorized(cls, required, user):
         return cls.TYPE.get(required, 'NONE') >= cls.TYPE.get(user)
 
 
@@ -33,8 +33,8 @@ class User(UserMixin, db.Model):
     def is_active(self):
         return self.active
 
-    def is_permission(self, required):
-        return Role.is_permission(required, self.role)
+    def is_authorized(self, required):
+        return Role.is_authorized(required, self.role)
 
     @classmethod
     def info(cls, id):

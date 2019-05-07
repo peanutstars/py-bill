@@ -30,11 +30,14 @@ class Manager(SCDebug):
         self.lock = threading.Lock()
 
 
-class _State:
-    def __init__(self, thread):
+class _State(SCDebug):
+    DEBUG = False
+
+    def __init__(self):
+        super(_State, self).__init__()
         self.loop = True
-        self.thread = thread
-        self.work_code = None
+        self.wcode = []
+        self.dprint(f'------------------- {id(self)} {id(self.wcode)}')
 
     def quit(self):
         self.loop = False
@@ -43,14 +46,12 @@ class _State:
         return self.loop
 
     def set_work_code(self, code=None):
-        self.work_code = code
-
-    def is_working(self, code):
-        if code is None:
-            return True if self.work_code is None else False
-        if code == self.work_code:
-            return True
-        return False
+        self.dprint(f'###########B {id(self.wcode)} {self.wcode}=[{code}]')
+        if self.wcode:
+            self.wcode.pop()
+        if code:
+            self.wcode.append(code)
+        self.dprint(f'###########A {id(self.wcode)} {self.wcode}=[{code}]')
 
 
 class _Scheduler(SCDebug):
@@ -102,17 +103,19 @@ class Collector(Manager, metaclass=SSingleton):
     QUEUE_SIZE = 1000
     QUEUE_TIMEOUT_SEC = 5
     # class
-    State = _State
+    # State = _State
     Scheduler = _Scheduler
 
     def __init__(self, *args, **kwargs):
         super(Collector, self).__init__(*args, **kwargs)
         self.stock_folder = BillConfig().get_value('_config.db.stock_folder')
         self._q = queue.Queue()
-        self.state = Collector.State(threading.Thread(target=self.worker))
-        self.state.thread.start()
+        self.state = _State()
+        self._thread = threading.Thread(target=self.worker)
+        self._thread.start()
         if self.INIT_NO_COLLECT not in args:
-            self.collect(None)
+            if 'DEBUG_PYTHON' not in os.environ:
+                self.collect(None)
 
     def push(self, code):
         if self.is_exist(code) is False:
@@ -141,7 +144,11 @@ class Collector(Manager, metaclass=SSingleton):
         self.collect(self.CMD_QUIT)
 
     def is_working(self, code):
-        return self.state.is_working(code)
+        # return self.state.is_working(code)
+        self.dprint(f'### {id(self.state.wcode)} {self.state.wcode} {code}')
+        if self.state.wcode and self.state.wcode[0] == code:
+            return True
+        return False
 
     def _do_event_collect(self):
         self.collect(None)

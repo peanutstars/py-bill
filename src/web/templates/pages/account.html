@@ -25,7 +25,12 @@
             </tr>
             <tr>
               <th>E-mail</th>
-              <td>{{ user.email}}</td>
+              <td>{{ user.email }}</td>
+              <td></td>
+            </tr>
+            <tr>
+              <th>Role</th>
+              <td>{{ user.role }}</td>
               <td></td>
             </tr>
             <tr>
@@ -38,7 +43,7 @@
       </div>
     </div>
 
-  {% if current_user.is_permission('ADMIN') %}
+  {% if current_user.is_authorized('ADMIN') %}
     <p/>
     <div >
         <header class="main">
@@ -51,20 +56,20 @@
                 <th>ID</th>
                 <th>E-mail</th>
                 <th>User Name</th>
-                <th colspan="2">Active</th>
+                <th>Active</th>
                 <th>Role</th>
                 <th>Registered Date</th>
-                <th></th>
+                <th colspan="2"></th>
               </tr>
             </thead>
             <tbody>
               {% for user in users %}
-              <tr>
-                <td>{{ user.id }}</td>
-                <td>{{ user.email }}</td>
-                <td>{{ user.username }}</td>
-                <td id="account-active-state-{{ user.id }}">{{ user.active }}</td>
-                <td>
+              <tr id="field-{{user.id}}">
+                <td name="col-id">{{ user.id }}</td>
+                <td name="col-email">{{ user.email }}</td>
+                <td name="col-name">{{ user.username }}</td>
+                <td name="col-active">{{ user.active }}</td>
+                <!-- <td>
                   {% if user.id != 1 %}
                     {% if user.active %}
                     <button class="button small gray account-inactive" value="{{ user.id }}">D</button>
@@ -72,12 +77,13 @@
                     <button class="button small green account-active" value="{{ user.id }}">A</button>
                     {% endif %}
                   {% endif %}
-                </td>
-                <td>{{ user.role }}</td>
-                <td>{{ user.registered_date.strftime('%Y.%m.%d %H:%M') }}</td>
-                <td>
+                </td> -->
+                <td name="col-role">{{ user.role }}</td>
+                <td name="col-regdate">{{ user.registered_date.strftime('%Y.%m.%d %H:%M') }}</td>
+                <td colspan="2">
                   {% if user.id != 1 %}
-                  <button class="button small red account-delete" value="{{ user.id }}">DEL</button>
+                  <a class="icon fa-lg fa-edit button-field-edit" value="{{user.id}}"></a>
+                  <!-- <button class="button small red account-delete" value="{{ user.id }}">DEL</button> -->
                   {% endif %}
                 </td>
               </tr>
@@ -93,22 +99,100 @@
 {% block bodyscript %}
 <script type="text/javascript">
   $(function(){
-    account_control()
+    _data = { roles: [{% for role in roles %}"{{role}}",{% endfor%}], };
+    reflact_field_button();
   });
-  function account_control(){
-    $(".account-active").each(function(idx){
+  function reflact_field_button(){
+    // $(".account-active").each(function(idx){
+    //   $(this).on('click', function(){
+    //     ajax.patch('/ajax/account/user', {id: $(this).val(), active: true}, render_reload);
+    //   });
+    // });
+    // $(".account-inactive").each(function(idx){
+    //   $(this).on('click', function(){
+    //     ajax.patch('/ajax/account/user', {id: $(this).val(), active: false}, render_reload);
+    //   });
+    // });
+    // $(".account-delete").each(function(idx){
+    //   $(this).on('click', function(){
+    //     ajax.delete('/ajax/account/user', {id: $(this).val()}, render_reload);
+    //   });
+    // });
+    $(".button-field-edit").each(function(idx){
       $(this).on('click', function(){
-        ajax.patch('/ajax/account/user', {id: $(this).val(), active: true}, render_reload);
+        var userid = $(this).attr('value');
+        var trid = "#field-"+userid;
+        var checked = function(check, value){
+          return (check == value) ? 'checked' : '';
+        };
+        var selected = function(select, value){
+          return (select == value) ? 'selected' : '';
+        };
+        var html =
+        html += '<tr id="field-edit-'+userid+'">';
+        html += '  <td>'+$(trid+' td[name="col-id"]').text()+'</td>';
+        html += '  <td>'+$(trid+' td[name="col-email"]').text()+'</td>';
+        html += '  <td>'+$(trid+' td[name="col-name"]').text()+'</td>';
+        html += '  <td>';
+        var active_radio_name = 'user-'+userid+'-active';
+        var active_radio_true = 'user-'+userid+'-active-true';
+        var active_radio_false = 'user-'+userid+'-active-false';
+        var active_value = $(trid+' td[name="col-active"]').text();
+        html += '    <div><input type="radio" id="'+active_radio_true+'" name="'+active_radio_name+'" value="true" '+checked('True', active_value)+'><label for="'+active_radio_true+'">True</label></div>';
+        html += '    <div><input type="radio" id="'+active_radio_false+'" name="'+active_radio_name+'" value="false" '+checked('False', active_value)+'><label for="'+active_radio_false+'">False</label></div>';
+        html += '  </td>';
+        html += '  <td>';
+        var role_name = 'user-'+userid+'-role';
+        var role_combo = 'combo-user-'+userid+'-role';
+        html += '    <div>';
+        html += '    <select name="'+role_name+'" id="'+role_combo+'">';
+        for (var i in _data.roles) {
+        html += '      <option value="'+_data.roles[i]+'" '+selected(_data.roles[i], $(trid+' td[name="col-role"]').text())+'>'+_data.roles[i]+'</option>';
+        }
+        html += '    </select>';
+        html += '    </div>';
+        html += '  </td>';
+        html += '  <td>'+$(trid+' td[name="col-regdate"]').text()+'</td>';
+        html += '  <td>';
+        html += '    <div><a class="icon fa-lg fa-stop button-edit-cancel" value="'+userid+'"></a></div>';
+        html += '    <div><a class="icon fa-lg fa-check button-edit-apply" value="'+userid+'"></a></div>';
+        html += '  </td>';
+        html += '  <td><div><a class="icon fa-lg fa-trash button-edit-delete" value="'+userid+'"></a></div></td>';
+        html += '</tr>';
+        $(trid).hide();
+        $(trid).after(html);
+        reflact_button_edit();
       });
     });
-    $(".account-inactive").each(function(idx){
+  }
+  function reflact_button_edit(){
+    $('.button-edit-cancel').each(function(idx){
       $(this).on('click', function(){
-        ajax.patch('/ajax/account/user', {id: $(this).val(), active: false}, render_reload);
+        var userid = $(this).attr('value');
+        $('#field-'+userid).show();
+        $('#field-edit-'+userid).remove();
       });
     });
-    $(".account-delete").each(function(idx){
+    $('.button-edit-apply').each(function(idx){
       $(this).on('click', function(){
-        ajax.delete('/ajax/account/user', {id: $(this).val()}, render_reload);
+        var userid = $(this).attr('value');
+        console.log('userid '+userid);
+        var trid = "#field-edit-"+userid;
+        var radio_name = 'user-'+userid+'-active';
+        var combo_name = 'user-'+userid+'-role';
+        var params = {
+          id: parseInt(userid),
+          active: $(trid+' input[name='+radio_name+']:checked').val() == 'true',
+          role: $(trid+' option:selected').val(),
+        };
+        console.log(params);
+        ajax.patch('/ajax/account/user', params, render_reload);
+      });
+    });
+    $('.button-edit-delete').each(function(idx){
+      $(this).on('click', function(){
+        var userid = $(this).attr('value');
+        ajax.delete('/ajax/account/user', {id: userid}, render_reload);
       });
     });
   }

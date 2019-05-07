@@ -9,7 +9,7 @@ from wtforms.csrf.session import SessionCSRF
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from .account import role_required
-from .model import User, Reply
+from .model import Role, User, Reply
 from .view_billdashboard import get_recent_stocks
 from . import app, db
 
@@ -125,9 +125,10 @@ def account_logout():
 @login_required
 def account():
     user = User.query.get(int(session['user_id']))
-    users = User.query.all() if int(session['user_id']) == 1 else None
+    users = User.query.all() if user.is_authorized('ADMIN') else None
     recent_stocks = get_recent_stocks()
     return render_template('pages/account.html',
+                           roles=Role.TYPE.keys(),
                            user=user, users=users, recent_stocks=recent_stocks)
 
 

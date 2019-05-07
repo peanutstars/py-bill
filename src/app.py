@@ -76,7 +76,14 @@ if _DEBUG is False:
     init_logger(app)
 
 # Manager
-Collector()
+# XXX: Issue One
+# Collector has thread and it is executed in the initialization process.
+# If executed the user thread before uwsgi is to done initialization.
+# The user thread is something wrong, it is as if two objects were created.
+# XXX: Issue Two
+# Value of option threads of uwsgi is to set 1 over,
+# the Collector object is created as much as that vlaue.
+# Collector()
 
 
 if __name__ == '__main__':
