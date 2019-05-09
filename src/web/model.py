@@ -1,8 +1,11 @@
 import datetime
 
+from dateutil.relativedelta import relativedelta
 from flask import jsonify, request
 from flask_login import UserMixin
+
 from . import db
+from core.helper import DateTool
 
 
 class Role:
@@ -85,6 +88,38 @@ class MStock(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     __table_args__ = (db.UniqueConstraint('user_id', 'code',
                                           name='_user_id_code'),)
+
+    @classmethod
+    def delete(cls, user_id, code):
+        item = MStock.query.filter_by(user_id=int(user_id), code=code).first()
+        if item:
+            db.session.delete(item)
+            db.session.commit()
+            return
+        raise KeyError(f'Not Matched - USER ID={user_id} and CODE={code}')
+
+    @classmethod
+    def update(cls, user_id, code, name):
+        user_id = int(user_id)
+        item = MStock.query.filter_by(user_id=user_id, code=code).first()
+        if item:
+            item.atime = datetime.datetime.now()
+        else:
+            item = MStock(code=code, name=name, user_id=user_id)
+        # try:
+        db.session().add(item)
+        db.session().commit()
+        # except Exception as e:
+        #     db.session().rollback()
+        #     raise Exception(str(e))
+
+    @classmethod
+    def list(cls, user_id):
+        now = datetime.datetime.now()
+        from_date = DateTool.to_strfdate(now - relativedelta(days=30))
+        query = MStock.query.filter_by(user_id=int(user_id))
+        return query.filter(MStock.atime >= from_date)\
+                    .order_by(MStock.atime.desc()).all()
 
 
 class Reply:

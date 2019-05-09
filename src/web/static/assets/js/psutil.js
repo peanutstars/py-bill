@@ -40,6 +40,9 @@
       var params = {method: 'GET', url: url, datatype: 'json', params: {ids: data.join()}, duration: 90};
       ajax.post('/ajax/proxy', params, function(resp){cb(resp.assets);});
     },
+    query_delete_recent_stock: function(code, cb) {
+      ajax.delete('/ajax/stock/item/'+code, {}, cb);
+    },
     query_columns: function(code, months, params, cb) {
       ajax.post('/ajax/stock/item/'+code+'/columns/'+months, params, cb);
     },
@@ -56,12 +59,16 @@
     query_daily_table: function(code, months, cb) {
       this.query_columns(code, months, {colnames: ['stamp', 'start', 'high', 'low', 'end', 'volume']}, cb);
     },
-    text_color: function(pprice, price){
+    text_compare_color: function(pprice, price){
       if (pprice > price)
         return 'color-down';
       if (pprice < price)
         return 'color-up';
       return '';
+    },
+    text_color_ralign: function(num, right) {
+      var color = (num > 0) ? 'stock color-up' : ((num < 0) ? 'stock color-down': 'stock');
+      return right ? color+' align-right': color;
     }
   },
   ajax = {
@@ -143,4 +150,13 @@
       $.ajax(opts);
     },
   };
+  // Sidebar Menu Function
+  $(".recent-stock-delete").each(function(idx){
+    $(this).on('click', function(){
+      stock.query_delete_recent_stock($(this).attr('value'), function(resp){
+        // console.log(JSON.stringify(resp));
+        $('#menu-field-'+resp.code).remove();
+      });
+    });
+  });
 })();

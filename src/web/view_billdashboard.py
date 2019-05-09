@@ -2,7 +2,6 @@
 # import os
 import datetime
 
-from dateutil.relativedelta import relativedelta
 from flask import render_template, flash, abort, session, request
 from flask_login import login_required
 
@@ -10,48 +9,16 @@ from . import app, db
 from .account import role_required
 from .model import MStock, Reply
 # from core.finance import BillConfig
-from core.helper import DateTool
 from core.connect import FKrx, Http
 from core.finance import DataCollection, StockItemDB, StockQuery
 from core.manager import Collector
-
-
-def get_recent_stocks():
-    if 'user_id' not in session:
-        return []
-    now = datetime.datetime.now()
-    # to_date = DateTool.to_strfdate(now)
-    from_date = DateTool.to_strfdate(now - relativedelta(days=30))
-    query = MStock.query.filter_by(user_id=session['user_id'])
-    recents = query.filter(MStock.atime >= from_date)\
-                   .order_by(MStock.atime.desc()).all()
-    # for recent in recents:
-    #     print(recent.name, recent.code, recent.atime)
-    return recents
-
-
-def marking_recent_stock(code, name):
-    recent = MStock.query.filter_by(
-                user_id=session['user_id'], code=code).first()
-    if recent:
-        recent.atime = datetime.datetime.now()
-    else:
-        recent = MStock(code=code, name=name, user_id=int(session['user_id']))
-    dbss = db.session()
-    if dbss:
-        try:
-            dbss.add(recent)
-            dbss.commit()
-        except Exception as e:
-            dbss.rollback()
-            flash(f'DB Error - {e}')
 
 
 @app.route('/bill/dashboard')
 @login_required
 @role_required('STOCK')
 def bill_dashboard():
-    recent_stocks = get_recent_stocks()
+    recent_stocks = MStock.list(session['user_id'])
     return render_template('pages/bill_dashboard.html',
                            recent_stocks=recent_stocks)
 
@@ -62,7 +29,7 @@ def bill_dashboard():
 @role_required('STOCK')
 def bill_stock(code):
     if code is None:
-        recent_stocks = get_recent_stocks()
+        recent_stocks = MStock.list(session['user_id'])
         return render_template('pages/bill_stock.html',
                                recent_stocks=recent_stocks)
     try:
@@ -71,8 +38,11 @@ def bill_stock(code):
         abort(404)
     extra_info = {'code': code,
                   'codename': provider.codename}
-    marking_recent_stock(code, provider.codename)
-    recent_stocks = get_recent_stocks()
+    try:
+        MStock.update(session['user_id'], code, provider.codename)
+    except Exception as e:
+        flash(f'DB Error - {e}')
+    recent_stocks = MStock.list(session['user_id'])
     return render_template('pages/bill_stock_code.html',
                            extra_info=extra_info, recent_stocks=recent_stocks)
 
@@ -82,6 +52,19 @@ def bill_stock(code):
 @role_required('STOCK')
 def ajax_stock_list():
     return Reply.Success(value=FKrx.get_chunk('list'))
+
+
+@app.route('/ajax/stock/item/<code>', methods=['DELETE'])
+@login_required
+@role_required('STOCK')
+def ajax_stock_item(code):
+    if request.method == 'DELETE':
+        try:
+            MStock.delete(session['user_id'], code)
+            return Reply.Success(value={'code': code})
+        except Exception as e:
+            return Reply.Fail(message=str(e))
+    return Reply.Fail(message=f'Not Support Method[{request.method}]')
 
 
 @app.route('/ajax/stock/item/<code>/columns/<month>', methods=['GET', 'POST'])

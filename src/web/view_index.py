@@ -5,14 +5,15 @@ from flask import render_template, session, request
 from pysp.sconf import SYAML
 
 from . import app
-from .model import Reply
-from .view_billdashboard import get_recent_stocks
+from .model import MStock, Reply
 from core.finance import BillConfig
 
 
 @app.route('/')
 def index():
-    recent_stocks = get_recent_stocks()
+    recent_stocks = []
+    if 'user_id' in session:
+        recent_stocks = MStock.list(session['user_id'])
     return render_template('pages/index.html', recent_stocks=recent_stocks)
 
 

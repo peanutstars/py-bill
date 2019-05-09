@@ -12,6 +12,35 @@
     <h2>Bill Board</h2>
   </header>
   <div>
+    <h3>Indicator</h3>
+    <div class="row">
+      <div class="col-4 col-4-medium col-6-small">
+        <div>DJI Day</div>
+        <img id="indicator-dji-day" src="https://ssl.pstatic.net/imgfinance/chart/world/continent/DJI@DJI.png" style="width: 100%; height: 160px;"/>
+      </div>
+      <div class="col-4 col-4-medium col-6-small">
+        <div>NAS Day</div>
+        <img id="indicator-nas-day" src="https://ssl.pstatic.net/imgfinance/chart/world/continent/NAS@IXIC.png" style="width: 100%; height: 160px;"/>
+      </div>
+      <div class="col-4 col-4-medium col-6-small">
+        <div>DJI 3Ms</div>
+        <img id="indicator-dji-month3" src="https://ssl.pstatic.net/imgfinance/chart/mobile/world/area/month3/DJI@DJI_end.png" style="width: 100%; height: 160px;"/>
+      </div>
+      <div class="col-4 col-4-medium col-6-small">
+        <div>Dollar</div>
+        <img id="indicator-dollar" src="https://ssl.pstatic.net/imgfinance/chart/marketindex/FX_USDKRW.png" style="width: 100%; height: 160px;"/>
+      </div>
+      <div class="col-4 col-4-medium col-6-small">
+        <div>Oil TWI</div>
+        <img id="indicator-oiltwi" src="https://ssl.pstatic.net/imgfinance/chart/marketindex/OIL_CL.png" style="width: 100%; height: 160px;"/>
+      </div>
+      <div class="col-4 col-4-medium col-6-small">
+        <div>Gold</div>
+        <img id="indicator-gold" src="https://ssl.pstatic.net/imgfinance/chart/marketindex/CMDT_GC.png" style="width: 100%; height: 160px;"/>
+      </div>
+    </div>
+    <p/>
+
     <h3>Recent Views</h3>
     <div class="row" id="recent-stocks-table"></div>
   </div>
@@ -59,15 +88,27 @@
         var brief = find_item(stocks[i], fields);
         var chgcolor = brief.change=='RISE'?'color-up':brief.change=='FALL'?'color-down':'';
         var item = [
-        '  <div class="col-6 col-12-medium">',
-        '    <div class="box stock recent" value="'+brief.shortCode.substring(1)+'">',
-        '      <ul class="area">',
-        '        <li class="item"><div class="stock text">'+brief.name+'</div></li>',
-        '        <li class="item"><div class="stock text align-right">'+util.formatNumber(brief.tradePrice)+'</div><div class="align-right">'+util.formatNumber(brief.accTradeVolume)+'</div></li>',
-        '        <li class="item"><div class="stock text align-right '+chgcolor+'">'+util.formatNumber(brief.changePrice)+'</div><div class="stock align-right '+chgcolor+'">'+(brief.changePriceRate*100).toFixed(2)+'%</div></li>',
-        '      </ul>',
-        '    </div>',
+        '<div class="col-6 col-12-medium">',
+        '  <div class="box stock recent" value="'+brief.shortCode.substring(1)+'">',
+        '    <ul class="area">',
+        '      <li class="item">',
+        '        <div class="stock text">'+brief.name+'</div>',
+        '        <div>&nbsp;</div>',
+        '        <div class="stock text align-right '+stock.text_compare_color(brief.prevClosingPrice, brief.openingPrice)+'">'+util.formatNumber(brief.openingPrice)+'</div>',
+        '      </li>',
+        '      <li class="item">',
+        '        <div class="stock text align-right">'+util.formatNumber(brief.tradePrice)+'</div>',
+        '        <div class="align-right">'+util.formatNumber(brief.accTradeVolume)+'</div>',
+        '        <div class="stock text align-right '+stock.text_compare_color(brief.prevClosingPrice, brief.lowPrice)+'">'+util.formatNumber(brief.lowPrice)+'</div>',
+        '      </li>',
+        '      <li class="item">',
+        '        <div class="stock text align-right '+chgcolor+'">'+util.formatNumber(brief.changePrice)+'</div>',
+        '        <div class="stock align-right '+chgcolor+'">'+(brief.changePriceRate*100).toFixed(2)+'%</div>',
+        '        <div class="stock text align-right '+stock.text_compare_color(brief.prevClosingPrice, brief.highPrice)+'">'+util.formatNumber(brief.highPrice)+'</div>',
+        '      </li>',
+        '    </ul>',
         '  </div>',
+        '</div>',
         ];
         html += item.join('\n');
       }

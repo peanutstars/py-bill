@@ -203,9 +203,9 @@
 
     var percent = (data.tradePrice-data.low52wPrice)/(data.high52wPrice-data.low52wPrice)*100;
     $("#sbrf_prevClosingPrice").text(util.formatNumber(data.prevClosingPrice));
-    $("#sbrf_openingPrice").text(util.formatNumber(data.openingPrice)).addClass(stock.text_color(data.prevClosingPrice, data.openingPrice));
-    $("#sbrf_lowPrice").text(util.formatNumber(data.lowPrice)).addClass(stock.text_color(data.prevClosingPrice, data.lowPrice));
-    $("#sbrf_highPrice").text(util.formatNumber(data.highPrice)).addClass(stock.text_color(data.prevClosingPrice, data.highPrice));
+    $("#sbrf_openingPrice").text(util.formatNumber(data.openingPrice)).addClass(stock.text_compare_color(data.prevClosingPrice, data.openingPrice));
+    $("#sbrf_lowPrice").text(util.formatNumber(data.lowPrice)).addClass(stock.text_compare_color(data.prevClosingPrice, data.lowPrice));
+    $("#sbrf_highPrice").text(util.formatNumber(data.highPrice)).addClass(stock.text_compare_color(data.prevClosingPrice, data.highPrice));
     $("#sbrf_accTradeVolume").text(util.formatNumber(data.accTradeVolume));
     $("#sbrf_globalAccTradePrice").text(util.formatNumber(Math.ceil(data.globalAccTradePrice/100000000)+' 억'));
     $("#sbrf_totalMarketValue").text(util.formatNumber(Math.ceil(data.totalMarketValue/100000000))+' 억');
@@ -222,12 +222,8 @@
       $("#sbrf_wicsSectorName").css('font-weight', '400').text(data.wicsSectorName);
   }
   function render_investors_table(data) {
-    var td_color = function(num, right) {
-      var color = (num > 0) ? 'stock color-up' : ((num < 0) ? 'stock color-down': 'stock');
-      return right ? color+' align-right': color;
-    };
     var td_number = function(num) {
-      return '<td class="'+td_color(num, true)+'">'+util.formatNumber(parseInt(num/1000))+'</td>';
+      return '<td class="'+stock.text_color_ralign(num, true)+'">'+util.formatNumber(parseInt(num/1000))+'</td>';
     }
     var td_foreigner = function(num, percent) {
       return td_number(num)+'<td>'+parseFloat(percent).toFixed(1)+'%</td>';
@@ -254,10 +250,6 @@
   function render_daily_table(data) {
     data.fields.reverse();
     console.log(data);
-    var td_color = function(num, right) {
-      var color = (num > 0) ? 'stock color-up' : ((num < 0) ? 'stock color-down': 'stock');
-      return right ? color+' align-right': color;
-    };
     var str = '';
     for (var i in data.fields) {
       if (i >= (data.fields.length-1))
@@ -270,7 +262,7 @@
       str += '<tr>';
       str += '<td class="align-right">'+parseInt(dates[1])+'.'+parseInt(dates[2])+'</td>';
       str += '<td class="align-right">'+util.formatNumber(field[4])+'</td>';
-      str += '<td class="'+td_color(numrate, true)+'">'+util.formatNumber(numrate)+'</td>';
+      str += '<td class="'+stock.text_color_ralign(numrate, true)+'">'+util.formatNumber(numrate)+'</td>';
       str += '<td class="align-right">'+util.formatNumber(field[1])+'</td>';
       str += '<td class="align-right">'+util.formatNumber(field[2])+'</td>';
       str += '<td class="align-right">'+util.formatNumber(field[3])+'</td>';
