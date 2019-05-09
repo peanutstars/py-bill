@@ -14,35 +14,57 @@
   <div>
     <h3>Indicator</h3>
     <div class="row">
-      <div class="col-4 col-4-medium col-6-small">
-        <div>DJI Day</div>
+      <div class="col-4 col-6-medium col-6-small">
+        <label>DJI Day</label>
         <img id="indicator-dji-day" src="https://ssl.pstatic.net/imgfinance/chart/world/continent/DJI@DJI.png" style="width: 100%; height: 160px;"/>
       </div>
-      <div class="col-4 col-4-medium col-6-small">
-        <div>NAS Day</div>
+      <div class="col-4 col-6-medium col-6-small">
+        <label>NAS Day</label>
         <img id="indicator-nas-day" src="https://ssl.pstatic.net/imgfinance/chart/world/continent/NAS@IXIC.png" style="width: 100%; height: 160px;"/>
       </div>
-      <div class="col-4 col-4-medium col-6-small">
-        <div>DJI 3Ms</div>
+      <div class="col-4 col-6-medium col-6-small">
+        <label>DJI 3Ms</label>
         <img id="indicator-dji-month3" src="https://ssl.pstatic.net/imgfinance/chart/mobile/world/area/month3/DJI@DJI_end.png" style="width: 100%; height: 160px;"/>
       </div>
-      <div class="col-4 col-4-medium col-6-small">
-        <div>Dollar</div>
+      <div class="col-4 col-6-medium col-6-small">
+        <label>Dollar</label>
         <img id="indicator-dollar" src="https://ssl.pstatic.net/imgfinance/chart/marketindex/FX_USDKRW.png" style="width: 100%; height: 160px;"/>
       </div>
-      <div class="col-4 col-4-medium col-6-small">
-        <div>Oil TWI</div>
+      <div class="col-4 col-6-medium col-6-small">
+        <label>Oil TWI</label>
         <img id="indicator-oiltwi" src="https://ssl.pstatic.net/imgfinance/chart/marketindex/OIL_CL.png" style="width: 100%; height: 160px;"/>
       </div>
-      <div class="col-4 col-4-medium col-6-small">
-        <div>Gold</div>
+      <div class="col-4 col-6-medium col-6-small">
+        <label>Gold</label>
         <img id="indicator-gold" src="https://ssl.pstatic.net/imgfinance/chart/marketindex/CMDT_GC.png" style="width: 100%; height: 160px;"/>
       </div>
     </div>
     <p/>
 
     <h3>Recent Views</h3>
-    <div class="row" id="recent-stocks-table"></div>
+    <div class="row" id="recent-stocks-table">
+      <div class="col-6 col-12-medium">
+        <div class="box gray stock">
+          <ul class="area">
+            <li class="item">
+              <div class="stock text">Item</div>
+              <div>&nbsp;</div>
+              <div class="stock text align-right">Start</div>
+            </li>
+            <li class="item">
+              <div class="stock text align-right">Price</div>
+              <div class="align-right">Volume</div>
+              <div class="stock text align-right">Low</div>
+            </li>
+            <li class="item">
+              <div class="stock text align-right">Up/Down</div>
+              <div class="stock align-right">Percent</div>
+              <div class="stock text align-right">High</div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 {% endblock %}

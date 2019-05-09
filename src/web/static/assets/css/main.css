@@ -3650,7 +3650,7 @@ input, select, textarea {
 	.stock.color-up {
 		color: red;
 	}
-	div.box.stock.recent {
+	div.box.stock {
 		padding: 0.5em 1.5em 0.5em 1.5em;
 		margin: 0;
 	}

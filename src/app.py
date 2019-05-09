@@ -83,7 +83,7 @@ if _DEBUG is False:
 # XXX: Issue Two
 # Value of option threads of uwsgi is to set 1 over,
 # the Collector object is created as much as that vlaue.
-# Collector()
+Collector()
 
 
 if __name__ == '__main__':
