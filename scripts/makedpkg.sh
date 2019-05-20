@@ -1,10 +1,10 @@
 #!/bin/bash
 
 DPKG_DIR=$PROJECT_ROOT/dpkg
-VERSION_FILE=$PROJECT_ROOT/VERSION
 DPKG_CONTROL_FILE=$DPKG_DIR/DEBIAN/control
 
-Version=`cat $VERSION_FILE`
+_Version=`git describe`
+Version=${_Version:1}
 Package="py-bill"
 Architecture="unknown"
 InstalledSize=`du --max-depth=0 $DPKG_DIR | awk '{ print $1 }'`

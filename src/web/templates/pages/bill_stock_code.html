@@ -209,7 +209,7 @@
     $("#sbrf_accTradeVolume").text(util.formatNumber(data.accTradeVolume));
     $("#sbrf_globalAccTradePrice").text(util.formatNumber(Math.ceil(data.globalAccTradePrice/100000000)+' 억'));
     $("#sbrf_totalMarketValue").text(util.formatNumber(Math.ceil(data.totalMarketValue/100000000))+' 억');
-    $("#sbrf_foreignRatio").text(parseFloat(data.foreignRatio).toFixed(3)+' %');
+    $("#sbrf_foreignRatio").text((parseFloat(data.foreignRatio)*100).toFixed(1)+' %');
 
     $("#sbrf_percent").css('width', ''+percent+'%');
     $("#sbrf_high52wPrice").text(util.formatNumber(data.high52wPrice));

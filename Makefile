@@ -1,5 +1,4 @@
 SHELL   := /bin/bash
-VERSION := $(shell cat VERSION)
 NULL    := /dev/null
 STAMP   := $(shell date +%Y%m%d-%H%M)
 ZIP_FILE:= $(shell basename $(CURDIR))-$(STAMP).zip
@@ -7,8 +6,7 @@ APP_DIR	:= $(CURDIR)/dpkg/opt/psapps/pybill
 
 REQUIRE_TXT	:= requirements.txt
 
-REPO_HASH           := $(shell git rev-parse --short HEAD)
-FULL_VERSION        := $(VERSION)-$(REPO_HASH)
+FULL_VERSION		:= $(shell git describe)
 VERSION_PY_FILE     := ./src/core/version.py
 VERSION_HTML_FILE   := src/web/templates/parts/_version.html
 
@@ -43,7 +41,7 @@ version:
 		def get():\n\
 			return \"$(FULL_VERSION)\"\n\
 	" > $(VERSION_PY_FILE))
-	@(echo -e "Ver $(FULL_VERSION)" > $(VERSION_HTML_FILE))
+	@(echo -e "Ver $(subst v,,${FULL_VERSION})" > $(VERSION_HTML_FILE))
 
 
 

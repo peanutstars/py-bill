@@ -37,7 +37,7 @@
     kakao_assets: function(codes, cb) {
       var url = 'https://stock.kakao.com/api/assets.json';
       var data = codes.map(function(el){return 'KOREA-A'+el});
-      var params = {method: 'GET', url: url, datatype: 'json', params: {ids: data.join()}, duration: 90};
+      var params = {method: 'GET', url: url, datatype: 'json', params: {ids: data.join()}, duration: 30};
       ajax.post('/ajax/proxy', params, function(resp){cb(resp.assets);});
     },
     query_delete_recent_stock: function(code, cb) {
