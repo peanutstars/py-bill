@@ -104,10 +104,12 @@
     <div class="row">
       <div id="chart-investor" style="width: 100%; height: 350px;"></div>
     </div>
+    <p/>
+    
     <div class="row">
       <div class="col-4 col-12-medium">
-        <h4>Investors Trading Amount</h4>
-        <table>
+        <h4 id="investors-trading"><span class="fa fa-caret-right"></span> Investors Trading</h4>
+        <table id="investors-trading-table" style="display: none;">
           <thead>
             <tr><th>Date</th><th class="align-center" colspan="2">Foreign</th><th>Institute</th><th>Person</th><tr>
           </thead>
@@ -116,14 +118,17 @@
         </table>
       </div>
       <div class="col-8 col-12-medium">
-        <h4>Daily Price</h4>
-        <table>
-          <thead>
-            <tr><th>Date</th><th>End</th><th>Rate</th><th>Start</th><th>High</th><th>Low</th><th>Volume</th><tr>
-          </thead>
-          <tbody id="tbody-daily">
-          </tbody>
-        </table>
+        <h4 id="daily-price" class="mb-zero"><span class="fa fa-caret-right"></span> Daily Price</h4>
+        <div id="daily-price-table" style="display: none;">
+          <button type="button" id="download-csv" class="button bottom small pull-right">CSV</button>
+          <table>
+            <thead>
+              <tr><th>Date</th><th>End</th><th>Rate</th><th>Start</th><th>High</th><th>Low</th><th>Volume</th><tr>
+            </thead>
+            <tbody id="tbody-daily">
+            </tbody>
+          </table>  
+        </div>
       </div>
     </div>
   </div>
@@ -160,6 +165,17 @@
     stock.query_investors_table(_code, 1, render_investors_table);
     stock.query_daily_table(_code, 1, render_daily_table);
     initButtonInvestor();
+
+    util.gui.show.area("#investors-trading", "#investors-trading span", "#investors-trading-table");
+    util.gui.show.area("#daily-price", "#daily-price span", "#daily-price-table");
+    $("#download-csv").on('click', function(){
+      let to_csv = function(data){
+        let title = $("header h2 a").text();
+        // let date = new Date().toISOString();
+        util.file.query_to_csv('daily-'+title+'.csv', title, data);
+      };
+      stock.query_daily_table(_code, 60, to_csv);
+    });
   });
 
   function initButtonInvestor() {

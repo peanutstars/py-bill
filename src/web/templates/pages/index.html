@@ -37,10 +37,10 @@
         $('#edit-bookmark').text('');
         $('#edit-bookmark').append(content_bookmark);
       }
-      util.shows(['#btn-group-edit', '#edit-bookmark'], ['#btn-group-none']);
+      util.gui.show.buttons(['#btn-group-edit', '#edit-bookmark'], ['#btn-group-none']);
     });
     $('#edit-cancel-button').click(function(){
-      util.shows(['#btn-group-none'],['#btn-group-edit', '#edit-bookmark']);
+      util.gui.show.buttons(['#btn-group-none'],['#btn-group-edit', '#edit-bookmark']);
     });
     $('#edit-store-button').click(function(){
       verify_bookmark_content();
@@ -73,14 +73,14 @@
     try {
       json = jsyaml.load(content);
     } catch (e) {
-      util.flash(e.message, 'danger');
+      util.gui.flash(e.message, 'danger');
       return;
     }
     render_bookmark(json);
     ajax.post('/ajax/bookmark', {data: content}, bookmark_store_response);
   }
   function bookmark_store_response(resp) {
-    util.shows(['#btn-group-none'],['#btn-group-edit', '#edit-bookmark']);
+    util.gui.show.buttons(['#btn-group-none'],['#btn-group-edit', '#edit-bookmark']);
   }
 </script>
 {% endblock %}

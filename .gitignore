@@ -3,8 +3,9 @@ __pycache__
 *.deb
 *.swp
 src/html5
-src/web/static/assets/sass
 src/core/version.py
+src/web/static/assets/sass
+src/web/static/favicon.ico
 src/web/templates/parts/_version.html
 dpkg/opt
 dpkg/DEBIAN/control

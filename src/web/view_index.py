@@ -2,11 +2,18 @@ import codecs
 import os
 
 from flask import render_template, session, request
+from flask import send_from_directory
 from pysp.sconf import SYAML
 
 from . import app
 from .model import MStock, Reply
 from core.finance import BillConfig
+
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'),
+                          'favicon.ico',mimetype='image/vnd.microsoft.icon')
 
 
 @app.route('/')

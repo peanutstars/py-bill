@@ -1817,7 +1817,7 @@ input, select, textarea {
 	label {
 		color: #3d4449;
 		display: block;
-		font-size: 0.9em;
+		font-size: 1.1em;
 		font-weight: 600;
 		margin: 0 0 1em 0;
 	}
@@ -3640,6 +3640,9 @@ input, select, textarea {
 	}
 
 	/* Stock */
+	.stock.text.small {
+		font-size: 0.8em;
+	}
 	.stock.text {
 		color: #283747;
 		font-size: 1.1em;
@@ -3679,4 +3682,7 @@ input, select, textarea {
 	}
 	table .button.small {
 		font-size: 0.6em;
+	}
+	.mb-zero {
+		margin-bottom: 0;
 	}
