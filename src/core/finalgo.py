@@ -43,6 +43,50 @@ class AlgoProc(Algo):
     def process(self, idx, fields):
         raise NotImplementedError(f'{self.__class__.__name__}.process')
 
+    def _check_array(self, idxs, values, field):
+        if len(idxs) != len(values):
+            raise Algo.Error('Not Enough each Count of Parameter.')
+        return [field[x] for x in idxs]
+
+    def is_all(self, idxs, values, field, **kwargs):
+        fvalues = self._check_array(idxs, values, field)
+        return all([x==y for x, y in zip(fvalues, values) if y is not None])
+
+    def is_any(self, idxs, values, field, **kwargs):
+        none_skip = kwargs.get('none_skip', True)
+        fvalues = self._check_array(idxs, values, field)
+        if none_skip:
+            return any([x==y for x, y in zip(fvalues, values) if y is not None])
+        return any([x==y for x, y in zip(fvalues, values)])
+
+    def is_le_all(self, idxs, values, field):
+        fvalues = self._check_array(idxs, values, field)
+        return all([x<=y for x, y in zip(fvalues, values) if y is not None])
+
+    def is_ge_all(self, idxs, values, field):
+        fvalues = self._check_array(idxs, values, field)
+        return all([x>=y for x, y in zip(fvalues, values) if y is not None])
+
+    def is_ge_any(self, idxs, values, field):
+        fvalues = self._check_array(idxs, values, field)
+        return any([x>=y for x, y in zip(fvalues, values) if y is not None])
+
+    def is_or(self, cmds, idxs, array, field):
+        _cmds = cmds
+        if type(cmds) is str:
+            _cmds = [cmds] * len(array)
+        if type(array) is list and type(array[0]) is list:
+            for i, a in enumerate(array):
+                cmd = _cmds[i]
+                if not hasattr(self, cmd):
+                    raise Algo.Error(f'"{cmd}" Is Not Exist.')
+                _cmd = getattr(self, cmd)
+                _v = _cmd(idxs, a, field)
+                if _v:
+                    return _v
+            return False
+        raise Algo.Error('It Is Not A Double-List.')
+
 
 class OpPrice(AlgoOp):
     TRADE_UNIT = {
@@ -211,55 +255,6 @@ class OpMinMax(AlgoOp):
                         [minvalue, maxvalue, percent], fields[idx])
 
 
-# class CondBuy(AlgoProc):
-#     COLNAME = 'buycnt'
-
-#     def __init__(self, cfg, colnames):
-#         accums = cfg.sum.accums
-#         colnames.append(self.COLNAME)
-#         self.ibuy = colnames.index(self.COLNAME)
-#         self.step_colnames = [
-#             f'{AlgoTable.get_curve_step_colname(x, accums)}Md' for x in range(len(accums))
-#         ]
-#         self.isteps = [colnames.index(x) for x in self.step_colnames]
-#         self.percent_colnames = {
-#             x: OpMinMax.COLNAME_PERCENT.format(x) for x in cfg.minmax.accums
-#         }
-    
-#     def process(self, cfg, idx, fields):
-#         buy_cnt = 0
-#         # If All is Not NULL
-#         if all([fields[idx][x] is not None for x in self.isteps]):
-#             f_steps = [fields[idx][x] for x in self.isteps]
-#             while True:
-#                 fgexit = False
-#                 for c in cfg.condition.buy.negative:
-#                     c = Dict(c)
-#                     if c.steps:
-#                         length = len(c.steps.val)
-#                         if c.steps.op == 'OR' and any([f_steps[x]==c.steps.val[x] for x in range(length)]):
-#                             fgexit = True
-#                             break
-#                         if c.steps.op == 'AND' and all([f_steps[x]==c.steps.val[x] for x in range(length)]):
-#                             fgexit = True
-#                             break
-#                 if fgexit:
-#                     break
-#                 buy_cnt += 1
-#                 break
-#             for c in cfg.condition.buy.positive:
-#                 c = Dict(c)
-#                 if c.steps:
-#                     length = len(c.steps.val)
-#                     if c.steps.op == 'OR' and any([f_steps[x]==c.steps.val[x] for x in range(length)]):
-#                         buy_cnt += 1
-#                     if c.steps.op == 'AND' and all([f_steps[x]==c.steps.val[x] for x in range(length)]):
-#                         buy_cnt += 1
-#         if len(fields[idx]) == self.ibuy:
-#             fields[idx].append(buy_cnt)
-#             return
-#         fields[idx][self.ibuy] = buy_cnt
-
 class CondBuy(AlgoProc):
     COLNAME_BUYCNT = 'buycnt'
     COLNAME_BUYREASON = 'breason'
@@ -278,40 +273,10 @@ class CondBuy(AlgoProc):
         self.ipercents = [colnames.index(x) for x in self.percents]
         self.after_hhupup = 0
     
-    def _check_array(self, idxs, values, field):
-        if len(idxs) != len(values):
-            raise Algo.Error('Not Enough each Count of Parameter.')
-        return [field[x] for x in idxs]
-
-    def is_matched_all(self, idxs, values, field, **kwargs):
-        fvalues = self._check_array(idxs, values, field)
-        return all([x==y for x, y in zip(fvalues, values) if y is not None])
-
-    def is_matched_any(self, idxs, values, field, **kwargs):
-        none_skip = kwargs.get('none_skip', True)
-        fvalues = self._check_array(idxs, values, field)
-        if none_skip:
-            return any([x==y for x, y in zip(fvalues, values) if y is not None])
-        return any([x==y for x, y in zip(fvalues, values)])
-
-    def is_le_all(self, idxs, values, field):
-        fvalues = self._check_array(idxs, values, field)
-        return all([x<=y for x, y in zip(fvalues, values) if y is not None])
-
-    def is_ge_all(self, idxs, values, field):
-        fvalues = self._check_array(idxs, values, field)
-        return all([x>=y for x, y in zip(fvalues, values) if y is not None])
-
-    def is_ge_any(self, idxs, values, field):
-        fvalues = self._check_array(idxs, values, field)
-        return any([x>=y for x, y in zip(fvalues, values) if y is not None])
-
     def is_skipped(self, field):
-        if self.is_matched_any(self.isteps, [None]*len(self.isteps), 
-                               field, none_skip=False):
+        if self.is_any(self.isteps, [None]*len(self.isteps), field, none_skip=False):
             return True
-        if self.is_matched_any(self.ipercents, [None]*len(self.ipercents), 
-                               field, none_skip=False):
+        if self.is_any(self.ipercents, [None]*len(self.ipercents), field, none_skip=False):
             return True
         return False
 
@@ -326,13 +291,13 @@ class CondBuy(AlgoProc):
             if fg_skip:
                 break
 
-            if self.is_matched_all(self.isteps, ['HH','UP','UP'], field):
+            if self.is_or('is_all', self.isteps, [['HH','UP','UP']], field):
                 if self.after_hhupup <= 0:
                     self.after_hhupup = 15 
                 else:
                     self.after_hhupup += 4
-            elif self.is_matched_all(self.isteps, ['HH','UP',None], field) or \
-                 self.is_matched_all(self.isteps, ['LW','HH',None], field):
+            elif self.is_or('is_all', self.isteps,
+                            [['HH','UP',None], ['LW','HH',None]], field):
                 if self.after_hhupup <= 0:
                     self.after_hhupup = 2
                 else:
@@ -340,23 +305,23 @@ class CondBuy(AlgoProc):
             else:
                 self.after_hhupup -= 1
 
-            if self.is_matched_all(self.isteps, ['UP','UP','UP'], field) or \
-               self.is_matched_any(self.isteps, ['HH','HH','HH'], field):
+            if self.is_or(['is_all','is_any'], self.isteps, 
+                          [['UP','UP','UP'], ['HH','HH','HH']], field):
                 break
 
-            if self.is_matched_any(self.isteps, ['DN','DN','DN'], field):
-                if self.is_matched_all(self.isteps, ['LW','DN','DN'], field):
+            if self.is_or('is_any', self.isteps, [['DN','DN','DN']], field):
+                if self.is_or('is_all', self.isteps, [['LW','DN','DN']], field):
                     buycnt += 1
-            elif self.is_matched_all(self.isteps, ['HH','UP',None], field):
+            elif self.is_or('is_all', self.isteps, [['HH','UP',None]], field):
                 pass
             else:
                 buycnt += 1
 
-            if self.is_ge_any(self.ipercents, [90,80,None,60,60,None], field):
+            if self.is_or('is_ge_any', self.ipercents, [[90,80,None,60,60,None]], field):
                 buycnt = 0
                 break
-            elif self.is_le_all(self.ipercents, [0,0,0,0,0,0], field) or \
-                 self.is_le_all(self.ipercents, [10,10,10,10,10,25], field):
+            elif self.is_or('is_le_all', self.ipercents, 
+                            [[0,0,0,0,0,0], [10,10,10,10,10,25]], field):
                 buycnt += 1
             
             if buycnt > 0 and self.after_hhupup >0:
