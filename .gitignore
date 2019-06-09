@@ -2,6 +2,8 @@ __pycache__
 *.sqlite3
 *.deb
 *.swp
+*.csv
+*.log
 src/html5
 src/core/version.py
 src/web/static/assets/sass

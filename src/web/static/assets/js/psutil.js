@@ -94,6 +94,9 @@
     query_columns: function(code, months, params, cb) {
       ajax.post('/ajax/stock/item/'+code+'/columns/'+months, params, cb);
     },
+    query_simulation: function(code, months, params, cb) {
+      ajax.post('/ajax/stock/item/'+code+'/simulation/'+months, params, cb);
+    },
     query_investors_graph: function(code, months, cb) {
       var params = {
           colnames: ['stamp', 'foreigner', 'institute', 'person', 'shortamount', 'end'],
@@ -106,6 +109,9 @@
     },
     query_daily_table: function(code, months, cb) {
       this.query_columns(code, months, {colnames: ['stamp', 'start', 'high', 'low', 'end', 'volume']}, cb);
+    },
+    query_simulation_table: function(code, months, cb) {
+      this.query_simulation(code, months, {colnames: ['stamp', 'start', 'high', 'low', 'end', 'volume']}, cb);
     },
     text_compare_color: function(pprice, price){
       if (pprice > price)

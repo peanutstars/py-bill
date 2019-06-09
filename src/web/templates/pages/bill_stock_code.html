@@ -32,9 +32,9 @@
     <button type="button" class="button bottom small button-candle" value="candle-month">M</button>
   </div>
   <div class="row">
-    <img id="candle-day" src="https://ssl.pstatic.net/imgfinance/chart/item/candle/day/{{extra_info.code}}.png" style="width: 110%; height: 350px;"/>
-    <img id="candle-week" src="https://ssl.pstatic.net/imgfinance/chart/item/candle/week/{{extra_info.code}}.png" style="width: 110%; height: 350px; display: none;"/>
-    <img id="candle-month" src="https://ssl.pstatic.net/imgfinance/chart/item/candle/month/{{extra_info.code}}.png" style="width: 110%; height: 350px; display: none;"/>
+    <img id="candle-day" src="https://ssl.pstatic.net/imgfinance/chart/item/candle/day/{{extra_info.code}}.png" style="width: 100%; height: 350px;"/>
+    <img id="candle-week" src="https://ssl.pstatic.net/imgfinance/chart/item/candle/week/{{extra_info.code}}.png" style="width: 100%; height: 350px; display: none;"/>
+    <img id="candle-month" src="https://ssl.pstatic.net/imgfinance/chart/item/candle/month/{{extra_info.code}}.png" style="width: 100%; height: 350px; display: none;"/>
     <p/>
   </div>
   <!-- Stock Brief -->
@@ -81,7 +81,7 @@
   </div>
   <!-- Stock Bar of 52 Weeks -->
   <div calss="row">
-    <div class="box" style="padding: 0.8em;">
+    <div id="percent-box" class="box" style="padding: 0.8em;">
       <span>52주 최저</span>
       <span class="pull-right">52주 최고</span>
       <div class="bar container">
@@ -102,9 +102,16 @@
       <button type="button" class="button bottom small button-investor" value="investor36">3Ys</button>
     </div>
     <div class="row">
-      <div id="chart-investor" style="width: 100%; height: 350px;"></div>
+      <div id="chart-investor" style="width: 99%; height: 350px;"></div>
     </div>
-    <p/>
+
+    <div class="row">
+      <div class="btn-group">
+          <button type="button" id="download-csv" class="button bottom small">CSV</button>
+          <button type="button" id="download-simulation-csv" class="button bottom small green">Simulation CSV</button>      
+      </div>
+    </div>
+    <p></p>
     
     <div class="row">
       <div class="col-4 col-12-medium">
@@ -118,9 +125,8 @@
         </table>
       </div>
       <div class="col-8 col-12-medium">
-        <h4 id="daily-price" class="mb-zero"><span class="fa fa-caret-right"></span> Daily Price</h4>
+        <h4 id="daily-price"><span class="fa fa-caret-right"></span> Daily Price</h4>
         <div id="daily-price-table" style="display: none;">
-          <button type="button" id="download-csv" class="button bottom small pull-right">CSV</button>
           <table>
             <thead>
               <tr><th>Date</th><th>End</th><th>Rate</th><th>Start</th><th>High</th><th>Low</th><th>Volume</th><tr>
@@ -141,6 +147,7 @@
   $(function(){
     _code = "{{ extra_info.code }}";
     _data = {investor: 'investor3'};
+    _chartWidth = null;
 
     // Chart
     google.charts.load('current', {'packages':['corechart']});
@@ -156,6 +163,7 @@
     //redraw graph when window resize is completed
     $(window).on('resizeEnd', function() {
         // drawChartCandle();
+        _chartWidth = null
         drawChartInvestorTrand();
     });
 
@@ -172,9 +180,17 @@
       let to_csv = function(data){
         let title = $("header h2 a").text();
         // let date = new Date().toISOString();
-        util.file.query_to_csv('daily-'+title+'.csv', title, data);
+        util.file.query_to_csv(title+'-daily.csv', title, data);
       };
       stock.query_daily_table(_code, 60, to_csv);
+    });
+    $("#download-simulation-csv").on('click', function(){
+      let to_csv = function(data){
+        let title = $("header h2 a").text();
+        // let date = new Date().toISOString();
+        util.file.query_to_csv(title+'-simulation.csv', title, data);
+      };
+      stock.query_simulation_table(_code, 60, to_csv);
     });
   });
 
@@ -324,9 +340,13 @@
       data.addRows(invdata.fields);
 
       // console.log(invdata);
+      if (_chartWidth == null) {
+        _chartWidth = document.getElementById('chart-investor').offsetWidth;
+      }
+      console.log('### '+document.getElementById('percent-box').offsetWidth);
       var options = {
         legend: { position: 'top' },
-        width: document.getElementById('chart-investor').offsetWidth,
+        width: _chartWidth,
         chartArea: {width: '85%', height: '75%'},
         // hAxis: {format: 'yy.M'},
         hAxis: {format: 'yy.M.d'},

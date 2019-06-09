@@ -11,6 +11,7 @@ from .model import MStock, Reply
 # from core.finance import BillConfig
 from core.connect import FKrx, Http
 from core.finance import DataCollection, StockItemDB, StockQuery
+from core.finalgo import AlgoTable
 from core.manager import Collector
 
 
@@ -81,11 +82,34 @@ def ajax_stock_query_columns(code, month):
             tdata = StockQuery.raw_data_of_each_colnames(
                                 sidb, months=int(month), **request.get_json())
             if len(tdata.fields) == 0:
-                raise
+                raise Exception
         except Exception:
             collector.collect(code)
             return Reply.Fail(message="Collector is Gathering Data.")
         return Reply.Success(value=Reply.Data(tdata))
+
+
+@app.route('/ajax/stock/item/<code>/simulation/<month>', methods=['GET', 'POST'])
+@login_required
+@role_required('STOCK')
+def ajax_stock_simulation_table(code, month):
+    collector = Collector()
+    with collector.lock:
+        if collector.is_working(code):
+            return Reply.Fail(message="Not Ready, Still be Collecting Data.")
+        try:
+            # colnames = ['stamp', 'start', 'low', 'high', 'end', 'volume']
+            sidb = StockItemDB.factory(code)
+            tdata = StockQuery.raw_data_of_each_colnames(
+                                sidb, months=int(month), **request.get_json())
+            if len(tdata.fields) == 0:
+                raise Exception
+            algo = AlgoTable(tdata)
+            pdata = algo.process()
+        except Exception:
+            collector.collect(code)
+            return Reply.Fail(message="Collector is Gathering Data.")
+        return Reply.Success(value=Reply.Data(pdata))        
 
 
 @app.route('/ajax/proxy', methods=['POST'])
