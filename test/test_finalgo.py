@@ -19,6 +19,7 @@ class TestAlgorithm(unittest.TestCase):
         
         algo = AlgoTable(qdata)
         pdata = algo.process()
+        print('Report', pdata.report)
         print(json.dumps(pdata))
 
         
