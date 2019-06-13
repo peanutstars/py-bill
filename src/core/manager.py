@@ -3,6 +3,7 @@
 import atexit
 import datetime
 import glob
+import multiprocessing
 import os
 import time
 import queue
@@ -13,6 +14,7 @@ from dateutil.relativedelta import relativedelta
 from pysp.sbasic import SSingleton
 from pysp.serror import SCDebug
 
+from core.model import Dict
 from core.config import BillConfig
 from core.finance import DataCollection
 
@@ -45,13 +47,18 @@ class _State(SCDebug):
     def is_run(self):
         return self.loop
 
-    def set_work_code(self, code=None):
+    def set_work_code(self, code):
         self.dprint(f'###########B {id(self.wcode)} {self.wcode}=[{code}]')
-        if self.wcode:
-            self.wcode.pop()
-        if code:
-            self.wcode.append(code)
+        self.wcode.append(code)
+        self.wcode = list(set(self.wcode))
         self.dprint(f'###########A {id(self.wcode)} {self.wcode}=[{code}]')
+
+    def clear_work_code(self, code):
+        self.dprint('## B clear_work_code', code, str(self.wcode))
+        if code in self.wcode:
+            idx = self.wcode.index(code)
+            self.wcode.pop(idx)
+        self.dprint('## A clear_work_code', str(self.wcode))
 
 
 class _Scheduler(SCDebug):
@@ -101,7 +108,7 @@ class Collector(Manager, metaclass=SSingleton):
     INIT_NO_COLLECT = "NO_COLLECT"
     CMD_QUIT = 'quit'
     QUEUE_SIZE = 1000
-    QUEUE_TIMEOUT_SEC = 5
+    QUEUE_TIMEOUT_SEC = 1
     # class
     # State = _State
     Scheduler = _Scheduler
@@ -146,7 +153,7 @@ class Collector(Manager, metaclass=SSingleton):
     def is_working(self, code):
         # return self.state.is_working(code)
         self.dprint(f'### {id(self.state.wcode)} {self.state.wcode} {code}')
-        if self.state.wcode and self.state.wcode[0] == code:
+        if code in self.state.wcode:
             return True
         return False
 
@@ -166,15 +173,32 @@ class Collector(Manager, metaclass=SSingleton):
                 self._do_event_hour()
             self.event = event
 
-    def _worker_item(self, item):
-        if item:
-            self.state.set_work_code(item)
-            DataCollection.collect(item, wstate=self.state)
-            self.state.set_work_code()
+    def _worker_item(self, code):
+        self.state.set_work_code(code)
+        # DataCollection.collect(code, wstate=self.state)
+        # self.state.clear_work_code(code)
+
+    def _worker_item_process(self):
+        def gen_params():
+            for code in self.state.wcode:
+                param = Dict()
+                param.code = code
+                param.kwargs.wstate = self.state
+                yield param
+            return []
+
+        if self._q.empty() and self.state.wcode:
+            cpu = multiprocessing.cpu_count()
+            pool = multiprocessing.Pool(processes=cpu)
+            for code in pool.imap(DataCollection.multiprocess_collect, gen_params()):
+                print('@@ Done', code)
+                self.state.clear_work_code(code)
+            print("@@ All Done")
 
     def worker(self, *args):
         self.dprint("<Collector::worker(begin)>")
         self.event = self.Scheduler.next()
+
         while self.state.is_run():
             try:
                 item = self.pop()
@@ -186,6 +210,9 @@ class Collector(Manager, metaclass=SSingleton):
                     item == self.CMD_QUIT:
                 break
 
+            if not item:
+                self._worker_item_process()
+                continue
             self._worker_item(item)
             self._worker_event()
 

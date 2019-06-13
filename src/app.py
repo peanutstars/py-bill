@@ -36,6 +36,7 @@ def init_logger(app):
     # hdl.setLevel(log_level)
 
     log = logging.getLogger()
+    log.handers = []
     log.addHandler(hdl)
     log.setLevel(log_level)
     app.logger.info("===== web application start =====")

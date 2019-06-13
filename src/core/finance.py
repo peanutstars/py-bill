@@ -201,11 +201,18 @@ class DataCollection:
 
     @classmethod
     def collect(cls, code, **kwargs):
+        print('@@ S', code)
         sp = cls.factory_provider(code, 'naver')
         cls.collect_candle(sp, **kwargs)
         cls.collect_investor(sp, **kwargs)
         sp = cls.factory_provider(code, 'krx')
         cls.collect_shortstock(sp, **kwargs)
+        print('@@ E', code)
+        return code
+
+    @classmethod
+    def multiprocess_collect(cls, param):
+        return cls.collect(param.code, **param.kwargs)
 
 
 class StockQuery:
