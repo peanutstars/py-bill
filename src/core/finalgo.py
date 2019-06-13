@@ -1,20 +1,20 @@
+#!/usr/bin/env python3
+
+import codecs
+import itertools
 import json
+import multiprocessing
+import os
 
 from collections import namedtuple
 
 from pysp.serror import SDebug
 
+from core.model import Dict
+from core.finance import StockItemDB, StockQuery
 
-class Dict(dict):
-    def __getattr__(self, name):
-        try:
-            attr = self[name]
-        except KeyError:
-            self[name] = Dict()
-            attr = self[name]
-        return attr
-    def __setattr__(self, k, v):
-        self[k] = v
+
+StepParam = namedtuple('StepParam', 'gradnames stepname')
 
 
 class Algo:
@@ -27,11 +27,6 @@ class Algo:
             return
         for i, ix in enumerate(idxs):
             field[ix] = values[i]
-
-
-class AlgoModel(object):
-    # Gredient Parameter
-    StepParam = namedtuple('StepParam', 'gradnames stepname')
 
 
 class AlgoOp(Algo):
@@ -309,15 +304,15 @@ class CondBuy(AlgoProc):
 
             if self.is_or('is_all', self.isteps, [['HH','UP','UP']], field):
                 if self.after_hhupup <= 0:
-                    self.after_hhupup = 15 
+                    self.after_hhupup = cfg.buy.after.hhupup.begin 
                 else:
-                    self.after_hhupup += 4
+                    self.after_hhupup += cfg.buy.after.hhupup.append
             elif self.is_or('is_all', self.isteps,
                             [['HH','UP',None], ['LW','HH',None]], field):
                 if self.after_hhupup <= 0:
-                    self.after_hhupup = 5
+                    self.after_hhupup = cfg.buy.after.hhupup.hhup_lwhh.begin
                 else:
-                    self.after_hhupup += 2
+                    self.after_hhupup += cfg.buy.after.hhupup.hhup_lwhh.append
             else:
                 self.after_hhupup -= 1
                 if self.after_hhupup < 0:
@@ -342,8 +337,9 @@ class CondBuy(AlgoProc):
                             [[0,0,0,0,0,0], [10,10,10,10,10,25]], field):
                 buycnt = self.HERE_IT_GO
 
-            if buycnt > 0 and (self.start is False or self.after_hhupup > 0):
-                buycnt = 0
+            if buycnt > 0:
+                if self.start is False or self.after_hhupup > cfg.buy.after.hhupup.thresholds:
+                    buycnt = 0
 
             # Additional purchase
             prevfield = fields[idx-1]
@@ -354,8 +350,8 @@ class CondBuy(AlgoProc):
             break  # End of While
 
         if not fg_skip:
-            buyreason += ','.join([str(field[x]) for x in self.isteps])
-            buyreason += ':'+','.join([str(field[x]) for x in self.ipercents])
+            buyreason += ':'.join([str(field[x]) for x in self.isteps])
+            buyreason += '@'+':'.join([str(field[x]) for x in self.ipercents])
             
         indexes = [self.ihhupup, self.ibcnt, self.ibreason]
         values = [self.after_hhupup, buycnt, buyreason]
@@ -406,6 +402,7 @@ class CalBuy(AlgoProc):
 class CondSell(AlgoProc):
     COLNAME_SELL_POINT =    'sellcnt'
     COLNAME_SELL_REASON =   'sreason'
+    HERE_IT_GO =            15
 
     def __init__(self, cfg, colnames):
         super(CondSell, self).__init__()
@@ -434,9 +431,11 @@ class CondSell(AlgoProc):
 
         if field[self.ibvolume] > 0:
             if self.is_any(self.isteps, ['HH','HH',None], field):
+                # XXX: Added New Condition
+                # if self.is_ge_all(self.ipercents, [None,None,None,60,None,None], field):
                 wanted = field[self.ibaverage]*to_rate(cfg.price.sell.return_rate)
                 if field[self.isprice] > wanted:
-                    sellcnt = 20
+                    sellcnt = self.HERE_IT_GO
 
         indexes = [self.iscnt, self.isreason]
         values = [sellcnt, sreason]
@@ -461,6 +460,8 @@ class CalSell(AlgoProc):
         self.isprice = colnames.index(cfg.price.sell.colname)
         self.investment_amount = 0
         self.earnings_amount = 0
+        self.investment_days = 0
+        self.earnings_count = 0
     
     def get_report(self):
         def to_float(x):
@@ -468,9 +469,12 @@ class CalSell(AlgoProc):
         report = Dict()
         report.investment_amount = self.investment_amount
         report.earnings_amount = self.earnings_amount
-        profit = (self.earnings_amount/self.investment_amount*100)-100
+        profit = 0
+        if self.investment_amount > 0:
+            profit = (self.earnings_amount/self.investment_amount*100)-100
         report.return_rate = to_float(profit)
-        report.expected_return_rate = to_float(self.cfg.price.sell.return_rate)
+        report.investment_days = self.investment_days
+        report.earnings_count = self.earnings_count
         return report
 
     def process(self, cfg, idx, fields):
@@ -483,14 +487,18 @@ class CalSell(AlgoProc):
             profit = '{:.2f}'.format((amount/field[self.ibamount]*100)-100)
             self.investment_amount += field[self.ibamount]
             self.earnings_amount += amount
+            self.earnings_count += 1
             self.calbuy.reset(field=field)
+
+        if field[self.ivolume] > 0:
+            self.investment_days += 1
 
         indexes = [self.isamount, self.iprofit]
         values = [amount, profit]
         self._fill_data(indexes, values, field)
 
 
-class AlgoTable(AlgoModel):
+class AlgoTable:
 
     def __init__(self, qdata, cfg=None):
         self.qdata = Dict(json.loads(json.dumps(qdata)))
@@ -515,17 +523,21 @@ class AlgoTable(AlgoModel):
     def default_option(cls):
         cfg = Dict()
         cfg.gradient.accum = 5
-        # cfg.sum.accums = [4, 8, 12]
-        cfg.sum.accums = [3, 6, 12]
+        cfg.sum.accums = [3, 6, 12]                 # [2..5][4..10][8..20]
         cfg.minmax.accums = [1, 2, 4, 8, 12, 18]
         cfg.curve.step = cls.get_curve_step_params(cfg.sum.accums)
         cfg.price.ref_colname.low = 'low'
         cfg.price.ref_colname.high = 'high'
         cfg.price.buy.colname = 'bprice'
-        cfg.price.buy.percent = 20
+        cfg.price.buy.percent = 50
         cfg.price.sell.colname = 'sprice'
-        cfg.price.sell.percent = 80
-        cfg.price.sell.return_rate = 7
+        cfg.price.sell.percent = 50
+        cfg.price.sell.return_rate = 7              # [5..15]
+        cfg.buy.after.hhupup.begin = 15             # [7..20]
+        cfg.buy.after.hhupup.append = 4             # [2..8]
+        cfg.buy.after.hhupup.hhup_lwhh.begin = 5    # [3..8]
+        cfg.buy.after.hhupup.hhup_lwhh.append = 2   # [1..5]
+        cfg.buy.after.hhupup.thresholds = 0         # [0..7]
         return cfg
 
     @classmethod
@@ -539,12 +551,12 @@ class AlgoTable(AlgoModel):
         params = []
         for i in range(len(accums)):
             if i == 0:
-                p = AlgoModel.StepParam(
+                p = StepParam(
                         ['endGt', f's{accums[i]}AvGt'], 
                         cls.get_curve_step_colname(i, accums))
                 params.append(p)
                 continue
-            p = AlgoModel.StepParam(
+            p = StepParam(
                         [f's{accums[i-1]}AvGt', f's{accums[i]}AvGt'],
                         cls.get_curve_step_colname(i, accums))
             params.append(p)
@@ -571,7 +583,238 @@ class AlgoTable(AlgoModel):
             for op in operate:
                 op.process(self.cfg, idx, pdata.fields)
 
+        pdata.cfg = self.cfg
         pdata.report = calsell.get_report()
         return pdata
 
 
+class IterAlgo:
+    CfgParam = namedtuple('CfgParam', 
+                          'hhupup_thresholds hhupup_begin hhupup_append '
+                          'hhup_lwhh_begin hhup_lwhh_append '
+                          'sum_accum_index')
+    SUM_ACCUMS = [
+        [2, 3, 4], [2, 3, 6], [2, 3, 8], [2, 3, 10],
+        [2, 4, 6], [2, 4, 8], [2, 4, 10], [2, 4, 12],
+        [3, 5, 7], [3, 5, 9], [3, 5, 11],
+        [3, 6, 9], [3, 6, 12],
+        [4, 6, 8], [4, 6, 10], [4, 6, 12],
+        [4, 7, 10], [4, 7, 12], [4, 7, 14],
+        [4, 8, 12], [4, 8, 16],
+        [4, 9, 14], 
+        [5, 10, 15], [5, 10, 20],
+        [6, 12, 18]
+    ]
+
+    def __init__(self):
+        self.iterlist = []
+        # return_rate = range(7, 16, 2)
+        hhupup_thresholds = range(0, 9, 2)
+        self.iterlist.append(hhupup_thresholds)
+        hhupup_begin = range(10, 21, 2)
+        self.iterlist.append(hhupup_begin)
+        hhupup_append = range(2, 9, 2)
+        self.iterlist.append(hhupup_append)
+        hhup_lwhh_begin = range(3, 9, 2)
+        self.iterlist.append(hhup_lwhh_begin)
+        hhup_lwhh_append = range(1,6)
+        self.iterlist.append(hhup_lwhh_append)
+        sum_accum_index = range(len(self.SUM_ACCUMS))
+        self.iterlist.append(sum_accum_index)
+
+    def gen_params(self, data):
+        for i, x in enumerate(itertools.product(*self.iterlist)):
+            p = IterAlgo.CfgParam(*x)
+            cfg = AlgoTable.default_option()
+            cfg.price.sell.return_rate = 7
+            cfg.sum.accums = IterAlgo.SUM_ACCUMS[p.sum_accum_index]
+            cfg.curve.step = AlgoTable.get_curve_step_params(cfg.sum.accums)
+            cfg.buy.after.hhupup.begin = p.hhupup_begin
+            cfg.buy.after.hhupup.append = p.hhupup_append
+            cfg.buy.after.hhupup.hhup_lwhh.begin = p.hhup_lwhh_begin
+            cfg.buy.after.hhupup.hhup_lwhh.append = p.hhup_lwhh_append
+            cfg.buy.after.hhupup.thresholds = p.hhupup_thresholds
+
+            param = Dict()
+            param.cfg = cfg
+            param.data = data
+
+            yield param
+
+    def gen_index_params(self, data, idx):
+        for i, x in enumerate(itertools.product(*self.iterlist)):
+            if idx != i:
+                continue
+            p = IterAlgo.CfgParam(*x)
+            cfg = AlgoTable.default_option()
+            cfg.price.sell.return_rate = 7
+            cfg.sum.accums = IterAlgo.SUM_ACCUMS[p.sum_accum_index]
+            cfg.curve.step = AlgoTable.get_curve_step_params(cfg.sum.accums)
+            cfg.buy.after.hhupup.begin = p.hhupup_begin
+            cfg.buy.after.hhupup.append = p.hhupup_append
+            cfg.buy.after.hhupup.hhup_lwhh.begin = p.hhup_lwhh_begin
+            cfg.buy.after.hhupup.hhup_lwhh.append = p.hhup_lwhh_append
+            cfg.buy.after.hhupup.thresholds = p.hhupup_thresholds
+
+            param = Dict()
+            param.cfg = cfg
+            param.data = data
+
+            if idx >= 0:
+                return param
+
+        if idx >= 0:
+            raise IndexError(f'Out Of Range: {idx}')
+
+    def calculate(self, p):
+        algo = AlgoTable(p.data, cfg=p.cfg)
+        return  algo.process()
+
+    @classmethod
+    def save_data(cls, fname, data):
+        with codecs.open(fname, 'w', encoding='utf-8') as fd:
+            m = cls.brief_dump(data) + '\n'
+            fd.write(m)
+            fd.write(json.dumps(data))
+
+    @classmethod
+    def compute(cls, code, **kwargs):
+        def_colnames = ['stamp', 'start', 'low', 'high', 'end', 'volume']
+        colnames = kwargs.get('colnames', def_colnames)
+        months = kwargs.get('months', 60)
+        folder = f'st_{code}'
+
+        if not os.path.exists(folder):
+            os.mkdir(folder)
+        
+        sidb = StockItemDB.factory(code)
+        qdata = StockQuery.raw_data_of_each_colnames(sidb, colnames, months=months)
+        it = cls()
+        sim = it.run(qdata, work_folder=folder)
+
+        for k in list(sim.keys()):
+            for i, v in enumerate(sim[k]):
+                fname = f'{folder}/{k}-{i:06d}.log'
+                cls.save_data(fname, v)
+
+    @classmethod
+    def compute_index(cls, code, index, **kwargs):
+        def_colnames = ['stamp', 'start', 'low', 'high', 'end', 'volume']
+        colnames = kwargs.get('colnames', def_colnames)
+        months = kwargs.get('months', 60)
+        folder = f'st_{code}'
+
+        if not os.path.exists(folder):
+            os.mkdir(folder)
+        
+        sidb = StockItemDB.factory(code)
+        qdata = StockQuery.raw_data_of_each_colnames(sidb, colnames, months=months)
+        it = IterAlgo()
+
+        index = int(index)
+        param = it.gen_index_params(qdata, index)
+
+        data = it.calculate(param)
+        fname = f'{folder}/index-{index:06d}.log'
+        cls.save_data(fname, data)
+
+        return data
+
+
+    @classmethod
+    def brief_dump(cls, data):
+        c = data.cfg
+        b = data.cfg.buy.after.hhupup
+        r = data.report
+
+        m  = f'{c.sum.accums} '
+        m += f'{b.begin} {b.append} : '
+        m += f'{b.hhup_lwhh.begin} {b.hhup_lwhh.append} : '
+        m += f'{b.thresholds} : '
+        m += f'{r.investment_amount} {r.return_rate} {r.investment_days} '
+        m += f'{r.earnings_count} '
+        return m
+
+    def run(self, qdata, **kwargs):
+        def sort_much(x):
+            r = x.report
+            if mindays <= r.investment_days and r.investment_days <= maxdays:
+                return r.investment_amount * r.return_rate
+            return 0
+
+        def sort_per_day(x):
+            r = x.report
+            if mindays <= r.investment_days and r.investment_days <= maxdays:
+                return r.investment_amount * r.return_rate / r.investment_days
+            return 0
+        
+        def sort_ecount(x):
+            r = x.report
+            return (r.earnings_count*100)+r.return_rate
+
+        pick_too_much = kwargs.get('too_much', 20)
+        pick_per_day = kwargs.get('per_day', 50)
+        pick_ecount = kwargs.get('ecount', 50)
+        work_folder = kwargs.get('work_folder', None)
+        
+        sim = Dict()
+        sim.too_much = []
+        sim.per_day = []
+        sim.ecount = []
+        cpu = multiprocessing.cpu_count()
+        pool = multiprocessing.Pool(processes=cpu)
+        mindays = len(qdata.fields)/5
+        maxdays = len(qdata.fields)/2.75
+        logfd = None
+        
+        if work_folder and os.path.exists(work_folder):
+            logfile = f'{work_folder}/index_brief.txt'
+            logfd = codecs.open(logfile, 'w', encoding='utf-8')
+
+        for data in pool.imap(self.calculate, self.gen_params(qdata)):
+            if logfd:
+                m = self.brief_dump(data) + '\n'
+                logfd.write(m)
+
+            sim.too_much.append(data)
+            sim.too_much.sort(key=lambda x: sort_much(x), reverse=True)
+            sim.too_much = sim.too_much[:pick_too_much]
+
+            sim.per_day.append(data)
+            sim.per_day.sort(key=lambda x: sort_per_day(x), reverse=True)
+            sim.per_day = sim.per_day[:pick_per_day]
+
+            sim.ecount.append(data)
+            sim.ecount.sort(key=lambda x: sort_ecount(x), reverse=True)
+            sim.ecount = sim.per_day[:pick_ecount]
+
+        if logfd:
+            logfd.close()
+
+        return sim
+
+
+if __name__ == '__main__':
+    import sys
+
+    def usage():
+        '''
+    Usage: finalgo <code> [<index>]
+        '''
+        print(usage.__doc__)
+        exit(-1)
+
+    if len(sys.argv) < 2:
+        usage()
+    
+    code = sys.argv[1]
+    index = -1
+    if len(sys.argv) == 3:
+        index = int(sys.argv[2])
+    
+    if index >= 0:
+        print('compute_index', code, index)
+        IterAlgo.compute_index(code, index)
+    else:
+        print('compute', code)
+        IterAlgo.compute(code)

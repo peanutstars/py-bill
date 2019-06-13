@@ -1,7 +1,22 @@
 # -*- coding: utf-8 -*-
 
+class Dict(dict):
 
-class DictHelper(dict):
+    def __getattr__(self, name):
+        try:
+            attr = self[name]
+        except KeyError:
+            self[name] = Dict()
+            attr = self[name]
+        return attr
+    def __setattr__(self, k, v):
+        self[k] = v
+    
+    def __reduce__(self):
+        return Dict, (dict(self),)
+
+
+class DictHelper(Dict):
     COLUMNS = []
 
     class Error(Exception):
@@ -29,8 +44,8 @@ class DictHelper(dict):
             return cls(**dict(zip(cls.COLUMNS, args)))
         raise cls.Error('Not Support Format')
 
-    def __getattr__(self, name):
-        return self[name]
+    # def __getattr__(self, name):
+    #     return self[name]
 
 
 class ServiceProvider(DictHelper):

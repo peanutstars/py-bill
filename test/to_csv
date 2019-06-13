@@ -1,0 +1,35 @@
+#!/bin/bash
+
+PARAM="$1"
+
+csv() {
+    local FILE="$1"
+    local BFILE=$(basename $1)
+    local CSV="${FILE%.*}".csv
+    local TMPFILE=.tmp.$BFILE
+
+    [ -n "$2" ] && CSV=$2
+
+    cat $FILE |\
+        sed "s/\"cfg\"/\n\"cfg\"/g" |\
+        grep -v "\"cfg\":" |\
+        sed "s/], /,\n/g" |\
+        sed "s/, /,/g" |\
+        sed "s/null//g" |\
+        sed "s/\[//g" |\
+        sed "s/]//g" |\
+        sed "s/{\"colnames\": //g" |\
+        sed "s/\"fields\": //g" |\
+        grep -v "SELECT" > $TMPFILE
+
+    mv $TMPFILE $CSV
+}
+
+if [ -d "$PARAM" ] ; then
+    for log in ${PARAM}/*.log
+    do
+        csv $log
+    done
+else
+    csv $PARAM
+fi

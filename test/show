@@ -1,0 +1,18 @@
+#!/bin/bash
+
+FOLDER="$1"
+
+show_first_line() {
+    local prefix=$1
+    echo "##### $prefix"
+    for file in $FOLDER/${prefix}*.log
+    do
+        local num=$(basename $file | tr -d -c 0-9)
+        local line=$(head -n 1 $file)
+        printf "%s: %s\n" "$file" "$line"
+    done
+}
+
+show_first_line too_much
+show_first_line per_day
+show_first_line ecount
