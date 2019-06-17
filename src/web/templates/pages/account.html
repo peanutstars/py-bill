@@ -45,6 +45,27 @@
 
   {% if current_user.is_authorized('ADMIN') %}
     <p/>
+    <div>
+      <header class="main">
+        <h2>Adjust Split Stock</h2>
+      </header>
+      <div class="row">
+        <table>
+          <tbody>
+            <tr><th>Stcok Code</th><td><input type="text" id="ass-code" value="" placeholder="Stock Code" /></td><tr>
+            <tr><th>Ratio</th><td><input type="text" id="ass-ratio" value="" placeholder="Ratio" /></td><tr>
+            <tr><th>From Date</th><td><input type="text" id="ass-from-date" value="" placeholder="YYYY-MM-DD" /></td><tr>
+            <tr><th>To Date</th><td><input type="text" id="ass-to-date" value="" placeholder="None | YYYY-MM-DD" /></td><tr>
+            <tr><td colspan="2">
+              <div class="pull-right"><button id="button-ass-apply" class="button small gray">Apply</button></div>
+              <div id="ass-msg"></div>
+            </td><tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+    <p/>
     <div >
         <header class="main">
           <h2>Users Information</h2>
@@ -99,9 +120,63 @@
 {% block bodyscript %}
 <script type="text/javascript">
   $(function(){
-    _data = { roles: [{% for role in roles %}"{{role}}",{% endfor%}], };
+    _data = {
+      roles: [{% for role in roles %}"{{role}}",{% endfor %}],
+      stockList: null,
+    };
+
+    stock.query_all_list(function(list){
+      _data.stockList = list;
+    });
     reflact_field_button();
+    active_ass_button();
   });
+
+  function active_ass_button() {
+    $("#button-ass-apply").on('click', function(){
+      let code = $("#ass-code").val();
+      let ratio = $("#ass-ratio").val();
+      let from_date = $("#ass-from-date").val();
+      let to_date = $("#ass-to-date").val();
+      let period = 1.5;
+      let params = {};
+
+      do
+      {
+        if ( ! stock.has_code(code, _data.stockList)) {
+          util.gui.spot_flash('#ass-msg', 'Invalid a Stock Code', 'red', period);
+          break;
+        }
+        if (isNaN(parseFloat(ratio))) {
+          util.gui.spot_flash('#ass-msg', 'Invalid a Ratio', 'red', period);
+          break;
+        }
+        if ( ! util.isValidDate(from_date)) {
+          util.gui.spot_flash('#ass-msg', 'Invalid a From Date', 'red', period);
+          break;
+        }
+        if (to_date) {
+          if ( ! util.isValidDate(to_date)) {
+            util.gui.spot_flash('#ass-msg', 'Invalid a To Date', 'red', period);
+            break;
+          } else {
+            params.edate = to_date;
+          }
+        }
+        code = util.paddingNumber(code, 6);
+        params.ratio = ratio;
+        params.sdate = from_date;
+        util.gui.spot_flash('#ass-msg', 'Processing ...', 'orange', 0);
+        stock.adjust_stock_split(code, params, function(resp){
+          $("#ass-code").val('');
+          $("#ass-ratio").val('');
+          $("#ass-from-date").val('');
+          $("#ass-to-date").val('');
+          util.gui.spot_flash('#ass-msg', 'Done to adjust.', 'green', 0);
+        });
+      }while(false);
+    });
+  }
   function reflact_field_button(){
     // $(".account-active").each(function(idx){
     //   $(this).on('click', function(){

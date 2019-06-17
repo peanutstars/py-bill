@@ -265,6 +265,7 @@ class CondBuy(AlgoProc):
         colnames.append(self.COLNAME_AFTER_HHUPUP)
         colnames.append(self.COLNAME_BUYCNT)
         colnames.append(self.COLNAME_BUYREASON)
+        self.istamp = colnames.index('stamp')
         self.ihhupup = colnames.index(self.COLNAME_AFTER_HHUPUP)
         self.ibcnt = colnames.index(self.COLNAME_BUYCNT)
         self.ibreason = colnames.index(self.COLNAME_BUYREASON)
@@ -299,8 +300,9 @@ class CondBuy(AlgoProc):
             if fg_skip:
                 break
             # Check Starting Condition
-            if self.is_all(self.isteps, ['DN','DN','DN'], field):
+            if self.start is False and self.is_all(self.isteps, ['DN','DN','DN'], field):
                 self.start = True
+                cfg.algo.start.stamp = field[self.istamp]
 
             if self.is_or('is_all', self.isteps, [['HH','UP','UP']], field):
                 if self.after_hhupup <= 0:
@@ -522,6 +524,8 @@ class AlgoTable:
     @classmethod
     def default_option(cls):
         cfg = Dict()
+        cfg.algo.index = None
+        cfg.algo.start.stamp = None
         cfg.gradient.accum = 5
         cfg.sum.accums = [3, 6, 12]                 # [2..5][4..10][8..20]
         cfg.minmax.accums = [1, 2, 4, 8, 12, 18]
@@ -590,6 +594,7 @@ class AlgoTable:
 
 class IterAlgo:
     CfgParam = namedtuple('CfgParam', 
+                          'minmax_index '
                           'hhupup_thresholds hhupup_begin hhupup_append '
                           'hhup_lwhh_begin hhup_lwhh_append '
                           'sum_accum_index')
@@ -605,11 +610,16 @@ class IterAlgo:
         [5, 10, 15], [5, 10, 20],
         [6, 12, 18]
     ]
+    MINMAX_ACCUMS = [
+        [1, 2, 4, 8, 12, 18], [1, 2, 3, 6, 9, 12]
+    ]
 
     def __init__(self):
         self.iterlist = []
         # return_rate = range(7, 16, 2)
-        hhupup_thresholds = range(0, 9, 2)
+        minmax_index = range(len(self.MINMAX_ACCUMS))
+        self.iterlist.append(minmax_index)
+        hhupup_thresholds = range(0, 5)
         self.iterlist.append(hhupup_thresholds)
         hhupup_begin = range(10, 21, 2)
         self.iterlist.append(hhupup_begin)
@@ -622,18 +632,24 @@ class IterAlgo:
         sum_accum_index = range(len(self.SUM_ACCUMS))
         self.iterlist.append(sum_accum_index)
 
+    def _param(self, i, p):
+        cfg = AlgoTable.default_option()
+        cfg.algo.index = i
+        cfg.price.sell.return_rate = 7
+        cfg.sum.accums = IterAlgo.SUM_ACCUMS[p.sum_accum_index]
+        cfg.minmax.accums = IterAlgo.MINMAX_ACCUMS[p.minmax_index]
+        cfg.curve.step = AlgoTable.get_curve_step_params(cfg.sum.accums)
+        cfg.buy.after.hhupup.begin = p.hhupup_begin
+        cfg.buy.after.hhupup.append = p.hhupup_append
+        cfg.buy.after.hhupup.hhup_lwhh.begin = p.hhup_lwhh_begin
+        cfg.buy.after.hhupup.hhup_lwhh.append = p.hhup_lwhh_append
+        cfg.buy.after.hhupup.thresholds = p.hhupup_thresholds
+        return cfg
+
     def gen_params(self, data):
         for i, x in enumerate(itertools.product(*self.iterlist)):
             p = IterAlgo.CfgParam(*x)
-            cfg = AlgoTable.default_option()
-            cfg.price.sell.return_rate = 7
-            cfg.sum.accums = IterAlgo.SUM_ACCUMS[p.sum_accum_index]
-            cfg.curve.step = AlgoTable.get_curve_step_params(cfg.sum.accums)
-            cfg.buy.after.hhupup.begin = p.hhupup_begin
-            cfg.buy.after.hhupup.append = p.hhupup_append
-            cfg.buy.after.hhupup.hhup_lwhh.begin = p.hhup_lwhh_begin
-            cfg.buy.after.hhupup.hhup_lwhh.append = p.hhup_lwhh_append
-            cfg.buy.after.hhupup.thresholds = p.hhupup_thresholds
+            cfg = self._param(i, p)
 
             param = Dict()
             param.cfg = cfg
@@ -646,15 +662,7 @@ class IterAlgo:
             if idx != i:
                 continue
             p = IterAlgo.CfgParam(*x)
-            cfg = AlgoTable.default_option()
-            cfg.price.sell.return_rate = 7
-            cfg.sum.accums = IterAlgo.SUM_ACCUMS[p.sum_accum_index]
-            cfg.curve.step = AlgoTable.get_curve_step_params(cfg.sum.accums)
-            cfg.buy.after.hhupup.begin = p.hhupup_begin
-            cfg.buy.after.hhupup.append = p.hhupup_append
-            cfg.buy.after.hhupup.hhup_lwhh.begin = p.hhup_lwhh_begin
-            cfg.buy.after.hhupup.hhup_lwhh.append = p.hhup_lwhh_append
-            cfg.buy.after.hhupup.thresholds = p.hhupup_thresholds
+            cfg = self._param(i, p)
 
             param = Dict()
             param.cfg = cfg
@@ -702,35 +710,63 @@ class IterAlgo:
         def_colnames = ['stamp', 'start', 'low', 'high', 'end', 'volume']
         colnames = kwargs.get('colnames', def_colnames)
         months = kwargs.get('months', 60)
-        folder = f'st_{code}'
+        fg_save = kwargs.get('save_file', False)
+        folder = kwargs.get('folder', f'st_{code}')
+        cfg = kwargs.get('cfg', None)
 
-        if not os.path.exists(folder):
-            os.mkdir(folder)
-        
         sidb = StockItemDB.factory(code)
         qdata = StockQuery.raw_data_of_each_colnames(sidb, colnames, months=months)
         it = IterAlgo()
 
         index = int(index)
         param = it.gen_index_params(qdata, index)
+        if cfg:
+            param.cfg = cfg
 
         data = it.calculate(param)
-        fname = f'{folder}/index-{index:06d}.log'
-        cls.save_data(fname, data)
+        if fg_save:
+            if not os.path.exists(folder):
+                os.mkdir(folder)
+            fname = f'{folder}/index-{index:06d}.log'
+            cls.save_data(fname, data)
 
         return data
 
+    @classmethod
+    def compute_index_chart(cls, code, index, **kwargs):
+        def filter_out(cns, data):
+            icns = [data.colnames.index(x) for x in cns]
+            fields = data.fields
+            istamp = data.colnames.index('stamp')
+            data.colnames = cns
+            data.fields = []
+            start_stamp = data.cfg.algo.start.stamp
+            for field in fields:
+                if field[istamp] < start_stamp:
+                    continue
+                _field = [x for i, x in enumerate(field) if i in icns]
+                data.fields.append(_field)
+            return data
+
+        if 'colnames' in kwargs:
+            colnames = kwargs.get('colnames')
+            del kwargs['colnames']
+        else:
+            colnames = ['stamp', 'end', 'afhuu', 'buycnt', 'sellcnt']
+        data = cls.compute_index(code, index, **kwargs)
+        return filter_out(colnames, data)
 
     @classmethod
     def brief_dump(cls, data):
         c = data.cfg
         b = data.cfg.buy.after.hhupup
         r = data.report
-
-        m  = f'{c.sum.accums} '
-        m += f'{b.begin} {b.append} : '
-        m += f'{b.hhup_lwhh.begin} {b.hhup_lwhh.append} : '
-        m += f'{b.thresholds} : '
+        m  = f'{c.algo.index:06d}:' if type(c.algo.index) is int else '------:'
+        m += f'{c.sum.accums}:'
+        m += f'{c.minmax.accums}:'
+        m += f'{b.begin} {b.append}:'
+        m += f'{b.hhup_lwhh.begin} {b.hhup_lwhh.append}:'
+        m += f'{b.thresholds}:'
         m += f'{r.investment_amount} {r.return_rate} {r.investment_days} '
         m += f'{r.earnings_count} '
         return m
@@ -799,22 +835,52 @@ if __name__ == '__main__':
 
     def usage():
         '''
-    Usage: finalgo <code> [<index>]
+    Usage: finalgo <cmd> <code> [<index>]
+        cmd:
+            compute <code>
+            compute <code> <index>
+            chart <code> <index>
         '''
         print(usage.__doc__)
         exit(-1)
 
-    if len(sys.argv) < 2:
+    def cmd_compute(code, index):
+        if index >= 0:
+            print('compute_index', code, index)
+            IterAlgo.compute_index(code, index, save_file=True)
+        else:
+            print('compute', code)
+            IterAlgo.compute(code)
+    
+    def cmd_chart(code, index):
+        if index < 0:
+            raise Exception('Invalid Index')
+        print('chart', code, index)
+        data = IterAlgo.compute_index_chart(code, index)
+        print(data)
+
+    def cmd_unknown(code, index):
+        raise Exception('Unknown Command')
+
+
+    if len(sys.argv) < 3:
         usage()
     
-    code = sys.argv[1]
+    cmd_pool = {
+        'compute':  cmd_compute,
+        'chart':    cmd_chart,
+    }
+    cmd = sys.argv[1]
+    code = sys.argv[2]
     index = -1
-    if len(sys.argv) == 3:
-        index = int(sys.argv[2])
+    if len(sys.argv) == 4:
+        index = int(sys.argv[3])
+
+    func = cmd_pool.get(cmd, cmd_unknown)
+    try:
+        func(code, index)
+    except Exception as e:
+        print(f'Error: {e}')
+        exit(-1)
     
-    if index >= 0:
-        print('compute_index', code, index)
-        IterAlgo.compute_index(code, index)
-    else:
-        print('compute', code)
-        IterAlgo.compute(code)
+

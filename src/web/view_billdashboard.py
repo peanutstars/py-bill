@@ -9,9 +9,10 @@ from . import app, db
 from .account import role_required
 from .model import MStock, Reply
 # from core.finance import BillConfig
+from core.model import Dict
 from core.connect import FKrx, Http
 from core.finance import DataCollection, StockItemDB, StockQuery
-from core.finalgo import AlgoTable
+from core.finalgo import IterAlgo
 from core.manager import Collector
 
 
@@ -68,6 +69,31 @@ def ajax_stock_item(code):
     return Reply.Fail(message=f'Not Support Method[{request.method}]')
 
 
+@app.route('/ajax/stock/item/<code>/adjust-stock-split', methods=['POST'])
+@login_required
+@role_required('ADMIN')
+def ajax_stock_adjust_stock_split(code):
+    collector = Collector()
+    # colnames = request.get_json().get('colnames', [])
+    with collector.lock:
+        if collector.is_working(code):
+            return Reply.Fail(message="Not Ready, Still be Collecting Data.")
+        try:
+            sidb = StockItemDB.factory(code)
+            options = Dict()
+            ratio = float(request.get_json().get('ratio'))
+            sdate = request.get_json().get('sdate')
+            if 'edate' in request.get_json():
+                options.edate = request.get_json().get('edate')
+            rv = sidb.adjust_split_stock(ratio, sdate, **options)
+            app.logger.debug(f'adjust_split_stock rv={rv} code={code} ratio={ratio} sdate={sdate}')
+        except Exception as e:
+            return Reply.Fail(message=f"Error adjust_split_stock, {e}")
+        if rv:
+            return Reply.Success()
+        return Reply.Fail(message='No Data or Failed to adjust')
+
+
 @app.route('/ajax/stock/item/<code>/columns/<month>', methods=['GET', 'POST'])
 @login_required
 @role_required('STOCK')
@@ -89,23 +115,71 @@ def ajax_stock_query_columns(code, month):
         return Reply.Success(value=Reply.Data(tdata))
 
 
-@app.route('/ajax/stock/item/<code>/simulation/<month>', methods=['GET', 'POST'])
+# @app.route('/ajax/stock/item/<code>/simulation/<month>', methods=['GET', 'POST'])
+# @login_required
+# @role_required('STOCK')
+# def ajax_stock_simulation_table(code, month):
+#     collector = Collector()
+#     with collector.lock:
+#         if collector.is_working(code):
+#             return Reply.Fail(message="Not Ready, Still be Collecting Data.")
+#         try:
+#             # colnames = ['stamp', 'start', 'low', 'high', 'end', 'volume']
+#             sidb = StockItemDB.factory(code)
+#             tdata = StockQuery.raw_data_of_each_colnames(
+#                                 sidb, months=int(month), **request.get_json())
+#             if len(tdata.fields) == 0:
+#                 raise Exception
+#             algo = AlgoTable(tdata)
+#             pdata = algo.process()
+#         except Exception:
+#             collector.collect(code)
+#             return Reply.Fail(message="Collector is Gathering Data.")
+#         return Reply.Success(value=Reply.Data(pdata))        
+
+
+@app.route('/ajax/stock/item/<code>/simulation/<index>', methods=['POST'])
 @login_required
 @role_required('STOCK')
-def ajax_stock_simulation_table(code, month):
+def ajax_stock_simulation_table(code, index):
     collector = Collector()
     with collector.lock:
         if collector.is_working(code):
             return Reply.Fail(message="Not Ready, Still be Collecting Data.")
         try:
             # colnames = ['stamp', 'start', 'low', 'high', 'end', 'volume']
-            sidb = StockItemDB.factory(code)
-            tdata = StockQuery.raw_data_of_each_colnames(
-                                sidb, months=int(month), **request.get_json())
-            if len(tdata.fields) == 0:
-                raise Exception
-            algo = AlgoTable(tdata)
-            pdata = algo.process()
+            pdata = IterAlgo.compute_index(code, index, **request.get_json())
+            # sidb = StockItemDB.factory(code)
+            # tdata = StockQuery.raw_data_of_each_colnames(
+            #                     sidb, months=int(month), **request.get_json())
+            # if len(tdata.fields) == 0:
+            #     raise Exception
+            # algo = AlgoTable(tdata)
+            # pdata = algo.process()
+        except Exception:
+            collector.collect(code)
+            return Reply.Fail(message="Collector is Gathering Data.")
+        return Reply.Success(value=Reply.Data(pdata))        
+
+
+@app.route('/ajax/stock/item/<code>/simulation-chart/<index>', methods=['POST'])
+@login_required
+@role_required('STOCK')
+def ajax_stock_simulation_chart(code, index):
+    collector = Collector()
+    with collector.lock:
+        if collector.is_working(code):
+            return Reply.Fail(message="Not Ready, Still be Collecting Data.")
+        try:
+            # colnames = ['stamp', 'start', 'low', 'high', 'end', 'volume']
+            pdata = IterAlgo.compute_index_chart(code, index, **request.get_json())
+            # sidb = StockItemDB.factory(code)
+            # tdata = StockQuery.raw_data_of_each_colnames(
+            #                     sidb, months=int(month), **request.get_json())
+            # if len(tdata.fields) == 0:
+            #     raise Exception
+            # algo = AlgoTable(tdata)
+            # pdata = algo.process()
         except Exception:
             collector.collect(code)
             return Reply.Fail(message="Collector is Gathering Data.")

@@ -18,7 +18,7 @@ class TestAlgorithm(unittest.TestCase):
             fd.write(json.dumps(data))
 
 
-    def test_fetch_finance_data(self):
+    def test_AlgoTable(self):
         stockcode = '030200'
         # stockcode = '001800'
         # stockcode = '009150'
@@ -26,29 +26,25 @@ class TestAlgorithm(unittest.TestCase):
         colnames = ['stamp', 'start', 'low', 'high', 'end', 'volume']
         qdata = StockQuery.raw_data_of_each_colnames(sidb, colnames, months=60)
         
-        # it = IterAlgo()
-        # sim = it.run(qdata)
-        # data_folder = f'STalk_{stockcode}'
-        # if not os.path.exists(data_folder):
-        #     os.mkdir(data_folder)
-
-        # for i, v in enumerate(sim.too_much):
-        #     sfile = f'{data_folder}/too_much{i+1:03d}.log'
-        #     self.as_file(sfile, v)
-
-        # for i, v in enumerate(sim.per_day):
-        #     sfile = f'{data_folder}/per_day{i+1:03d}.log'
-        #     self.as_file(sfile, v)
-
-        # for i, v in enumerate(sim.ecount):
-        #     sfile = f'{data_folder}/ecount{i+1:03d}.log'
-        #     self.as_file(sfile, v)
-
         algo = AlgoTable(qdata)
         pdata = algo.process()
 
         pd = pickle.dumps(pdata)
         pickle.loads(pd)
+    
+    def test_IterAlgo(self):
+        stockcode = '030200'
+        index = 0
+        
+        data = IterAlgo.compute_index(stockcode, index)
+        pd = pickle.dumps(data)
+        pickle.loads(pd)
 
-        # print('Report', pdata.report)
-        # print(json.dumps(pdata))      
+    # def test_adjust_split_stock(self):
+    #     stockcode = '001800'
+    #     rate = 20
+    #     sdate = '2017-07-06'
+    #     sidb = StockItemDB.factory(stockcode)
+    #     rv = sidb.adjust_split_stock(rate, sdate)
+    #     print('-----------------', rv)
+    #     del sidb

@@ -109,6 +109,53 @@ class StockItemDB(SSimpleDB):
             data.append(item)
         return self.upsert_array('stock_day', data=data)
 
+    def adjust_split_stock(self, ratio, sdate, **kwargs):
+        def adjust_data(idivs, imuls, field):
+            for i in range(len(field)):
+                if i in idivs:
+                    if field[i]:
+                        field[i] = int(field[i]/ratio)
+                if i in imuls:
+                    if field[i]:
+                        field[i] = int(field[i]*ratio)
+            return field
+        
+        edate = kwargs.get('edate', '1970-01-01')
+        divcolnames = ['start', 'end', 'high', 'low',]
+        mulcolnames = ['volume', 'foreigner', 'institute', 'person', 'short', 'shortamount']
+        date_start = DateTool.to_datetime(sdate)
+        date_end =  DateTool.to_datetime(edate)
+        if (date_start-date_end).days >= 0:
+            date_start, date_end = date_end, date_start
+
+        # print('@@', ratio, date_start, date_end, )
+        tablename = 'stock_day'
+        # colnames = self.get_colnames(tablename)
+        colnames = ['stamp'] + list(set(divcolnames+mulcolnames))
+        columns = [Column(x) for x in colnames]
+        table = self.get_table(tablename)
+        sql = sqlalchemy.sql.select(columns).where(
+            and_(DateTool.to_strfdate(date_start) <= table.c.stamp,
+                 table.c.stamp <= DateTool.to_strfdate(date_end))).\
+            order_by(table.c.stamp.asc())
+        try:
+            fields = self.session.query(sql).all()
+        except Exception as e:
+            # print('@@', 'Query Error')
+            raise StockItemDB.Error(f'{e}')
+        
+        idivs = [colnames.index(x) for x in divcolnames]
+        imuls = [colnames.index(x) for x in mulcolnames]
+        data = []
+        # print('@@', 'Query', len(fields), len(data))
+        for i, v in enumerate(fields):
+            # print(i, v, end=':')
+            v = adjust_data(idivs, imuls, list(v))
+            # print(v)
+            data.append(dict(zip(colnames, v)))
+        # print(str(data))
+        return self.upsert_array(tablename, data=data)
+
 
 class DataCollection:
     class Error(Exception):

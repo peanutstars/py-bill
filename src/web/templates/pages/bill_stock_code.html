@@ -104,40 +104,56 @@
     <div class="row">
       <div id="chart-investor" style="width: 99%; height: 350px;"></div>
     </div>
+  </div>
 
-    <div class="row">
-      <div class="btn-group">
-          <button type="button" id="download-csv" class="button bottom small">CSV</button>
-          <button type="button" id="download-simulation-csv" class="button bottom small green">Simulation CSV</button>      
-      </div>
+  <div>
+    <div>
+      <ul class="actions">
+        <li><b>Data</b></li>
+        <li><a href="#" class="button small" id="download-csv">CSV</a></li>
+      </ul>    
     </div>
-    <p></p>
-    
+    <div>
+      <ul class="actions">
+        <li><b>Simulation</b></li>
+        <li><a href="#" class="simulation control button small" id="draw-previous">&lt;</a></li>
+        <li><input type="text" class="simulation control small" id="simulation-index" placeholder="Index"/></li>
+        <li><a href="#" class="simulation control button small" id="draw-next">&gt;</a></li>
+        <li><a href="#" class="simulation control button small" id="draw-simulation-chart">Chart</a></li>
+        <li><a href="#" class="simulation control button small" id="download-simulation-csv">CSV</a></li>
+      </ul>  
+    </div>
     <div class="row">
-      <div class="col-4 col-12-medium">
-        <h4 id="investors-trading"><span class="fa fa-caret-right"></span> Investors Trading</h4>
-        <table id="investors-trading-table" style="display: none;">
+      <div class="simulation area" id="simulation-chart" style="width: 99%; height: 350px; display: none"></div>
+    </div>
+    <div class="simulation area box" id="simulation-config" style="margin: 0; display: none;"></div>  
+  </div>
+
+  <div class="row">
+    <div class="col-4 col-12-medium">
+      <h4 id="investors-trading"><span class="fa fa-caret-right"></span> Investors Trading</h4>
+      <table id="investors-trading-table" style="display: none;">
+        <thead>
+          <tr><th>Date</th><th class="align-center" colspan="2">Foreign</th><th>Institute</th><th>Person</th><tr>
+        </thead>
+        <tbody id="tbody-invtbl">
+        </tbody>
+      </table>
+    </div>
+    <div class="col-8 col-12-medium">
+      <h4 id="daily-price"><span class="fa fa-caret-right"></span> Daily Price</h4>
+      <div id="daily-price-table" style="display: none;">
+        <table>
           <thead>
-            <tr><th>Date</th><th class="align-center" colspan="2">Foreign</th><th>Institute</th><th>Person</th><tr>
+            <tr><th>Date</th><th>End</th><th>Rate</th><th>Start</th><th>High</th><th>Low</th><th>Volume</th><tr>
           </thead>
-          <tbody id="tbody-invtbl">
+          <tbody id="tbody-daily">
           </tbody>
-        </table>
-      </div>
-      <div class="col-8 col-12-medium">
-        <h4 id="daily-price"><span class="fa fa-caret-right"></span> Daily Price</h4>
-        <div id="daily-price-table" style="display: none;">
-          <table>
-            <thead>
-              <tr><th>Date</th><th>End</th><th>Rate</th><th>Start</th><th>High</th><th>Low</th><th>Volume</th><tr>
-            </thead>
-            <tbody id="tbody-daily">
-            </tbody>
-          </table>  
-        </div>
+        </table>  
       </div>
     </div>
   </div>
+  
 </section>
 {% endblock %}
 
@@ -146,7 +162,14 @@
 <script type="text/javascript">
   $(function(){
     _code = "{{ extra_info.code }}";
-    _data = {investor: 'investor3'};
+    _data = {
+      investor: 'investor3',
+      chart: {
+        simulation: {
+          index: null,
+        }
+      }
+    };
     _chartWidth = null;
 
     // Chart
@@ -173,26 +196,81 @@
     stock.query_investors_table(_code, 1, render_investors_table);
     stock.query_daily_table(_code, 1, render_daily_table);
     initButtonInvestor();
+    init_extra_buttons();
 
     util.gui.show.area("#investors-trading", "#investors-trading span", "#investors-trading-table");
     util.gui.show.area("#daily-price", "#daily-price span", "#daily-price-table");
-    $("#download-csv").on('click', function(){
+  });
+
+  function init_extra_buttons() {
+    let sim_ctl_selector = $('.simulation.control');
+    let sim_area_selector = $('.simulation.area');
+    let index_selector = $("#simulation-index");
+    let get_index = function(){
+      let index = parseInt(index_selector.val());
+      return (isNaN(index)) ? 0 : index;
+    };
+    $("#download-csv").on('click', function(e){
+      let selector = $("#download-csv");
       let to_csv = function(data){
         let title = $("header h2 a").text();
         // let date = new Date().toISOString();
         util.file.query_to_csv(title+'-daily.csv', title, data);
+        selector.removeClass('disabled');
       };
-      stock.query_daily_table(_code, 60, to_csv);
+      e.preventDefault();
+      selector.addClass('disabled');
+      stock.query_table(_code, 60, to_csv);
     });
-    $("#download-simulation-csv").on('click', function(){
+    $("#download-simulation-csv").on('click', function(e){
       let to_csv = function(data){
         let title = $("header h2 a").text();
         // let date = new Date().toISOString();
-        util.file.query_to_csv(title+'-simulation.csv', title, data);
+        index_selector.val(data.cfg.algo.index);
+        util.file.sim_data_to_csv(title+'-simulation.csv', title, data);
+        sim_ctl_selector.each(function(idx){$(this).removeClass('disabled');});
       };
-      stock.query_simulation_table(_code, 60, to_csv);
+      e.preventDefault();
+      selecsim_ctl_selectortor.each(function(idx){$(this).addClass('disabled');});
+      stock.query_simulation(_code, get_index(), {}, to_csv);
     });
-  });
+    let draw_chart = function(index) {
+      let sim_data_selector = $("#simulation-config");
+      let do_draw = function(data){
+        sim_area_selector.each(function(i){$(this).show()});
+        let info = '<b>CFG</b><br/>'+JSON.stringify(data.cfg)+'<br/><b>REPORT</b><br/>'+JSON.stringify(data.report);
+        index_selector.val(data.cfg.algo.index);
+        sim_data_selector.html(info);
+        drawSimulationChart(data);
+        _data.chart.simulation.index = data.cfg.algo.index;
+        sim_ctl_selector.each(function(i){$(this).removeClass('disabled');});
+      }
+      sim_data_selector.html('');
+      sim_ctl_selector.each(function(i){$(this).addClass('disabled');});
+      stock.query_simulation_chart(_code, index, {}, do_draw);
+    };
+    $("#draw-simulation-chart").on('click', function(e){
+      e.preventDefault();
+      let index = get_index();
+      if (_data.chart.simulation.index != index) {
+        draw_chart(index);
+      }
+    });
+    $("#draw-previous").on('click', function(e){
+      e.preventDefault();
+      let index = Math.max(get_index()-1, 0);
+      if (_data.chart.simulation.index != index) {
+        draw_chart(index);
+      }
+    });
+    $("#draw-next").on('click', function(e){
+      e.preventDefault();
+      let index = get_index()+1;
+      if (_data.chart.simulation.index != index) {
+        draw_chart(index);
+      }
+    });
+  }
 
   function initButtonInvestor() {
     var months = [3, 6, 12, 24, 36];
@@ -347,13 +425,14 @@
       var options = {
         legend: { position: 'top' },
         width: _chartWidth,
-        chartArea: {width: '85%', height: '75%'},
+        chartArea: {width: '92%', height: '75%', left: 0},
         // hAxis: {format: 'yy.M'},
         hAxis: {format: 'yy.M.d'},
         // vAxis: {textPosition: 'none'},
-        vAxis: {1: {maxValue: invdata.endmax, minValue: invdata.endmin},
-                0: {textPosition: 'none'},
-                gridlines: {color: 'transparent'}},
+        vAxis: { 0: {gridlines: {color: 'transparent'}}, 
+                 1: {maxValue: invdata.endmax, minValue: invdata.endmin} },
+        vAxes: { 0: {ticks: [], textStyle: {fontSize: 0}},
+                 1: {gridlines: { count:0}} },
         colors: ['#F5B041', '#A569BD', '#5DADE2', '#34495E', '#D5DBDB'],
         series: {
           4: {type: "area", targetAxisIndex: 1, areaOpacity: 0.25}
@@ -370,29 +449,78 @@
       setTimeout(drawChartInvestorTrand, 250);
     }
   }
-  function drawChartCandle() {
-    var data = google.visualization.arrayToDataTable([
-      //  low, start, high, end
-      ['Mon', 20, 28, 38, 45],
-      ['Tue', 31, 38, 55, 66],
-      ['Wed', 50, 55, 77, 80],
-      ['Thu', 77, 77, 66, 50],
-      ['Fri', 68, 66, 22, 15]
-      // Treat first row as data as well.
-    ], true);
 
-    var options = {
-      legend:'none',
-      width: document.getElementById('chart-candle').offsetWidth,
-      chartArea: {width: '85%', height: '75%'},
-      candlestick: {
-        risingColor: {stroke: 'red', fill: 'red'},
-        fallingColor: {stroke: 'blue', fill: 'blue'}
-      },
+  function drawSimulationChart(sdata) {
+    let data = new google.visualization.DataTable();
+    let cdata = [];
+    let colnames = {};
+    colnames.end = 'End';
+    colnames.afhuu = "HUU";
+    colnames.buycnt = "BPoint";
+    colnames.sellcnt = "SPoint";
+    for (var i in sdata.colnames) {
+      if (i==0) {
+        data.addColumn('date', 'X');
+        continue;
+      }
+      data.addColumn('number', colnames[sdata.colnames[i]]);
+    }
+    for (var row of sdata.fields) {
+      let date = row.shift();
+      cdata.push([new Date(date.split('-'))].concat(row));
+    }
+    data.addRows(cdata);
+
+    // console.log(invdata);
+    if (_chartWidth == null) {
+      _chartWidth = document.getElementById('chart-investor').offsetWidth;
+    }
+    console.log('### '+document.getElementById('percent-box').offsetWidth);
+
+    let options = {
+      legend: { position: 'top' },
+      width: _chartWidth,
+      chartArea: {width: '92%', height: '75%', right: 0},
+      // // hAxis: {format: 'yy.M'},
+      hAxis: {format: 'yy.M.d'},
+      // // vAxis: {textPosition: 'none'},
+      // vAxis: { 0: {gridlines: {color: 'transparent'}}}, 
+      //          1: {maxValue: invdata.endmax, minValue: invdata.endmin} },
+      vAxes: { 1: {gridlines: { count:0}} },
+      colors: ['blue', 'orange', 'gray', 'red'],
+      series: {
+        1: {targetAxisIndex: 1},
+        2: {targetAxisIndex: 1},
+        3: {targetAxisIndex: 1},
+      }
     };
-
-    var chart = new google.visualization.CandlestickChart(document.getElementById('chart-candle'));
+    let chart = new google.visualization.LineChart(document.getElementById('simulation-chart'));
     chart.draw(data, options);
   }
+
+  // function drawChartCandle() {
+  //   var data = google.visualization.arrayToDataTable([
+  //     //  low, start, high, end
+  //     ['Mon', 20, 28, 38, 45],
+  //     ['Tue', 31, 38, 55, 66],
+  //     ['Wed', 50, 55, 77, 80],
+  //     ['Thu', 77, 77, 66, 50],
+  //     ['Fri', 68, 66, 22, 15]
+  //     // Treat first row as data as well.
+  //   ], true);
+
+  //   var options = {
+  //     legend:'none',
+  //     width: document.getElementById('chart-candle').offsetWidth,
+  //     chartArea: {width: '85%', height: '75%'},
+  //     candlestick: {
+  //       risingColor: {stroke: 'red', fill: 'red'},
+  //       fallingColor: {stroke: 'blue', fill: 'blue'}
+  //     },
+  //   };
+
+  //   var chart = new google.visualization.CandlestickChart(document.getElementById('chart-candle'));
+  //   chart.draw(data, options);
+  // }
 </script>
 {% endblock %}

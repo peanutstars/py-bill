@@ -13,14 +13,12 @@
 {% block bodyscript %}
 <script type="text/javascript">
   $(function(){
-    _data = {};
+    _data = {
+      stockList: null,
+    };
 
-    get_stock_list(render_stock_list);
+    stock.query_all_list(render_stock_list);
   });
-
-  function get_stock_list(cb) {
-    ajax.post('/ajax/stock/list', {}, cb);
-  }
 
   function get_first_character(word) {
     var cho_pool = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
@@ -36,6 +34,7 @@
   function render_stock_list(list) {
     var char, pchar=null;
     var html = '';
+    _data.stockList = list;
     for (var i in list) {
       var codename = list[i].codeName;
       var code = list[i].short_code.substring(1);

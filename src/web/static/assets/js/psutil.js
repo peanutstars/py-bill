@@ -34,6 +34,13 @@
           });      
         }
       },
+      spot_flash: function(selector, msg, color, duration) {
+        let html = '<span style="color: '+color+';">'+msg+'</span>';
+        $(selector).html(html);
+        if (duration > 0) {
+          setTimeout(function(){$(selector).html('')}, duration*1000);
+        }
+      }
     },
     file: {
       downloadCSV: function (filename, content) {
@@ -60,10 +67,37 @@
         }
         this.downloadCSV(filename, csv);
       },
+      sim_data_to_csv: function(filename, title, data) {
+        let EOL = '\r\n'
+        let csv = '';
+        let idx;
+        csv += title +(','.repeat(data.colnames.length-1))+ EOL.repeat(2);
+        csv += 'Report,"'+JSON.stringify(data.report)+'"'+(','.repeat(data.colnames.length-2))+ EOL;
+        csv += 'CFG,"'+JSON.stringify(data.cfg)+'"'+(','.repeat(data.colnames.length-2))+EOL.repeat(2);
+        csv += data.colnames.join() + EOL;
+        for (idx in data.fields) {
+          csv += data.fields[idx].join() + EOL;
+        }
+        this.downloadCSV(filename, csv);
+      },
     },
     formatNumber: function(num) {
       return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
     },
+    paddingNumber: function(num, length) {
+      let s = '0000000000000000'+parseInt(num);
+      return s.substr(s.length-length);
+    },
+    isValidDate: function(dstr) {
+      let darr = dstr.split('-').map(function(e){
+        return parseInt(e);
+      });
+      if (darr.length < 3) {
+        return false;
+      }
+      let date = new Date(darr);
+      return (date == 'Invalid Date') ? false : true;
+    }
   };
   stock = {
     kakao_brief_stock: function(code, cb) {
@@ -88,14 +122,20 @@
       let params = {method: 'GET', url: url, datatype: 'json', params: {ids: data.join()}, duration: 120};
       ajax.post('/ajax/proxy', params, function(resp){cb(resp.recentSecurities);});
     },
+    query_all_list: function(cb) {
+      ajax.post('/ajax/stock/list', {}, cb);
+    },
     query_delete_recent_stock: function(code, cb) {
       ajax.delete('/ajax/stock/item/'+code, {}, cb);
     },
     query_columns: function(code, months, params, cb) {
       ajax.post('/ajax/stock/item/'+code+'/columns/'+months, params, cb);
     },
-    query_simulation: function(code, months, params, cb) {
-      ajax.post('/ajax/stock/item/'+code+'/simulation/'+months, params, cb);
+    query_simulation: function(code, index, params, cb) {
+      ajax.post('/ajax/stock/item/'+code+'/simulation/'+index, params, cb);
+    },
+    query_simulation_chart: function(code, index, params, cb) {
+      ajax.post('/ajax/stock/item/'+code+'/simulation-chart/'+index, params, cb);
     },
     query_investors_graph: function(code, months, cb) {
       var params = {
@@ -110,8 +150,11 @@
     query_daily_table: function(code, months, cb) {
       this.query_columns(code, months, {colnames: ['stamp', 'start', 'high', 'low', 'end', 'volume']}, cb);
     },
-    query_simulation_table: function(code, months, cb) {
-      this.query_simulation(code, months, {colnames: ['stamp', 'start', 'high', 'low', 'end', 'volume']}, cb);
+    query_table: function(code, months, cb) {
+      this.query_columns(code, months, {colnames: []}, cb);
+    },
+    adjust_stock_split: function(code, params, cb){
+      ajax.post('/ajax/stock/item/'+code+'/adjust-stock-split', params, cb);
     },
     text_compare_color: function(pprice, price){
       if (pprice > price)
@@ -123,6 +166,18 @@
     text_color_ralign: function(num, right) {
       var color = (num > 0) ? 'stock color-up' : ((num < 0) ? 'stock color-down': 'stock');
       return right ? color+' align-right': color;
+    },
+    has_code: function(code, list) {
+      if (code) {
+        let short_code = 'A'+util.paddingNumber(code, 6);
+        for (var i in list) {
+          let item = list[i];
+          if (item.short_code == short_code) {
+            return true;
+          }
+        } 
+      }
+      return false;
     }
   },
   ajax = {
