@@ -164,7 +164,9 @@ class Collector(Manager, metaclass=SSingleton):
         self.iprint(f'EVENT HOUR {datetime.datetime.now()} {id(self)}')
 
     def _worker_event(self):
-        if self.event.stamp < time.time():
+        curtime = time.time()
+        # print(self.event.stamp, curtime)
+        if self.event.stamp < curtime:
             event = self.Scheduler.next()
             self.iprint(f'EVENT@{self.event.event}')
             if self.event.event == self.Scheduler.EVENT_COLLECT:
@@ -210,10 +212,10 @@ class Collector(Manager, metaclass=SSingleton):
                     item == self.CMD_QUIT:
                 break
 
+            self._worker_event()
             if not item:
                 self._worker_item_process()
-                continue
-            self._worker_item(item)
-            self._worker_event()
+            else:
+                self._worker_item(item)
 
         self.dprint("<Collector::worker(end)>")

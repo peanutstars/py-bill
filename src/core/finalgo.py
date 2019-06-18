@@ -392,7 +392,8 @@ class CalBuy(AlgoProc):
         indexes = [self.ivolume, self.iamount, self.iaverage]
 
         buy_count = field[self.ibcnt]
-        if buy_count > 0:
+        bprice = field[self.ibprice]
+        if buy_count > 0 and bprice > 0:
             self.volume += 1
             self.amount += (1 * field[self.ibprice])
             self.average = int(self.amount / self.volume)
@@ -484,8 +485,9 @@ class CalSell(AlgoProc):
         profit = None
         field = fields[idx]
 
-        if field[self.iscnt] > 0:
-            amount = field[self.ivolume] * field[self.isprice]
+        sprice = field[self.isprice]
+        if field[self.iscnt] > 0 and sprice > 0:
+            amount = field[self.ivolume] * sprice
             profit = '{:.2f}'.format((amount/field[self.ibamount]*100)-100)
             self.investment_amount += field[self.ibamount]
             self.earnings_amount += amount
@@ -528,7 +530,7 @@ class AlgoTable:
         cfg.algo.start.stamp = None
         cfg.gradient.accum = 5
         cfg.sum.accums = [3, 6, 12]                 # [2..5][4..10][8..20]
-        cfg.minmax.accums = [1, 2, 4, 8, 12, 18]
+        cfg.minmax.accums = [1, 2, 3, 6, 9, 12]     # [1, 2, 4, 8, 12, 18]
         cfg.curve.step = cls.get_curve_step_params(cfg.sum.accums)
         cfg.price.ref_colname.low = 'low'
         cfg.price.ref_colname.high = 'high'
@@ -599,19 +601,17 @@ class IterAlgo:
                           'hhup_lwhh_begin hhup_lwhh_append '
                           'sum_accum_index')
     SUM_ACCUMS = [
-        [2, 3, 4], [2, 3, 6], [2, 3, 8], [2, 3, 10],
-        [2, 4, 6], [2, 4, 8], [2, 4, 10], [2, 4, 12],
-        [3, 5, 7], [3, 5, 9], [3, 5, 11],
+        [2, 3, 4], [2, 3, 5], [2, 3, 6],  # [2, 3, 8], [2, 3, 10],
+        [2, 4, 6], [2, 4, 8],  # [2, 4, 10], [2, 4, 12],
+        [2, 5, 10],
+        [3, 5, 7], [3, 5, 9],  # [3, 5, 11],
         [3, 6, 9], [3, 6, 12],
-        [4, 6, 8], [4, 6, 10], [4, 6, 12],
-        [4, 7, 10], [4, 7, 12], [4, 7, 14],
-        [4, 8, 12], [4, 8, 16],
-        [4, 9, 14], 
-        [5, 10, 15], [5, 10, 20],
-        [6, 12, 18]
+        [4, 5, 6], [4, 5, 10],
+        [4, 6, 8], 
+        [4, 7, 10],
     ]
     MINMAX_ACCUMS = [
-        [1, 2, 4, 8, 12, 18], [1, 2, 3, 6, 9, 12]
+        [1, 2, 3, 6, 9, 12],  # [1, 2, 4, 8, 12, 18], 
     ]
 
     def __init__(self):
@@ -619,15 +619,15 @@ class IterAlgo:
         # return_rate = range(7, 16, 2)
         minmax_index = range(len(self.MINMAX_ACCUMS))
         self.iterlist.append(minmax_index)
-        hhupup_thresholds = range(0, 5)
+        hhupup_thresholds = range(0, 3)
         self.iterlist.append(hhupup_thresholds)
-        hhupup_begin = range(10, 21, 2)
+        hhupup_begin = range(14, 21)
         self.iterlist.append(hhupup_begin)
-        hhupup_append = range(2, 9, 2)
+        hhupup_append = range(3, 8)
         self.iterlist.append(hhupup_append)
-        hhup_lwhh_begin = range(3, 9, 2)
+        hhup_lwhh_begin = range(3, 8)
         self.iterlist.append(hhup_lwhh_begin)
-        hhup_lwhh_append = range(1,6)
+        hhup_lwhh_append = range(0, 5)
         self.iterlist.append(hhup_lwhh_append)
         sum_accum_index = range(len(self.SUM_ACCUMS))
         self.iterlist.append(sum_accum_index)
@@ -681,7 +681,7 @@ class IterAlgo:
     @classmethod
     def save_data(cls, fname, data):
         with codecs.open(fname, 'w', encoding='utf-8') as fd:
-            m = cls.brief_dump(data) + '\n'
+            m = cls.dump_brief(data) + '\n'
             fd.write(m)
             fd.write(json.dumps(data))
 
@@ -698,12 +698,11 @@ class IterAlgo:
         sidb = StockItemDB.factory(code)
         qdata = StockQuery.raw_data_of_each_colnames(sidb, colnames, months=months)
         it = cls()
-        sim = it.run(qdata, work_folder=folder)
-
-        for k in list(sim.keys()):
-            for i, v in enumerate(sim[k]):
-                fname = f'{folder}/{k}-{i:06d}.log'
-                cls.save_data(fname, v)
+        it.run(qdata, work_folder=folder)
+        # for k in list(sim.keys()):
+        #     for i, v in enumerate(sim[k]):
+        #         fname = f'{folder}/{k}-{i:06d}.log'
+        #         cls.save_data(fname, v)
 
     @classmethod
     def compute_index(cls, code, index, **kwargs):
@@ -757,13 +756,13 @@ class IterAlgo:
         return filter_out(colnames, data)
 
     @classmethod
-    def brief_dump(cls, data):
+    def dump_brief(cls, data):
         c = data.cfg
         b = data.cfg.buy.after.hhupup
         r = data.report
         m  = f'{c.algo.index:06d}:' if type(c.algo.index) is int else '------:'
-        m += f'{c.sum.accums}:'
-        m += f'{c.minmax.accums}:'
+        m += f'{" ".join([str(x) for x in c.sum.accums])}:'
+        m += f'{" ".join([str(x) for x in c.minmax.accums])}:'
         m += f'{b.begin} {b.append}:'
         m += f'{b.hhup_lwhh.begin} {b.hhup_lwhh.append}:'
         m += f'{b.thresholds}:'
@@ -772,59 +771,27 @@ class IterAlgo:
         return m
 
     def run(self, qdata, **kwargs):
-        def sort_much(x):
-            r = x.report
-            if mindays <= r.investment_days and r.investment_days <= maxdays:
-                return r.investment_amount * r.return_rate
-            return 0
-
-        def sort_per_day(x):
-            r = x.report
-            if mindays <= r.investment_days and r.investment_days <= maxdays:
-                return r.investment_amount * r.return_rate / r.investment_days
-            return 0
-        
-        def sort_ecount(x):
-            r = x.report
-            return (r.earnings_count*100)+r.return_rate
-
-        pick_too_much = kwargs.get('too_much', 20)
-        pick_per_day = kwargs.get('per_day', 50)
-        pick_ecount = kwargs.get('ecount', 50)
         work_folder = kwargs.get('work_folder', None)
         
         sim = Dict()
-        sim.too_much = []
-        sim.per_day = []
-        sim.ecount = []
         cpu = multiprocessing.cpu_count()
         pool = multiprocessing.Pool(processes=cpu)
-        mindays = len(qdata.fields)/5
-        maxdays = len(qdata.fields)/2.75
+        max_ecount = 0
         logfd = None
         
         if work_folder and os.path.exists(work_folder):
-            logfile = f'{work_folder}/index_brief.txt'
+            logfile = f'{work_folder}/brief.txt'
             logfd = codecs.open(logfile, 'w', encoding='utf-8')
 
         for data in pool.imap(self.calculate, self.gen_params(qdata)):
             if logfd:
-                m = self.brief_dump(data) + '\n'
+                m = self.dump_brief(data) + '\n'
                 logfd.write(m)
 
-            sim.too_much.append(data)
-            sim.too_much.sort(key=lambda x: sort_much(x), reverse=True)
-            sim.too_much = sim.too_much[:pick_too_much]
-
-            sim.per_day.append(data)
-            sim.per_day.sort(key=lambda x: sort_per_day(x), reverse=True)
-            sim.per_day = sim.per_day[:pick_per_day]
-
-            sim.ecount.append(data)
-            sim.ecount.sort(key=lambda x: sort_ecount(x), reverse=True)
-            sim.ecount = sim.per_day[:pick_ecount]
+            max_ecount = max(data.report.earnings_count, max_ecount)
 
         if logfd:
+            logfd.write(f'MAX Earnings Count: {max_ecount} \n')
             logfd.close()
 
         return sim
