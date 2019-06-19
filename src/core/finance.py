@@ -154,7 +154,9 @@ class StockItemDB(SSimpleDB):
             # print(v)
             data.append(dict(zip(colnames, v)))
         # print(str(data))
-        return self.upsert_array(tablename, data=data)
+        rv = self.upsert_array(tablename, data=data)
+        FCache().clear()
+        return rv
 
 
 class DataCollection:

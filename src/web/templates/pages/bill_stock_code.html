@@ -108,19 +108,19 @@
 
   <div>
     <div>
-      <ul class="actions">
-        <li><b>Data</b></li>
+      <h3>Data</h3>
+      <ul class="row actions">
         <li><a href="#" class="button small" id="download-csv">CSV</a></li>
       </ul>    
     </div>
     <div>
-      <ul class="actions">
-        <li><b>Simulation</b></li>
-        <li><a href="#" class="simulation control button small" id="draw-previous">&lt;</a></li>
+      <h3>Simulation</h3>
+      <ul class="row actions">
+        <li><a href="#" class="simulation control bottom button small" id="draw-previous">&lt;</a></li>
         <li><input type="text" class="simulation control small" id="simulation-index" placeholder="Index"/></li>
-        <li><a href="#" class="simulation control button small" id="draw-next">&gt;</a></li>
-        <li><a href="#" class="simulation control button small" id="draw-simulation-chart">Chart</a></li>
-        <li><a href="#" class="simulation control button small" id="download-simulation-csv">CSV</a></li>
+        <li><a href="#" class="simulation control bottom button small" id="draw-next">&gt;</a></li>
+        <li><a href="#" class="simulation control bottom button small" id="draw-simulation-chart">Chart</a></li>
+        <li><a href="#" class="simulation control bottom button small" id="download-simulation-csv">CSV</a></li>
       </ul>  
     </div>
     <div class="row">
@@ -153,7 +153,28 @@
       </div>
     </div>
   </div>
-  
+  {% if current_user.is_authorized('ADMIN') %}
+  <p/>
+  <div class="row">
+    <div class="col-12 col-12-medium col-12-small">
+      <h3 id="adjust-split-stock"><span class="fa fa-caret-right"> Adjust Split Stock</span></h3>
+      <div id="adjust-split-stock-table" style="display: none;">
+        <table>
+          <thead></thead>
+          <tbody>
+            <tr><th>Ratio</th><td><input type="text" id="ass-ratio" value="" placeholder="Ratio" /></td><tr>
+            <tr><th>From Date</th><td><input type="text" id="ass-from-date" value="" placeholder="YYYY-MM-DD" /></td><tr>
+            <tr><th>To Date</th><td><input type="text" id="ass-to-date" value="" placeholder="None | YYYY-MM-DD" /></td><tr>
+            <tr><td colspan="2">
+              <div class="pull-right"><button id="button-ass-apply" class="button small gray">Apply</button></div>
+              <div id="ass-msg"></div>
+            </td><tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 </section>
 {% endblock %}
 
@@ -197,9 +218,11 @@
     stock.query_daily_table(_code, 1, render_daily_table);
     initButtonInvestor();
     init_extra_buttons();
+    init_ass_button();
 
     util.gui.show.area("#investors-trading", "#investors-trading span", "#investors-trading-table");
     util.gui.show.area("#daily-price", "#daily-price span", "#daily-price-table");
+    util.gui.show.area("#adjust-split-stock", "#adjust-split-stock span", "#adjust-split-stock-table")
   });
 
   function init_extra_buttons() {
@@ -231,7 +254,7 @@
         sim_ctl_selector.each(function(idx){$(this).removeClass('disabled');});
       };
       e.preventDefault();
-      selecsim_ctl_selectortor.each(function(idx){$(this).addClass('disabled');});
+      sim_ctl_selector.each(function(idx){$(this).addClass('disabled');});
       stock.query_simulation(_code, get_index(), {}, to_csv);
     });
     let draw_chart = function(index) {
@@ -302,6 +325,48 @@
       })
     });
   }
+
+  function init_ass_button() {
+    $("#button-ass-apply").on('click', function(){
+      let code = _code;
+      let ratio = $("#ass-ratio").val();
+      let from_date = $("#ass-from-date").val();
+      let to_date = $("#ass-to-date").val();
+      let period = 1.5;
+      let params = {};
+
+      do
+      {
+        if (isNaN(parseFloat(ratio))) {
+          util.gui.spot_flash('#ass-msg', 'Invalid a Ratio', 'red', period);
+          break;
+        }
+        if ( ! util.isValidDate(from_date)) {
+          util.gui.spot_flash('#ass-msg', 'Invalid a From Date', 'red', period);
+          break;
+        }
+        if (to_date) {
+          if ( ! util.isValidDate(to_date)) {
+            util.gui.spot_flash('#ass-msg', 'Invalid a To Date', 'red', period);
+            break;
+          } else {
+            params.edate = to_date;
+          }
+        }
+        code = util.paddingNumber(code, 6);
+        params.ratio = ratio;
+        params.sdate = from_date;
+        util.gui.spot_flash('#ass-msg', 'Processing ...', 'orange', 0);
+        stock.adjust_stock_split(code, params, function(resp){
+          $("#ass-ratio").val('');
+          $("#ass-from-date").val('');
+          $("#ass-to-date").val('');
+          util.gui.spot_flash('#ass-msg', 'Done to adjust.', 'green', 0);
+        });
+      }while(false);
+    });
+  }
+
   function render_kakao_brief_stock(data){
     _data.code = data;
     console.log(data);
@@ -421,7 +486,7 @@
       if (_chartWidth == null) {
         _chartWidth = document.getElementById('chart-investor').offsetWidth;
       }
-      console.log('### '+document.getElementById('percent-box').offsetWidth);
+      // console.log('### '+document.getElementById('percent-box').offsetWidth);
       var options = {
         legend: { position: 'top' },
         width: _chartWidth,
