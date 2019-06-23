@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import codecs
+import hashlib
 import itertools
 import json
 import multiprocessing
@@ -423,22 +424,54 @@ class CondSell(AlgoProc):
         _minmax_percent = OpMinMax.COLNAME_PERCENT.format
         self.percents = [_minmax_percent(x) for x in cfg.minmax.accums]
         self.ipercents = [colnames.index(x) for x in self.percents]
+        self.std_hhupup = int(cfg.buy.after.hhupup.begin/2)
+        self.ihhupup = colnames.index(CondBuy.COLNAME_AFTER_HHUPUP)
+        self.rrate = 1.0 + cfg.price.sell.return_rate/100.0
+        self.method = cfg.sell.method
 
     def process(self, cfg, idx, fields):
-        def to_rate(rate):
-            return 1.0 + rate/100.0
-
         sellcnt = 0
         sreason = ''
         field = fields[idx]
 
         if field[self.ibvolume] > 0:
-            if self.is_any(self.isteps, ['HH','HH',None], field):
-                # XXX: Added New Condition
-                # if self.is_ge_all(self.ipercents, [None,None,None,60,None,None], field):
-                wanted = field[self.ibaverage]*to_rate(cfg.price.sell.return_rate)
-                if field[self.isprice] > wanted:
-                    sellcnt = self.HERE_IT_GO
+            # if self.method == 1:
+            #     if self.is_any(self.isteps, ['HH','HH',None], field):
+            #         # XXX: Added New Condition
+            #         # if self.is_ge_any(self.ipercents, [150,130,110,100,None,None], field):
+            #         #    if field[self.ihhupup] >= self.std_hhupup:
+            #         wanted = field[self.ibaverage]*self.rrate
+            #         if field[self.isprice] > wanted:
+            #             sellcnt = self.HERE_IT_GO
+
+            # if self.method == 2:
+            #     if self.is_any(self.isteps, ['HH','HH',None], field):
+            #         # XXX: Added New Condition
+            #         if self.is_ge_any(self.ipercents, [150,125,105,95,None,None], field):
+            #             if field[self.ihhupup] >= self.std_hhupup:
+            #                 wanted = field[self.ibaverage]*self.rrate
+            #                 if field[self.isprice] > wanted:
+            #                     sellcnt = self.HERE_IT_GO
+
+            if self.method == 3:
+                if self.is_any(self.isteps, ['HH','HH',None], field) or \
+                self.is_or('is_all', self.isteps, [['DN','UP',None], ['LW','UP',None]], field):
+                    # XXX: Added New Condition
+                    if self.is_ge_any(self.ipercents, [150,125,105,95,None,None], field):
+                        if field[self.ihhupup] >= self.std_hhupup:
+                            wanted = field[self.ibaverage]*self.rrate
+                            if field[self.isprice] > wanted:
+                                sellcnt = self.HERE_IT_GO
+
+            if self.method == 4:
+                if self.is_any(self.isteps, ['HH','HH',None], field) or \
+                self.is_or('is_all', self.isteps, [['DN','UP',None], ['LW','UP',None]], field):
+                    # XXX: Added New Condition
+                    # if self.is_ge_any(self.ipercents, [150,130,110,95,None,None], field):
+                    if field[self.ihhupup] >= self.std_hhupup:
+                        wanted = field[self.ibaverage]*self.rrate
+                        if field[self.isprice] > wanted:
+                            sellcnt = self.HERE_IT_GO
 
         indexes = [self.iscnt, self.isreason]
         values = [sellcnt, sreason]
@@ -448,6 +481,7 @@ class CondSell(AlgoProc):
 class CalSell(AlgoProc):
     COLNAME_SELL_AMOUNT =   'samount'
     COLNAME_SELL_PROFIT =   'profit'
+    WORK_DAYS_PER_YEAR =    245
 
     def __init__(self, cfg, colnames, calbuy):
         super(CalSell, self).__init__()
@@ -465,6 +499,7 @@ class CalSell(AlgoProc):
         self.earnings_amount = 0
         self.investment_days = 0
         self.earnings_count = 0
+        self.earnings_last_count = 0
     
     def get_report(self):
         def to_float(x):
@@ -478,6 +513,7 @@ class CalSell(AlgoProc):
         report.return_rate = to_float(profit)
         report.investment_days = self.investment_days
         report.earnings_count = self.earnings_count
+        report.earnings_last_count = self.earnings_last_count
         return report
 
     def process(self, cfg, idx, fields):
@@ -492,6 +528,8 @@ class CalSell(AlgoProc):
             self.investment_amount += field[self.ibamount]
             self.earnings_amount += amount
             self.earnings_count += 1
+            if idx >= (len(fields)-self.WORK_DAYS_PER_YEAR):
+                self.earnings_last_count += 1
             self.calbuy.reset(field=field)
 
         if field[self.ivolume] > 0:
@@ -503,6 +541,7 @@ class CalSell(AlgoProc):
 
 
 class AlgoTable:
+    NAME = 'JNLON'
 
     def __init__(self, qdata, cfg=None):
         self.qdata = Dict(json.loads(json.dumps(qdata)))
@@ -544,6 +583,7 @@ class AlgoTable:
         cfg.buy.after.hhupup.hhup_lwhh.begin = 5    # [3..8]
         cfg.buy.after.hhupup.hhup_lwhh.append = 2   # [1..5]
         cfg.buy.after.hhupup.thresholds = 0         # [0..7]
+        cfg.sell.method = 4
         return cfg
 
     @classmethod
@@ -596,7 +636,7 @@ class AlgoTable:
 
 class IterAlgo:
     CfgParam = namedtuple('CfgParam', 
-                          'minmax_index '
+                          'sell_method minmax_index '
                           'hhupup_thresholds hhupup_begin hhupup_append '
                           'hhup_lwhh_begin hhup_lwhh_append '
                           'sum_accum_index')
@@ -610,13 +650,13 @@ class IterAlgo:
         [4, 6, 8], 
         [4, 7, 10],
     ]
-    MINMAX_ACCUMS = [
-        [1, 2, 3, 6, 9, 12],  # [1, 2, 4, 8, 12, 18], 
-    ]
+    MINMAX_ACCUMS = [[1, 2, 3, 6, 9, 12]]  # [1, 2, 4, 8, 12, 18], 
+    COND_SELL_METHOD = [3, 4]
 
     def __init__(self):
         self.iterlist = []
-        # return_rate = range(7, 16, 2)
+        sell_method = range(len(self.COND_SELL_METHOD))
+        self.iterlist.append(sell_method)
         minmax_index = range(len(self.MINMAX_ACCUMS))
         self.iterlist.append(minmax_index)
         hhupup_thresholds = range(0, 3)
@@ -644,6 +684,7 @@ class IterAlgo:
         cfg.buy.after.hhupup.hhup_lwhh.begin = p.hhup_lwhh_begin
         cfg.buy.after.hhupup.hhup_lwhh.append = p.hhup_lwhh_append
         cfg.buy.after.hhupup.thresholds = p.hhupup_thresholds
+        cfg.sell.method = IterAlgo.COND_SELL_METHOD[p.sell_method]
         return cfg
 
     def gen_params(self, data):
@@ -689,8 +730,8 @@ class IterAlgo:
     def compute(cls, code, **kwargs):
         def_colnames = ['stamp', 'start', 'low', 'high', 'end', 'volume']
         colnames = kwargs.get('colnames', def_colnames)
-        months = kwargs.get('months', 60)
-        folder = f'st_{code}'
+        months = kwargs.get('months', 72)
+        folder = kwargs.get('folder', 'brief')
 
         if not os.path.exists(folder):
             os.mkdir(folder)
@@ -698,19 +739,15 @@ class IterAlgo:
         sidb = StockItemDB.factory(code)
         qdata = StockQuery.raw_data_of_each_colnames(sidb, colnames, months=months)
         it = cls()
-        it.run(qdata, work_folder=folder)
-        # for k in list(sim.keys()):
-        #     for i, v in enumerate(sim[k]):
-        #         fname = f'{folder}/{k}-{i:06d}.log'
-        #         cls.save_data(fname, v)
+        it.run(qdata, work_folder=folder, code=code, months=months)
 
     @classmethod
     def compute_index(cls, code, index, **kwargs):
         def_colnames = ['stamp', 'start', 'low', 'high', 'end', 'volume']
         colnames = kwargs.get('colnames', def_colnames)
-        months = kwargs.get('months', 60)
+        months = kwargs.get('months', 72)
         fg_save = kwargs.get('save_file', False)
-        folder = kwargs.get('folder', f'st_{code}')
+        folder = kwargs.get('folder', 'brief')
         cfg = kwargs.get('cfg', None)
 
         sidb = StockItemDB.factory(code)
@@ -726,7 +763,7 @@ class IterAlgo:
         if fg_save:
             if not os.path.exists(folder):
                 os.mkdir(folder)
-            fname = f'{folder}/index-{index:06d}.log'
+            fname = f'{folder}/index-{code}-{index:06d}.log'
             cls.save_data(fname, data)
 
         return data
@@ -734,6 +771,8 @@ class IterAlgo:
     @classmethod
     def compute_index_chart(cls, code, index, **kwargs):
         def filter_out(cns, data):
+            # cns: Colnames
+            # icns: index Colnames
             icns = [data.colnames.index(x) for x in cns]
             fields = data.fields
             istamp = data.colnames.index('stamp')
@@ -759,6 +798,7 @@ class IterAlgo:
     def dump_brief(cls, data):
         c = data.cfg
         b = data.cfg.buy.after.hhupup
+        s = data.cfg.sell
         r = data.report
         m  = f'{c.algo.index:06d}:' if type(c.algo.index) is int else '------:'
         m += f'{" ".join([str(x) for x in c.sum.accums])}:'
@@ -766,32 +806,45 @@ class IterAlgo:
         m += f'{b.begin} {b.append}:'
         m += f'{b.hhup_lwhh.begin} {b.hhup_lwhh.append}:'
         m += f'{b.thresholds}:'
+        m += f'{s.method}:'
         m += f'{r.investment_amount} {r.return_rate} {r.investment_days} '
-        m += f'{r.earnings_count} '
+        m += f'{r.earnings_count} {r.earnings_last_count}'
         return m
 
     def run(self, qdata, **kwargs):
         work_folder = kwargs.get('work_folder', None)
+        code = kwargs.get('code', 'XXXXXX')
+        months = kwargs.get('months')
         
         sim = Dict()
         cpu = multiprocessing.cpu_count()
         pool = multiprocessing.Pool(processes=cpu)
+        std_ecount = int((months/12)*(2/3))
         max_ecount = 0
         logfd = None
+        md5 = hashlib.md5()
         
         if work_folder and os.path.exists(work_folder):
-            logfile = f'{work_folder}/brief.txt'
+            logfile = f'{work_folder}/brief-{code}.txt'
+            # if 'ENV_CASE_ALGO' in os.environ:
+            #     env_algo = os.environ["ENV_CASE_ALGO"]
+            #     logfile = f'{work_folder}/brief-{env_algo}.txt'
             logfd = codecs.open(logfile, 'w', encoding='utf-8')
 
         for data in pool.imap(self.calculate, self.gen_params(qdata)):
             if logfd:
-                m = self.dump_brief(data) + '\n'
-                logfd.write(m)
+                if data.report.earnings_count >= std_ecount:
+                    m = self.dump_brief(data) + '\n'
+                    md5.update(m.encode('utf-8'))
+                    logfd.write(m)
 
             max_ecount = max(data.report.earnings_count, max_ecount)
 
         if logfd:
-            logfd.write(f'MAX Earnings Count: {max_ecount} \n')
+            m = f'MAX Earnings Count: {max_ecount} \n'
+            md5.update(m.encode('utf-8'))
+            logfd.write(m)
+            logfd.write(f'{md5.hexdigest()}')
             logfd.close()
 
         return sim

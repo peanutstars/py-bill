@@ -95,11 +95,11 @@
   <div>
     <h4>Investor Trands</h4>
     <div class="btn-group">
-      <button type="button" class="button bottom small gray button-investor" value="investor3">3Ms</button>
-      <button type="button" class="button bottom small button-investor" value="investor6">6Ms</button>
+      <button type="button" class="button bottom small gray button-investor" value="investor3">3M</button>
+      <button type="button" class="button bottom small button-investor" value="investor6">6M</button>
       <button type="button" class="button bottom small button-investor" value="investor12">1Y</button>
-      <button type="button" class="button bottom small button-investor" value="investor24">2Ys</button>
-      <button type="button" class="button bottom small button-investor" value="investor36">3Ys</button>
+      <button type="button" class="button bottom small button-investor" value="investor24">2Y</button>
+      <button type="button" class="button bottom small button-investor" value="investor36">3Y</button>
     </div>
     <div class="row">
       <div id="chart-investor" style="width: 99%; height: 350px;"></div>
@@ -115,13 +115,20 @@
     </div>
     <div>
       <h3>Simulation</h3>
-      <ul class="row actions">
+      <ul class="row actions" style="margin-bottom: 0.5em;">
         <li><a href="#" class="simulation control bottom button small" id="draw-previous">&lt;</a></li>
         <li><input type="text" class="simulation control small" id="simulation-index" placeholder="Index"/></li>
         <li><a href="#" class="simulation control bottom button small" id="draw-next">&gt;</a></li>
+        <li><input type="text" class="simulation control small" id="simulation-months" placeholder="months"/></li>
         <li><a href="#" class="simulation control bottom button small" id="draw-simulation-chart">Chart</a></li>
         <li><a href="#" class="simulation control bottom button small" id="download-simulation-csv">CSV</a></li>
-      </ul>  
+      </ul>
+      <ul class="row actions">
+        <li><a href="#" class="simulation control button small gray button-simulation" value="6">6M</a></li>
+        <li><a href="#" class="simulation control button small button-simulation" value="12">1Y</a></li>
+        <li><a href="#" class="simulation control button small button-simulation" value="24">2Y</a></li>
+        <li><a href="#" class="simulation control button small button-simulation" value="0">MAX</a></li>
+      </ul>
     </div>
     <div class="row">
       <div class="simulation area" id="simulation-chart" style="width: 99%; height: 350px; display: none"></div>
@@ -188,6 +195,9 @@
       chart: {
         simulation: {
           index: null,
+          key: 6,
+          data: null,
+          months: null,
         }
       }
     };
@@ -229,10 +239,28 @@
     let sim_ctl_selector = $('.simulation.control');
     let sim_area_selector = $('.simulation.area');
     let index_selector = $("#simulation-index");
+    let months_selector = $("#simulation-months");
     let get_index = function(){
       let index = parseInt(index_selector.val());
       return (isNaN(index)) ? 0 : index;
     };
+    $(".button-simulation").each(function(idx){
+      $(this).on("click", function(e){
+        e.preventDefault();
+        // inactived button, set the default
+        $(".button-simulation").each(function(idx){
+          $(this).removeClass("gray")
+        });
+        // activating the selected button
+        $(this).addClass("gray");
+        let key = parseInt($(this).attr('value'));
+        if (_data.chart.simulation.key == key) {
+          return;
+        }
+        _data.chart.simulation.key = key;
+        draw_chart(get_index());
+      });
+    });
     $("#download-csv").on('click', function(e){
       let selector = $("#download-csv");
       let to_csv = function(data){
@@ -255,7 +283,9 @@
       };
       e.preventDefault();
       sim_ctl_selector.each(function(idx){$(this).addClass('disabled');});
-      stock.query_simulation(_code, get_index(), {}, to_csv);
+      let months = (months_selector.val().length > 0)?Math.max(parseInt(months_selector.val()),72):null;
+      let options = (months) ? {months: months} : {};
+      stock.query_simulation(_code, get_index(), options, to_csv);
     });
     let draw_chart = function(index) {
       let sim_data_selector = $("#simulation-config");
@@ -266,32 +296,31 @@
         sim_data_selector.html(info);
         drawSimulationChart(data);
         _data.chart.simulation.index = data.cfg.algo.index;
+        _data.chart.simulation.data = data;
         sim_ctl_selector.each(function(i){$(this).removeClass('disabled');});
       }
-      sim_data_selector.html('');
-      sim_ctl_selector.each(function(i){$(this).addClass('disabled');});
-      stock.query_simulation_chart(_code, index, {}, do_draw);
+      let months = (months_selector.val().length > 0)?Math.max(parseInt(months_selector.val()),72):null;
+      if (_data.chart.simulation.index != index || _data.chart.simulation.months != months) {
+        let options = (months) ? {months: months} : {};
+        _data.chart.simulation.months = months;
+        sim_data_selector.html('');
+        sim_ctl_selector.each(function(i){$(this).addClass('disabled');});
+        stock.query_simulation_chart(_code, index, options, do_draw);
+      } else {
+        do_draw(_data.chart.simulation.data);
+      }
     };
     $("#draw-simulation-chart").on('click', function(e){
       e.preventDefault();
-      let index = get_index();
-      if (_data.chart.simulation.index != index) {
-        draw_chart(index);
-      }
+      draw_chart(get_index());
     });
     $("#draw-previous").on('click', function(e){
       e.preventDefault();
-      let index = Math.max(get_index()-1, 0);
-      if (_data.chart.simulation.index != index) {
-        draw_chart(index);
-      }
+      draw_chart(Math.max(get_index()-1, 0));
     });
     $("#draw-next").on('click', function(e){
       e.preventDefault();
-      let index = get_index()+1;
-      if (_data.chart.simulation.index != index) {
-        draw_chart(index);
-      }
+      draw_chart(get_index()+1);
     });
   }
 
@@ -517,7 +546,6 @@
 
   function drawSimulationChart(sdata) {
     let data = new google.visualization.DataTable();
-    let cdata = [];
     let colnames = {};
     colnames.end = 'End';
     colnames.afhuu = "HUU";
@@ -530,17 +558,26 @@
       }
       data.addColumn('number', colnames[sdata.colnames[i]]);
     }
-    for (var row of sdata.fields) {
-      let date = row.shift();
-      cdata.push([new Date(date.split('-'))].concat(row));
+    if (sdata.cdata) {
+
+    } else {
+      let cdata = [];
+      for (var row of sdata.fields) {
+        let date = row.shift();
+        cdata.push([new Date(date.split('-'))].concat(row));
+      }
+      sdata.cdata = cdata;
     }
-    data.addRows(cdata);
+    let sidx = _data.chart.simulation.key;
+    sidx = (sidx == 0) ? 0 : (sdata.cdata.length - 23*sidx);
+    sidx = Math.max(sidx, 0);
+    data.addRows(sdata.cdata.slice(sidx));
 
     // console.log(invdata);
     if (_chartWidth == null) {
       _chartWidth = document.getElementById('chart-investor').offsetWidth;
     }
-    console.log('### '+document.getElementById('percent-box').offsetWidth);
+    // console.log('### '+document.getElementById('percent-box').offsetWidth);
 
     let options = {
       legend: { position: 'top' },
