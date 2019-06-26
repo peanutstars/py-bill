@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import codecs
+import datetime
 import hashlib
 import itertools
 import json
@@ -499,7 +500,7 @@ class CalSell(AlgoProc):
         self.earnings_amount = 0
         self.investment_days = 0
         self.earnings_count = 0
-        self.earnings_last_count = 0
+        self.last_earnings_count = 0
     
     def get_report(self):
         def to_float(x):
@@ -513,7 +514,7 @@ class CalSell(AlgoProc):
         report.return_rate = to_float(profit)
         report.investment_days = self.investment_days
         report.earnings_count = self.earnings_count
-        report.earnings_last_count = self.earnings_last_count
+        report.last_earnings_count = self.last_earnings_count
         return report
 
     def process(self, cfg, idx, fields):
@@ -529,7 +530,7 @@ class CalSell(AlgoProc):
             self.earnings_amount += amount
             self.earnings_count += 1
             if idx >= (len(fields)-self.WORK_DAYS_PER_YEAR):
-                self.earnings_last_count += 1
+                self.last_earnings_count += 1
             self.calbuy.reset(field=field)
 
         if field[self.ivolume] > 0:
@@ -635,6 +636,9 @@ class AlgoTable:
 
 
 class IterAlgo:
+    class Error(Exception):
+        pass
+
     CfgParam = namedtuple('CfgParam', 
                           'sell_method minmax_index '
                           'hhupup_thresholds hhupup_begin hhupup_append '
@@ -731,7 +735,7 @@ class IterAlgo:
         def_colnames = ['stamp', 'start', 'low', 'high', 'end', 'volume']
         colnames = kwargs.get('colnames', def_colnames)
         months = kwargs.get('months', 72)
-        folder = kwargs.get('folder', 'brief')
+        folder = kwargs.get('folder', 'algo')
 
         if not os.path.exists(folder):
             os.mkdir(folder)
@@ -747,7 +751,7 @@ class IterAlgo:
         colnames = kwargs.get('colnames', def_colnames)
         months = kwargs.get('months', 72)
         fg_save = kwargs.get('save_file', False)
-        folder = kwargs.get('folder', 'brief')
+        folder = kwargs.get('folder', 'algo')
         cfg = kwargs.get('cfg', None)
 
         sidb = StockItemDB.factory(code)
@@ -803,12 +807,12 @@ class IterAlgo:
         m  = f'{c.algo.index:06d}:' if type(c.algo.index) is int else '------:'
         m += f'{" ".join([str(x) for x in c.sum.accums])}:'
         m += f'{" ".join([str(x) for x in c.minmax.accums])}:'
-        m += f'{b.begin} {b.append}:'
-        m += f'{b.hhup_lwhh.begin} {b.hhup_lwhh.append}:'
+        m += f'{b.begin} {b.append} '
+        m += f'{b.hhup_lwhh.begin} {b.hhup_lwhh.append} '
         m += f'{b.thresholds}:'
         m += f'{s.method}:'
         m += f'{r.investment_amount} {r.return_rate} {r.investment_days} '
-        m += f'{r.earnings_count} {r.earnings_last_count}'
+        m += f'{r.earnings_count} {r.last_earnings_count}'
         return m
 
     def run(self, qdata, **kwargs):
@@ -821,11 +825,12 @@ class IterAlgo:
         pool = multiprocessing.Pool(processes=cpu)
         std_ecount = int((months/12)*(2/3))
         max_ecount = 0
+        max_last_ecount = 0
         logfd = None
         md5 = hashlib.md5()
         
         if work_folder and os.path.exists(work_folder):
-            logfile = f'{work_folder}/brief-{code}.txt'
+            logfile = f'{work_folder}/{code}.brief'
             # if 'ENV_CASE_ALGO' in os.environ:
             #     env_algo = os.environ["ENV_CASE_ALGO"]
             #     logfile = f'{work_folder}/brief-{env_algo}.txt'
@@ -837,17 +842,60 @@ class IterAlgo:
                     m = self.dump_brief(data) + '\n'
                     md5.update(m.encode('utf-8'))
                     logfd.write(m)
-
             max_ecount = max(data.report.earnings_count, max_ecount)
+            max_last_ecount = max(data.report.last_earnings_count, max_last_ecount)
 
         if logfd:
-            m = f'MAX Earnings Count: {max_ecount} \n'
+            m  = f'MAX Earnings Count: {max_ecount}\n'
+            m += f'MAX Last Earnings Count: {max_last_ecount}\n'
+            m += f'Build Date: {datetime.datetime.now().strftime("%Y-%m-%d")}\n'
             md5.update(m.encode('utf-8'))
             logfd.write(m)
-            logfd.write(f'{md5.hexdigest()}')
+            logfd.write(f'MD5SUM: {md5.hexdigest()}')
             logfd.close()
 
         return sim
+    
+    @classmethod
+    def load_brief(cls, code, **kwargs):
+        def col_to_list(arr):
+            return arr[:-1] + arr[-1].split()
+
+        folder = kwargs.get('folder', '/var/pybill/stock/algo')
+
+        data = Dict()
+        data.colnames = ['index', 'sum', 'minmax', 'hhupup', 'sell', 
+                         'iamount', 'return', 'idays', 'ecount', 'lecount']
+        data.fields = []
+        data.md5sum = False
+        md5 = hashlib.md5()
+        # _code = int(code)
+        path = f'{folder}/{int(code):06d}.brief'
+        if not os.path.exists(path):
+            cls.Error(f'Not Exists: {path}')
+
+        with codecs.open(path, 'r', encoding='utf-8') as fd:
+            for line in fd:
+                arr = line.split(':')
+                arrc = len(arr)
+                if arrc == 6:
+                    data.fields.append(col_to_list(arr))
+                else:
+                    if arr[0].find('MAX Earnings Count') >= 0:
+                        data.max_ecount = int(arr[1])
+                    elif arr[0].find('MAX Last Earnings Count') >= 0:
+                        data.max_lecount = int(arr[1])
+                    elif arr[0].find('Build Date') >= 0:
+                        data.build_date = arr[1].strip()
+                    elif arr[0].find('MD5SUM') >= 0:
+                        md5sum = arr[1].strip()
+                        if md5sum == md5.hexdigest():
+                            data.md5sum = True
+                    else:
+                        raise cls.Error(f'Unknown Format: "{line}"')
+                md5.update(line.encode('utf-8'))
+
+        return data
 
 
 if __name__ == '__main__':

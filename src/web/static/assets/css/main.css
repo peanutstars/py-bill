@@ -3686,3 +3686,9 @@ input, select, textarea {
 	.mb-zero {
 		margin-bottom: 0;
 	}
+	.etc.bottom {
+		margin-bottom: 0.25em;
+	}
+	.etc.small {
+		font-size: 0.8em;
+	}

@@ -48,3 +48,8 @@ class TestAlgorithm(unittest.TestCase):
     #     rv = sidb.adjust_split_stock(rate, sdate)
     #     print('-----------------', rv)
     #     del sidb
+
+    def test_load_brief(self):
+        stockcode = '030200'
+        data = IterAlgo.load_brief(stockcode, folder='./algo')
+        # print(json.dumps(data))

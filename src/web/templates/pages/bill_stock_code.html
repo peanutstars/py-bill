@@ -105,37 +105,6 @@
       <div id="chart-investor" style="width: 99%; height: 350px;"></div>
     </div>
   </div>
-
-  <div>
-    <div>
-      <h3>Data</h3>
-      <ul class="row actions">
-        <li><a href="#" class="button small" id="download-csv">CSV</a></li>
-      </ul>    
-    </div>
-    <div>
-      <h3>Simulation</h3>
-      <ul class="row actions" style="margin-bottom: 0.5em;">
-        <li><a href="#" class="simulation control bottom button small" id="draw-previous">&lt;</a></li>
-        <li><input type="text" class="simulation control small" id="simulation-index" placeholder="Index"/></li>
-        <li><a href="#" class="simulation control bottom button small" id="draw-next">&gt;</a></li>
-        <li><input type="text" class="simulation control small" id="simulation-months" placeholder="months"/></li>
-        <li><a href="#" class="simulation control bottom button small" id="draw-simulation-chart">Chart</a></li>
-        <li><a href="#" class="simulation control bottom button small" id="download-simulation-csv">CSV</a></li>
-      </ul>
-      <ul class="row actions">
-        <li><a href="#" class="simulation control button small gray button-simulation" value="6">6M</a></li>
-        <li><a href="#" class="simulation control button small button-simulation" value="12">1Y</a></li>
-        <li><a href="#" class="simulation control button small button-simulation" value="24">2Y</a></li>
-        <li><a href="#" class="simulation control button small button-simulation" value="0">MAX</a></li>
-      </ul>
-    </div>
-    <div class="row">
-      <div class="simulation area" id="simulation-chart" style="width: 99%; height: 350px; display: none"></div>
-    </div>
-    <div class="simulation area box" id="simulation-config" style="display: none;"></div>
-  </div>
-
   <div class="row">
     <div class="col-4 col-12-medium">
       <h4 id="investors-trading"><span class="fa fa-caret-right"></span> Investors Trading</h4>
@@ -160,6 +129,114 @@
       </div>
     </div>
   </div>
+
+  <div>
+    <div>
+      <h3>Data</h3>
+      <ul class="row actions">
+        <li><a href="#" class="button small" id="download-csv">CSV</a></li>
+      </ul>    
+    </div>
+    <div>
+      <h3>Simulation</h3>
+      <ul class="row actions" style="margin-bottom: 0.3em;">
+        <li><a href="#" class="simulation control bottom button small" id="draw-previous">&lt;</a></li>
+        <li><input type="text" class="simulation control small" id="simulation-index" placeholder="Index"/></li>
+        <li><a href="#" class="simulation control bottom button small" id="draw-next">&gt;</a></li>
+        <li><input type="text" class="simulation control small" id="simulation-months" style="width: 7em;" placeholder="months"/></li>
+        <li><a href="#" class="simulation control bottom button small" id="draw-simulation-chart">Chart</a></li>
+        <li><a href="#" class="simulation control bottom button small" id="download-simulation-csv">CSV</a></li>
+      </ul>
+      <ul class="row actions">
+        <li><a href="#" class="simulation control button small gray button-simulation" value="6">6M</a></li>
+        <li><a href="#" class="simulation control button small button-simulation" value="12">1Y</a></li>
+        <li><a href="#" class="simulation control button small button-simulation" value="24">2Y</a></li>
+        <li><a href="#" class="simulation control button small button-simulation" value="0">MAX</a></li>
+      </ul>
+    </div>
+    <div class="row">
+      <div class="simulation area" id="simulation-chart" style="width: 99%; height: 350px; display: none"></div>
+    </div>
+    <div class="simulation area box" id="simulation-config" style="display: none;"></div>
+
+{% if extra_info.algo %}
+    <h3>Algo Brief</h3>
+    <div id="algo-brief-load">
+      <ul class="row actions">
+        <li><a href="#" class="button small yellow" id="button-algo-brief-load">Load</a></li>
+      </ul>    
+    </div>
+    <div id="algo-brief-area" style="display: none;">
+      <div>
+        <ul class="row actions" style="margin-bottom: 0.3em;">
+          <li style="width: 7.5em;"><b class="etc small">Sell Mode</b></li>
+          <li>
+            <select class="etc bottom small" name="algo-brief-sell" id="algo-brief-sell">
+              <option value="0">All</option>
+              <option value="3">SM3</option>
+              <option value="4">SM4</option>
+            </select>
+          </li>
+        </ul>
+        <ul class="row actions" style="margin-bottom: 0.3em;">
+          <li style="width: 7.5em;"><b class="etc small">Return Rate</b></li>
+          <li><input type="text" class="etc bottom small" id="algo-brief-return-begin" placeholder="Begin" style="width: 7.5em;" /></li>
+          <li><input type="text" class="etc bottom small" id="algo-brief-return-end" placeholder="End | None" style="width: 7.5em;" /></li>
+        </ul>
+        <ul class="row actions" style="margin-bottom: 0.3em;">
+          <li style="width: 7.5em;"><b class="etc small">Investment Days</b></li>
+          <li><input type="text" class="etc bottom small" id="algo-brief-idays-begin" placeholder="Begin" style="width: 7.5em;" /></li>
+          <li><input type="text" class="etc bottom small" id="algo-brief-idays-end" placeholder="End | None" style="width: 7.5em;" /></li>
+        </ul>  
+        <ul class="row actions" style="margin-bottom: 0.3em;">
+          <li style="width: 7.5em;"><b class="etc small">Earn. count</b></li>
+          <li><input type="text" class="etc bottom small" id="algo-brief-ecount-begin" placeholder="Begin" style="width: 7.5em;" /></li>
+          <li><input type="text" class="etc bottom small" id="algo-brief-ecount-end" placeholder="End | None" style="width: 7.5em;" /></li>
+        </ul>    
+        <ul class="row actions" style="margin-bottom: 0.3em;">
+          <li style="width: 7.5em;"><b class="etc small">Last E. count</b></li>
+          <li><input type="text" class="etc bottom small" id="algo-brief-lecount-begin" placeholder="Begin" style="width: 7.5em;" /></li>
+          <li><input type="text" class="etc bottom small" id="algo-brief-lecount-end" placeholder="End | None" style="width: 7.5em;" /></li>
+        </ul>    
+        <ul class="row actions" style="margin-bottom: 0.3em;">
+          <li style="width: 7.5em;"></li>
+          <li><a href="#" class="algo brief table bottom button small disabled gray" id="algo-brief-table-filter-out">APPLY</a></li>
+        </ul>    
+      </div>
+      <div class="row">
+        <div class="col-12 col-12-medium">
+          <div class="row" style="margin-bottom: 0.3em;">
+            <div class="col-3 col-6-medium etc small"><B>Build Date</B></div>
+            <div class="col-3 col-6-medium etc small"><div id="algo-brief-build-date"></div></div>
+            <div class="col-3 col-6-medium etc small"><B>MD5SUM</B></div>
+            <div class="col-3 col-6-medium etc small"><div id="algo-brief-md5sum"></div></div>
+            <div class="col-3 col-6-medium etc small"><B>Earnings Count</B></div>
+            <div class="col-3 col-6-medium etc small"><div id="algo-brief-max-ecount"></div></div>
+            <div class="col-3 col-6-medium etc small"><B>Last Earnings Count</B></div>
+            <div class="col-3 col-6-medium etc small"><div id="algo-brief-max-lecount"></div></div>
+          </div>
+          
+          <ul class="row actions" style="margin-bottom: 0.3em;">
+            <li><a href="#" class="algo brief table bottom button small disabled" id="algo-brief-table-previous">&lt;</a></li>
+            <li><input type="text" class="algo brief table small" id="algo-brief-table-index" value="0" style="width: 5em;" disabled/></li>
+            <li>/ <span id="algo-brief-table-max-index"></span></li>
+            <li><a href="#" class="algo brief table bottom button small disabled" id="algo-brief-table-next">&gt;</a></li>
+          </ul>
+          
+          <table class="etc small">
+          <thead>
+              <tr><th>Index</th><th>Sum</th><th>MinMax</th><th>HhUpUp</th><th>Sell</th><th>IAmount</th><th>Return</th><th>IDays</th><th>ECount</th><th>LECount</th><tr>
+            </thead>
+            <tbody id="algo-brief-tbody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <p/>
+{% endif %} 
+  </div>
+
   {% if current_user.is_authorized('ADMIN') %}
   <p/>
   <div class="row">
@@ -199,9 +276,21 @@
           data: null,
           months: null,
         }
+      },
+      algo: {
+        have: {{ extra_info.algo|tojson }},
+        fields: null,
+        filtered: null,
+        index: null,
       }
     };
     _chartWidth = null;
+    // // check mobild
+    // if( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
+    //   $("#algo-brief").hide();
+    // } else {
+    //   $("#algo-brief").show();
+    // }
 
     // Chart
     google.charts.load('current', {'packages':['corechart']});
@@ -229,6 +318,7 @@
     initButtonInvestor();
     init_extra_buttons();
     init_ass_button();
+    init_algo_brief_load();
 
     util.gui.show.area("#investors-trading", "#investors-trading span", "#investors-trading-table");
     util.gui.show.area("#daily-price", "#daily-price span", "#daily-price-table");
@@ -394,6 +484,176 @@
         });
       }while(false);
     });
+  }
+
+  function init_algo_brief_load() {
+    $("#button-algo-brief-load").on('click', function(e){
+      e.preventDefault();
+      $("#algo-brief-load").hide();
+      $("#algo-brief-area").show();
+      init_algo_brief();
+    });
+  }
+
+  function init_algo_brief(){
+    let tbody_selector = $("#algo-brief-tbody");
+    let algo_brief_nav_selector = $('.algo.brief.table');
+    let algo_brief_nav_previous = $('#algo-brief-table-previous');
+    let algo_brief_nav_index = $("#algo-brief-table-index");
+    let algo_brief_table_max_index = $('#algo-brief-table-max-index');
+    let algo_brief_nav_next = $('#algo-brief-table-next');
+    let algo_brief_table_filter_out = $('#algo-brief-table-filter-out');
+    let algo_brief = {};
+    algo_brief.table_nav_enable = function(enable){
+      algo_brief_nav_selector.each(function(idx){
+        if (enable) {
+          if ($(this).get(0).tagName == 'A')
+            $(this).removeClass('disabled');
+          else
+            $(this).removeAttr('disabled');
+        } else {
+          if ($(this).get(0).tagName == 'A')
+            $(this).addClass('disabled');
+          else
+            $(this).attr('disabled','disabled');
+        }
+      });      
+    };
+    algo_brief.table_nav_next = function(e){
+      let index = parseInt(algo_brief_nav_index.val());
+      if (isNaN(index)) index = 0;
+      if ((index+1) < _data.algo.max_index) {
+        algo_brief_nav_index.val(index+1);
+      }
+      algo_brief.render_tbody();
+    };
+    algo_brief.table_nav_previous = function(e){
+      let index = parseInt(algo_brief_nav_index.val());
+      if (isNaN(index)) index = 0;
+      if ((index-1) >= 0) {
+        algo_brief_nav_index.val(index-1);
+      }
+      algo_brief.render_tbody();
+    };
+    algo_brief._filter_sell = function(data){
+      let filtered = [];
+      let selector = 'algo-brief-sell';
+      let foSell = $('#'+selector).val();
+      let isell = _data.algo.colnames.indexOf(selector.split('-').pop());
+      if (foSell == 0)
+        return data;
+      for (field of data) {
+        if (field[isell] == foSell)
+          filtered.push(field);
+      }
+      return filtered;
+    };
+    algo_brief._filter_range = function(selector, data) {
+      let foBegin = $('#'+selector+'-begin').val();
+      let foEnd = $('#'+selector+'-end').val();
+      let tag = selector.split('-').pop();
+      let itag = _data.algo.colnames.indexOf(tag);
+      if (foBegin.length == 0 && foEnd.length == 0)
+        return data;
+      let filtered = [];
+      if (foBegin.length > 0 && foEnd.length > 0) {
+        let begin = parseFloat(foBegin);
+        let end = parseFloat(foEnd);
+        for (field of data) {
+          let item = field[itag];
+          if (begin <= item && item <= end) filtered.push(field);
+        }
+      } else if (foBegin.length > 0) {
+        let begin = parseFloat(foBegin);
+        for (field of data) {
+          let item = field[itag];
+          if (begin <= item) filtered.push(field);
+        }
+      } else if (foEnd.length > 0){
+        let end = parseFloat(foEnd);
+        for (field of data) {
+          let item = field[itag];
+          if (item <= end) filtered.push(field);
+        }
+      } else {
+        return data;
+      }
+      return filtered;
+    };
+    algo_brief.filter_out = function(){
+      let filtered = [];
+      // console.log(_data.algo.colnames);
+      filtered = algo_brief._filter_sell(_data.algo.fields);
+      for (tag of ['return', 'idays', 'ecount', 'lecount']) {
+        filtered = algo_brief._filter_range('algo-brief-'+tag, filtered);
+      }
+      _data.algo.filtered = filtered;
+      let lastIAlign = (_data.algo.filtered.length%100) == 0 ? 0 : 1;
+      _data.algo.index = -1;
+      _data.algo.max_index = parseInt(_data.algo.filtered.length/100 + lastIAlign);
+      algo_brief_table_max_index.text(_data.algo.max_index-1);
+    };
+    algo_brief.render_tbody_field = function(items){
+      let html = '<tr>';
+      for (it of items){ html += '<td>'+it+'</td>'; }
+      return html+'</tr>';
+    };
+    algo_brief.render_tbody = function(){
+      let tbody = '';
+      let index = parseInt(algo_brief_nav_index.val());
+      let min = index * 100;
+      let max = (index+1) * 100;
+      if (index != _data.algo.index) {
+        for (let iindex=min; iindex<max; iindex++){
+          let field = _data.algo.filtered[iindex];
+          if (field) tbody += algo_brief.render_tbody_field(field);
+        }
+        tbody_selector.html(tbody);
+        _data.algo.index = index;
+      }
+      algo_brief.table_nav_enable(true);
+    };
+    algo_brief.render = function(data){
+      $('#algo-brief-build-date').text(data.build_date);
+      $('#algo-brief-md5sum').text(data.md5sum);
+      $('#algo-brief-max-ecount').text(data.max_ecount);
+      $('#algo-brief-max-lecount').text(data.max_lecount);
+      _data.algo.colnames = data.colnames;
+      _data.algo.fields = data.fields;
+      _data.algo.max_index = 0;
+      algo_brief.filter_out();
+      algo_brief.render_tbody();
+    };
+    algo_brief.clear = function(){
+      $('#algo-brief-build-date').text('');
+      $('#algo-brief-md5sum').text('');
+      $('#algo-brief-max-ecount').text('');
+      $('#algo-brief-max-lecount').text('');
+      algo_brief.table_nav_enable(false);
+      tbody_selector.html('');
+    };
+    let load_algo_brief = function(){
+      stock.query_algo_brief(_code, {}, algo_brief.render);
+    };
+    algo_brief.clear();
+    algo_brief_nav_next.on('click', function(e){
+      algo_brief.table_nav_enable(false);
+      e.preventDefault();
+      algo_brief.table_nav_next(e);
+    });
+    algo_brief_nav_previous.on('click', function(e){
+      algo_brief.table_nav_enable(false);
+      e.preventDefault();
+      algo_brief.table_nav_previous(e);
+    });
+    algo_brief_table_filter_out.on('click', function(e){
+      algo_brief.table_nav_enable(false);
+      e.preventDefault();
+      algo_brief_nav_index.val(0);
+      algo_brief.filter_out();
+      algo_brief.render_tbody();
+    });
+    load_algo_brief();
   }
 
   function render_kakao_brief_stock(data){

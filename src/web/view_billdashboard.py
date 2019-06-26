@@ -1,5 +1,5 @@
 # import codecs
-# import os
+import os
 import datetime
 
 from flask import render_template, flash, abort, session, request
@@ -10,10 +10,14 @@ from .account import role_required
 from .model import MStock, Reply
 # from core.finance import BillConfig
 from core.model import Dict
+from core.config import BillConfig
 from core.connect import FKrx, Http
 from core.finance import DataCollection, StockItemDB, StockQuery
 from core.finalgo import IterAlgo
 from core.manager import Collector
+
+
+_algo_folder = BillConfig().get_value('_config.db.stock_folder') + '/algo/'
 
 
 @app.route('/bill/dashboard')
@@ -38,8 +42,12 @@ def bill_stock(code):
         provider = DataCollection.factory_provider(code, 'krx')
     except DataCollection.Error:
         abort(404)
-    extra_info = {'code': code,
-                  'codename': provider.codename}
+
+    extra_info = {
+        'code': code,
+        'codename': provider.codename,
+        'algo': os.path.exists(_algo_folder+f'{code}.brief'),
+        }
     try:
         MStock.update(session['user_id'], code, provider.codename)
     except Exception as e:
@@ -92,6 +100,17 @@ def ajax_stock_adjust_stock_split(code):
         if rv:
             return Reply.Success()
         return Reply.Fail(message='No Data or Failed to adjust')
+
+
+@app.route('/ajax/stock/item/<code>/algo-brief', methods=['POST'])
+@login_required
+@role_required('STOCK')
+def ajax_stock_algo_brief(code):
+    algo = os.path.exists(_algo_folder+f'{code}.brief')
+    if algo is False:
+        return Reply.Fail(message='No Data of Algo Brief')
+    data = IterAlgo.load_brief(code, folder=_algo_folder)
+    return Reply.Success(value=Reply.Data(data))
 
 
 @app.route('/ajax/stock/item/<code>/columns/<month>', methods=['GET', 'POST'])
