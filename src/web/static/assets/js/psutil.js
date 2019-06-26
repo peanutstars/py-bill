@@ -147,6 +147,9 @@
     query_algo_brief: function(code, params, cb) {
       ajax.post('/ajax/stock/item/'+code+'/algo-brief', params, cb);
     },
+    query_algo_index_mark: function(code, index, cb){
+      ajax.post('/ajax/stock/item/'+code+'/algo-index-mark/'+index, {}, cb);
+    },
     query_investors_table: function(code, months, cb) {
       this.query_columns(code, months, {colnames: ['stamp', 'foreigner', 'frate', 'institute', 'person']}, cb);
     },

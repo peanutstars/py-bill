@@ -86,6 +86,7 @@ class MStock(db.Model):
     name = db.Column(db.String(32))
     atime = db.Column(db.DateTime, default=datetime.datetime.now)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    algo_index = db.Column(db.Integer)
     __table_args__ = (db.UniqueConstraint('user_id', 'code',
                                           name='_user_id_code'),)
 
@@ -109,9 +110,18 @@ class MStock(db.Model):
         # try:
         db.session().add(item)
         db.session().commit()
-        # except Exception as e:
-        #     db.session().rollback()
-        #     raise Exception(str(e))
+        return item
+
+    @classmethod
+    def mark(cls, user_id, code, index):
+        user_id = int(user_id)
+        item = MStock.query.filter_by(user_id=user_id, code=code).first()
+        if item:
+            item.algo_index = int(index)
+            db.session().add(item)
+            db.session().commit()
+            return
+        raise KeyError(f'Not Matched - USER ID={user_id} and CODE={code}')
 
     @classmethod
     def list(cls, user_id):

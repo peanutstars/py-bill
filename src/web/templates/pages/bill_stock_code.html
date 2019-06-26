@@ -141,11 +141,12 @@
       <h3>Simulation</h3>
       <ul class="row actions" style="margin-bottom: 0.3em;">
         <li><a href="#" class="simulation control bottom button small" id="draw-previous">&lt;</a></li>
-        <li><input type="text" class="simulation control small" id="simulation-index" placeholder="Index"/></li>
+        <li><input type="text" class="simulation control small" id="simulation-index" style="width: 5.5em;" placeholder="Index"/></li>
         <li><a href="#" class="simulation control bottom button small" id="draw-next">&gt;</a></li>
-        <li><input type="text" class="simulation control small" id="simulation-months" style="width: 7em;" placeholder="months"/></li>
+        <li><input type="text" class="simulation control small" id="simulation-months" style="width: 5.5em;" placeholder="months"/></li>
         <li><a href="#" class="simulation control bottom button small" id="draw-simulation-chart">Chart</a></li>
         <li><a href="#" class="simulation control bottom button small" id="download-simulation-csv">CSV</a></li>
+        <li><a href="#" class="simulation control bottom button small" id="download-simulation-mark">MARK</a></li>
       </ul>
       <ul class="row actions">
         <li><a href="#" class="simulation control button small gray button-simulation" value="6">6M</a></li>
@@ -157,7 +158,7 @@
     <div class="row">
       <div class="simulation area" id="simulation-chart" style="width: 99%; height: 350px; display: none"></div>
     </div>
-    <div class="simulation area box" id="simulation-config" style="display: none;"></div>
+    <div class="simulation area" id="simulation-config" style="display: none;"></div>
 
 {% if extra_info.algo %}
     <h3>Algo Brief</h3>
@@ -279,6 +280,7 @@
       },
       algo: {
         have: {{ extra_info.algo|tojson }},
+        mark: {{ extra_info.algo_index|tojson }},
         fields: null,
         filtered: null,
         index: null,
@@ -330,13 +332,24 @@
     let sim_area_selector = $('.simulation.area');
     let index_selector = $("#simulation-index");
     let months_selector = $("#simulation-months");
+    let mark_selector = $("#download-simulation-mark");
     let get_index = function(){
       let index = parseInt(index_selector.val());
       return (isNaN(index)) ? 0 : index;
     };
+    mark_selector.on('click', function(e){
+      e.preventDefault();
+      if ($(this).hasClass('blue')) {
+        $(this).removeClass('blue');
+        stock.query_algo_index_mark(_code, index_selector.val(), function(resp){});
+      } else {
+        $(this).addClass('blue');
+      }
+    });
     $(".button-simulation").each(function(idx){
       $(this).on("click", function(e){
         e.preventDefault();
+        mark_selector.removeClass('blue');
         // inactived button, set the default
         $(".button-simulation").each(function(idx){
           $(this).removeClass("gray")
@@ -377,13 +390,37 @@
       let options = (months) ? {months: months} : {};
       stock.query_simulation(_code, get_index(), options, to_csv);
     });
+    let dump_brief = function(cfg, report) {
+      let brief= [
+      '<table class="etc small">',
+      '  <thead>',
+      '    <tr><th>Index</th><th>Sum</th><th>MinMax</th><th>HhUpUp</th><th>Sell</th><th>IAmount</th><th>Return</th><th>IDays</th><th>ECount</th><th>LECount</th><tr>',
+      '  </thead>',
+      '  <tbody>',
+      '    <tr>',
+      '      <td>'+cfg.algo.index+'</td>',
+      '      <td>'+cfg.sum.accums.join(' ')+'</td>',
+      '      <td>'+cfg.minmax.accums.join(' ')+'</td>',
+      '      <td>'+cfg.buy.after.hhupup.begin+' '+cfg.buy.after.hhupup.append+' '+cfg.buy.after.hhupup.hhup_lwhh.begin+' '+cfg.buy.after.hhupup.hhup_lwhh.append+' '+cfg.buy.after.hhupup.thresholds+'</td>',
+      '      <td>'+cfg.sell.method+'</td>',
+      '      <td>'+report.investment_amount+'</td>',
+      '      <td>'+report.return_rate+'</td>',
+      '      <td>'+report.investment_days+'</td>',
+      '      <td>'+report.earnings_count+'</td>',
+      '      <td>'+report.last_earnings_count+'</td>',
+      '    </tr>',
+      '  </tbody>',
+      '</table>'
+      ];
+      return brief.join(' ');
+    };
     let draw_chart = function(index) {
       let sim_data_selector = $("#simulation-config");
       let do_draw = function(data){
         sim_area_selector.each(function(i){$(this).show()});
-        let info = '<b>CFG</b><br/>'+JSON.stringify(data.cfg)+'<br/><b>REPORT</b><br/>'+JSON.stringify(data.report);
+        // let info = '<b>CFG</b><br/>'+JSON.stringify(data.cfg)+'<br/><b>REPORT</b><br/>'+JSON.stringify(data.report);
         index_selector.val(data.cfg.algo.index);
-        sim_data_selector.html(info);
+        sim_data_selector.html(dump_brief(data.cfg, data.report));
         drawSimulationChart(data);
         _data.chart.simulation.index = data.cfg.algo.index;
         _data.chart.simulation.data = data;
@@ -412,6 +449,12 @@
       e.preventDefault();
       draw_chart(get_index()+1);
     });
+    if (_data.algo.mark) {
+      setTimeout(function(){
+        $('#simulation-index').val(parseInt(_data.algo.mark));
+        document.getElementById('draw-simulation-chart').click();
+      }, 100);
+    }
   }
 
   function initButtonInvestor() {
@@ -595,7 +638,10 @@
     };
     algo_brief.render_tbody_field = function(items){
       let html = '<tr>';
-      for (it of items){ html += '<td>'+it+'</td>'; }
+      html += '<td><a href="#" class="algo brief index">'+items[0]+'</a></td>'
+      for (it of items.slice(1)){ 
+        html += '<td>'+it+'</td>'; 
+      }
       return html+'</tr>';
     };
     algo_brief.render_tbody = function(){
@@ -610,6 +656,15 @@
         }
         tbody_selector.html(tbody);
         _data.algo.index = index;
+        $('.algo.brief.index').each(function(idx){
+          $(this).on('click', function(e){
+            e.preventDefault();
+            let index = $(this).text();
+            $('#simulation-index').val(index);
+            document.getElementById('draw-simulation-chart').click();
+            console.log('index', index);
+          });
+        });
       }
       algo_brief.table_nav_enable(true);
     };

@@ -43,15 +43,24 @@ def bill_stock(code):
     except DataCollection.Error:
         abort(404)
 
+    algo_index = None
+    m = MStock.query.filter_by(user_id=1, code=code).first()
+    if m and m.algo_index:
+        algo_index = m.algo_index
+
+    try:
+        m = MStock.update(session['user_id'], code, provider.codename)
+        if m and m.algo_index:
+            algo_index = m.algo_index
+    except Exception as e:
+        flash(f'DB Error - {e}')
+
     extra_info = {
         'code': code,
         'codename': provider.codename,
         'algo': os.path.exists(_algo_folder+f'{code}.brief'),
+        'algo_index': algo_index,
         }
-    try:
-        MStock.update(session['user_id'], code, provider.codename)
-    except Exception as e:
-        flash(f'DB Error - {e}')
     recent_stocks = MStock.list(session['user_id'])
     return render_template('pages/bill_stock_code.html',
                            extra_info=extra_info, recent_stocks=recent_stocks)
@@ -111,6 +120,19 @@ def ajax_stock_algo_brief(code):
         return Reply.Fail(message='No Data of Algo Brief')
     data = IterAlgo.load_brief(code, folder=_algo_folder)
     return Reply.Success(value=Reply.Data(data))
+
+
+@app.route('/ajax/stock/item/<code>/algo-index-mark/<index>', methods=['POST'])
+@login_required
+@role_required('STOCK')
+def ajax_stock_algo_index_mark(code, index):
+    try:
+        MStock.mark(session['user_id'], code, index)
+    except Exception as e:
+        emsg = f'DB Error - {e}'
+        flash(emsg)
+        return Reply.Fail(message=emsg)
+    return Reply.Success()
 
 
 @app.route('/ajax/stock/item/<code>/columns/<month>', methods=['GET', 'POST'])
