@@ -117,7 +117,7 @@ class MStock(db.Model):
         user_id = int(user_id)
         item = MStock.query.filter_by(user_id=user_id, code=code).first()
         if item:
-            item.algo_index = int(index)
+            item.algo_index = None if index == 'null' else int(index)
             db.session().add(item)
             db.session().commit()
             return

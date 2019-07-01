@@ -148,6 +148,7 @@
         <li><a href="#" class="simulation control bottom button small" id="download-simulation-csv">CSV</a></li>
         <li><a href="#" class="simulation control bottom button small" id="download-simulation-mark">MARK</a></li>
       </ul>
+      <span class="small">MARK - Click & Click to SET, Double-Click & Click to RESET</span>
       <ul class="row actions">
         <li><a href="#" class="simulation control button small gray button-simulation" value="6">6M</a></li>
         <li><a href="#" class="simulation control button small button-simulation" value="12">1Y</a></li>
@@ -155,10 +156,20 @@
         <li><a href="#" class="simulation control button small button-simulation" value="0">MAX</a></li>
       </ul>
     </div>
-    <div class="row">
-      <div class="simulation area" id="simulation-chart" style="width: 99%; height: 350px; display: none"></div>
+    <div class="simulation area" style="display: none;">
+      <div class="row">
+        <div id="simulation-chart" style="width: 99%; height: 350px;"></div>
+      </div>
+      <div style="display: none;">
+        <ul class="row actions pull-right">
+          <li><a href="#" class="simulation control button small shift" value="-6">&gt;</a></li>
+        </ul>
+        <ul class="row actions">
+          <li><a href="#" class="simulation control button small shift" value="6">&lt;</a></li>
+        </ul>
+      </div>
+      <div id="simulation-config"></div>
     </div>
-    <div class="simulation area" id="simulation-config" style="display: none;"></div>
 
 {% if extra_info.algo %}
     <h3>Algo Brief</h3>
@@ -340,16 +351,22 @@
     mark_selector.on('click', function(e){
       e.preventDefault();
       if ($(this).hasClass('blue')) {
-        $(this).removeClass('blue');
+        $(this).removeClass('blue').removeClass('red').text('MARK');
         stock.query_algo_index_mark(_code, index_selector.val(), function(resp){});
+      } else if($(this).hasClass('red')){
+        $(this).removeClass('blue').removeClass('red').text('MARK');
+        stock.query_algo_index_mark(_code, null, function(resp){});
       } else {
-        $(this).addClass('blue');
+        $(this).addClass('blue').text('SET');
       }
+    }).on('dblclick', function(e){
+      e.preventDefault();
+      $(this).removeClass('blue').addClass('red').text('CLEAR');
     });
     $(".button-simulation").each(function(idx){
       $(this).on("click", function(e){
         e.preventDefault();
-        mark_selector.removeClass('blue');
+        mark_selector.removeClass('blue').removeClass('red').text('MARK');
         // inactived button, set the default
         $(".button-simulation").each(function(idx){
           $(this).removeClass("gray")
@@ -363,6 +380,9 @@
         _data.chart.simulation.key = key;
         draw_chart(get_index());
       });
+    });
+    $(".simulation.control.shift").each(function(idx){
+      // TODO: Shift Graphic as a direction button.
     });
     $("#download-csv").on('click', function(e){
       let selector = $("#download-csv");

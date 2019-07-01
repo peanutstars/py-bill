@@ -13,6 +13,7 @@ from collections import namedtuple
 from pysp.serror import SDebug
 
 from core.model import Dict
+from core.connect import Http
 from core.finance import StockItemDB, StockQuery
 
 
@@ -260,6 +261,7 @@ class CondBuy(AlgoProc):
     COLNAME_BUYREASON =     'breason'
     COLNAME_AFTER_HHUPUP =  'afhuu'
     HERE_IT_GO =            15
+    AVG_DROP_RATE =         0.975
 
     def __init__(self, cfg, colnames):
         super(CondBuy, self).__init__()
@@ -348,7 +350,7 @@ class CondBuy(AlgoProc):
             # Additional purchase
             prevfield = fields[idx-1]
             baverage = prevfield[self.ibaverage]
-            if baverage and baverage > field[self.ibprice]:
+            if baverage and int(baverage*self.AVG_DROP_RATE) > field[self.ibprice]:
                 buycnt = self.HERE_IT_GO
 
             break  # End of While
@@ -746,6 +748,43 @@ class IterAlgo:
         it.run(qdata, work_folder=folder, code=code, months=months)
 
     @classmethod
+    def current_stock(cls, code, qdata):
+        def renew_last_field(field, cs):
+            field[istamp] = cs.date
+            field[istart] = int(cs.openingPrice)
+            field[ilow] =   int(cs.lowPrice)
+            field[ihigh] =  int(cs.highPrice)
+            field[iend] =   int(cs.tradePrice)
+            field[ivolume] = int(cs.accTradeVolume)
+
+        url = 'https://stock.kakao.com/api/securities/KOREA-A'+code+'.json'
+        options = {
+            'json':     True,
+            'duration': 90,
+        }
+        cstock = Http.proxy('GET', url, **options)
+        if cstock:
+            cstock = Dict(cstock['recentSecurity'])
+            # print(json.dumps(cstock, indent=1))
+            cdate = datetime.datetime.now().strftime("%Y-%m-%d")
+            if cstock.date != cdate:
+                # Maybe Holiday or Not opened yet.
+                return
+            istamp = qdata.colnames.index('stamp')
+            istart = qdata.colnames.index('start')
+            ilow = qdata.colnames.index('low')
+            ihigh = qdata.colnames.index('high')
+            iend = qdata.colnames.index('end')
+            ivolume = qdata.colnames.index('volume')
+
+            if cdate == qdata.fields[-1][istamp]:
+                pass
+            else:
+                field = [None]*len(qdata.colnames)
+                qdata.fields.append(field)
+            renew_last_field(qdata.fields[-1], cstock)
+
+    @classmethod
     def compute_index(cls, code, index, **kwargs):
         def_colnames = ['stamp', 'start', 'low', 'high', 'end', 'volume']
         colnames = kwargs.get('colnames', def_colnames)
@@ -756,6 +795,9 @@ class IterAlgo:
 
         sidb = StockItemDB.factory(code)
         qdata = StockQuery.raw_data_of_each_colnames(sidb, colnames, months=months)
+        # print(qdata.fields[-1])
+        cls.current_stock(code, qdata)
+        # print(qdata.fields[-1])
         it = IterAlgo()
 
         index = int(index)
