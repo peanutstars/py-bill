@@ -261,7 +261,7 @@ class CondBuy(AlgoProc):
     COLNAME_BUYREASON =     'breason'
     COLNAME_AFTER_HHUPUP =  'afhuu'
     HERE_IT_GO =            15
-    AVG_DROP_RATE =         0.975
+    AVG_DROP_RATE =         0.970
 
     def __init__(self, cfg, colnames):
         super(CondBuy, self).__init__()
@@ -351,6 +351,7 @@ class CondBuy(AlgoProc):
             prevfield = fields[idx-1]
             baverage = prevfield[self.ibaverage]
             if baverage and int(baverage*self.AVG_DROP_RATE) > field[self.ibprice]:
+                buyreason += 'Avg:'
                 buycnt = self.HERE_IT_GO
 
             break  # End of While
@@ -534,6 +535,9 @@ class CalSell(AlgoProc):
             if idx >= (len(fields)-self.WORK_DAYS_PER_YEAR):
                 self.last_earnings_count += 1
             self.calbuy.reset(field=field)
+        elif field[self.ivolume]:
+            _amount = field[self.ivolume] * sprice
+            profit = '{:.2f}'.format((_amount/field[self.ibamount]*100)-100)
 
         if field[self.ivolume] > 0:
             self.investment_days += 1
@@ -816,9 +820,30 @@ class IterAlgo:
 
     @classmethod
     def compute_index_chart(cls, code, index, **kwargs):
+        def chart_today(data):
+            lastfield = data.fields[-1]
+            istamp = data.colnames.index('stamp')
+            ibreason = data.colnames.index(CondBuy.COLNAME_BUYREASON)
+            ibvolume = data.colnames.index(CalBuy.COLNAME_BUY_VOLUME)
+            ibavg = data.colnames.index(CalBuy.COLNAME_BUY_AVERAGE)
+            ibuycnt = data.colnames.index(CondBuy.COLNAME_BUYCNT)
+            isellcnt = data.colnames.index(CondSell.COLNAME_SELL_POINT)
+            isprofit = data.colnames.index(CalSell.COLNAME_SELL_PROFIT)
+
+            brief = Dict()
+            brief.date = lastfield[istamp]
+            brief.breason = lastfield[ibreason]
+            brief.bvolume = lastfield[ibvolume]
+            brief.bavg = lastfield[ibavg]
+            brief.bpoint = 1 if lastfield[ibuycnt] else 0
+            brief.spoint = 1 if lastfield[isellcnt] else 0
+            brief.sprofit = lastfield[isprofit]
+            data.chart.today = brief
+
         def filter_out(cns, data):
             # cns: Colnames
             # icns: index Colnames
+            chart_today(data)
             icns = [data.colnames.index(x) for x in cns]
             fields = data.fields
             istamp = data.colnames.index('stamp')

@@ -148,7 +148,7 @@
         <li><a href="#" class="simulation control bottom button small" id="download-simulation-csv">CSV</a></li>
         <li><a href="#" class="simulation control bottom button small" id="download-simulation-mark">MARK</a></li>
       </ul>
-      <span class="small">MARK - Click & Click to SET, Double-Click & Click to RESET</span>
+      <span class="etc small">MARK - Click & Click to SET, Double-Click & Click to RESET</span>
       <ul class="row actions">
         <li><a href="#" class="simulation control button small gray button-simulation" value="6">6M</a></li>
         <li><a href="#" class="simulation control button small button-simulation" value="12">1Y</a></li>
@@ -159,6 +159,22 @@
     <div class="simulation area" style="display: none;">
       <div class="row">
         <div id="simulation-chart" style="width: 99%; height: 350px;"></div>
+        <div style="width: 100%;">
+          <ul class="row actions etc small" style="margin-bottom: 0.3em;">
+            <li style="width: 6em;"><b>Date</b></li>
+            <li id="simulation-chart-date"></li>
+          </ul>          
+          <ul class="row actions etc small" style="margin-bottom: 0.3em;">
+            <li style="width: 6em;" id="simulation-chart-bpoint"><b>Buying</b></li>
+            <li><span>Average:</span> <span id="simulation-chart-bavg" style="color: black;"></span></li>
+            <li><span>Count:</span> <span id="simulation-chart-bvolume"></span></li>
+            <li><span>Reason:</span> <span id="simulation-chart-breason"></span></li>
+          </ul>
+          <ul class="row actions etc small" style="margin-bottom: 0.3em;">
+            <li style="width: 6em;" id="simulation-chart-spoint"><b>Sell</b></li>
+            <li><span>Profit:</span> <span id="simulation-chart-sprofit" style="color: black;"></span></li>
+          </ul>
+        </div>
       </div>
       <div style="display: none;">
         <ul class="row actions pull-right">
@@ -436,15 +452,30 @@
     };
     let draw_chart = function(index) {
       let sim_data_selector = $("#simulation-config");
+      let chart_today_brief = function(data){
+        // console.log(data);
+        if (data.chart.today.spoint) $('#simulation-chart-spoint').append('&nbsp;&nbsp;<span class="fa fa-star pull-right" style="color: white;"></span>').addClass('etc round bg-red');
+        if (data.chart.today.bpoint) $('#simulation-chart-bpoint').append('&nbsp;&nbsp;<span class="fa fa-star pull-right" style="color: white;"></span>').addClass('etc round bg-gray');
+
+        $('#simulation-chart-date').append('&nbsp;<span>'+data.chart.today.date+'</span>');
+        $('#simulation-chart-bavg').text(util.formatNumber(data.chart.today.bavg));
+        $('#simulation-chart-bvolume').text(util.formatNumber(data.chart.today.bvolume));
+        $('#simulation-chart-breason').text(data.chart.today.breason);
+        let profit = data.chart.today.sprofit;
+        $('#simulation-chart-sprofit').text(profit?profit+'%':'None');
+      };
       let do_draw = function(data){
-        sim_area_selector.each(function(i){$(this).show()});
-        // let info = '<b>CFG</b><br/>'+JSON.stringify(data.cfg)+'<br/><b>REPORT</b><br/>'+JSON.stringify(data.report);
-        index_selector.val(data.cfg.algo.index);
-        sim_data_selector.html(dump_brief(data.cfg, data.report));
-        drawSimulationChart(data);
-        _data.chart.simulation.index = data.cfg.algo.index;
-        _data.chart.simulation.data = data;
-        sim_ctl_selector.each(function(i){$(this).removeClass('disabled');});
+        setTimeout(function(){
+          sim_area_selector.each(function(i){$(this).show()});
+          // let info = '<b>CFG</b><br/>'+JSON.stringify(data.cfg)+'<br/><b>REPORT</b><br/>'+JSON.stringify(data.report);
+          index_selector.val(data.cfg.algo.index);
+          sim_data_selector.html(dump_brief(data.cfg, data.report));
+          drawSimulationChart(data);
+          _data.chart.simulation.index = data.cfg.algo.index;
+          _data.chart.simulation.data = data;
+          sim_ctl_selector.each(function(i){$(this).removeClass('disabled');});
+          chart_today_brief(data);
+        }, 100);
       }
       let months = (months_selector.val().length > 0)?Math.max(parseInt(months_selector.val()),72):null;
       if (_data.chart.simulation.index != index || _data.chart.simulation.months != months) {

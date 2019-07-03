@@ -12,3 +12,7 @@ pyyaml==4.2b4
 Werkzeug==0.14.1
 WTForms==2.2.1
 uWSGI==2.0.18
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+oauth2client
