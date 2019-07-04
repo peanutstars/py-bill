@@ -14,7 +14,7 @@ from apiclient import errors, discovery
 
 
 INFO = print
-CLIENT_SECRET_FILE = 'client_secret_846592600740-adtej5v1a4qtvburl8f3jh5r4q0u4kqr.apps.googleusercontent.com.json'
+CLIENT_SECRET_FILE = 'client_secret.json'
 
 
 class Gmail:
@@ -66,11 +66,24 @@ class Gmail:
 
 
 if __name__ == '__main__':
-    def main():
-        recipients = ['peanutstars.job@gmail.com']
+    import codecs
+
+    def main(mfile):
+        recipients = ['peanutstars.lee@gmail.com']
         to = ', '.join(recipients)
-        subject = "Title: Send Mail 5"
-        msghtml = "Hi<br/>Html Email<br/><br/>Sent from Gmail"
+        subject = "Title: Send Mail"
+        if mfile:
+            with codecs.open(mfile, 'r', encoding='utf-8') as fd:
+                msghtml = fd.read()
+        else:
+            msghtml = "Hi<br/>Html Email<br/><br/>Sent from Gmail"
         msgtext = None
         Gmail.send(to, subject, msghtml, msgtext)
-    main()
+
+    msgfile = None
+    if len(sys.argv) > 1:
+        msgfile = sys.argv[1]
+        if not os.path.exists(msgfile):
+            raise FileNotFoundError(f'Not Found: {msgfile}')
+
+    main(msgfile)

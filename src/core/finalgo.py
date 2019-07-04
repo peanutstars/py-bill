@@ -61,6 +61,10 @@ class AlgoProc(Algo):
         fvalues = self._check_array(idxs, values, field)
         return all([x<=y for x, y in zip(fvalues, values) if y is not None])
 
+    def is_le_any(self, idxs, values, field):
+        fvalues = self._check_array(idxs, values, field)
+        return any([x<=y for x, y in zip(fvalues, values) if y is not None])
+
     def is_ge_all(self, idxs, values, field):
         fvalues = self._check_array(idxs, values, field)
         return all([x>=y for x, y in zip(fvalues, values) if y is not None])
@@ -261,7 +265,7 @@ class CondBuy(AlgoProc):
     COLNAME_BUYREASON =     'breason'
     COLNAME_AFTER_HHUPUP =  'afhuu'
     HERE_IT_GO =            15
-    AVG_DROP_RATE =         0.970
+    AVG_DROP_RATE =         0.95
 
     def __init__(self, cfg, colnames):
         super(CondBuy, self).__init__()
@@ -336,29 +340,36 @@ class CondBuy(AlgoProc):
             else:
                 buycnt = self.HERE_IT_GO
 
-            if self.is_or('is_ge_any', self.ipercents, [[90,80,None,60,60,None]], field):
+            if self.is_ge_any(self.ipercents, [90,80,None,60,60,None], field):
+                # Too High
+                buyreason += 'TH#'
                 buycnt = 0
                 break
-            elif self.is_or('is_le_all', self.ipercents, 
-                            [[0,0,0,0,0,0], [10,10,10,10,10,25]], field):
+            elif self.is_le_any(self.ipercents, [-10,-5,0,0,4,8], field):
+                # Too Low
+                buyreason += 'TL#'
+                buycnt = 0
+                break 
+            elif self.is_le_all(self.ipercents, [10,10,10,10,10,25], field):
                 buycnt = self.HERE_IT_GO
 
             if buycnt > 0:
                 if self.start is False or self.after_hhupup > cfg.buy.after.hhupup.thresholds:
+                    buyreason += 'TS#'
                     buycnt = 0
 
             # Additional purchase
             prevfield = fields[idx-1]
             baverage = prevfield[self.ibaverage]
             if baverage and int(baverage*self.AVG_DROP_RATE) > field[self.ibprice]:
-                buyreason += 'Avg:'
+                buyreason += 'Avg#'
                 buycnt = self.HERE_IT_GO
 
             break  # End of While
 
         if not fg_skip:
-            buyreason += ':'.join([str(field[x]) for x in self.isteps])
-            buyreason += '@'+':'.join([str(field[x]) for x in self.ipercents])
+            buyreason += ''.join([str(field[x]) for x in self.isteps])
+            buyreason += '#'+':'.join([str(field[x]) for x in self.ipercents])
             
         indexes = [self.ihhupup, self.ibcnt, self.ibreason]
         values = [self.after_hhupup, buycnt, buyreason]
@@ -469,10 +480,10 @@ class CondSell(AlgoProc):
 
             if self.method == 4:
                 if self.is_any(self.isteps, ['HH','HH',None], field) or \
-                self.is_or('is_all', self.isteps, [['DN','UP',None], ['LW','UP',None]], field):
-                    # XXX: Added New Condition
-                    # if self.is_ge_any(self.ipercents, [150,130,110,95,None,None], field):
+                self.is_or('is_all', self.isteps, [['DN','UP',None],['LW','UP',None],
+                                                   ['UP','LW',None],['UP','UP','UP']], field):
                     if field[self.ihhupup] >= self.std_hhupup:
+                        # TODO: Add that Profit is Up Side Rapidly
                         wanted = field[self.ibaverage]*self.rrate
                         if field[self.isprice] > wanted:
                             sellcnt = self.HERE_IT_GO
@@ -685,7 +696,7 @@ class IterAlgo:
     def _param(self, i, p):
         cfg = AlgoTable.default_option()
         cfg.algo.index = i
-        cfg.price.sell.return_rate = 7
+        # cfg.price.sell.return_rate = 7
         cfg.sum.accums = IterAlgo.SUM_ACCUMS[p.sum_accum_index]
         cfg.minmax.accums = IterAlgo.MINMAX_ACCUMS[p.minmax_index]
         cfg.curve.step = AlgoTable.get_curve_step_params(cfg.sum.accums)

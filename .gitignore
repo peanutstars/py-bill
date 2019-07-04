@@ -5,6 +5,7 @@
 *.csv
 *.log
 __pycache__
+client_secret.json
 src/html5
 src/core/version.py
 src/web/static/assets/sass

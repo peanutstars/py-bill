@@ -115,7 +115,7 @@ class Collector(Manager, metaclass=SSingleton):
 
     def __init__(self, *args, **kwargs):
         super(Collector, self).__init__(*args, **kwargs)
-        self.stock_folder = BillConfig().get_value('_config.db.stock_folder')
+        self.stock_folder = BillConfig().get_value('config.db.stock.folder')
         self._q = queue.Queue()
         self.state = _State()
         self._thread = threading.Thread(target=self.worker)

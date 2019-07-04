@@ -14,7 +14,12 @@ class BillConfig(SConfig, metaclass=SSingleton):
         self.init_variables()
 
     def init_variables(self):
+        # load a user configuration.
+        user_config = self.get_value('folder.user_config')+'/config.yml'
+        if os.path.exists(user_config):
+            self.collecting(user_config)
+        #
         stock_yml = f'{self.config_folder}/db/stock.yml'
-        self.set_value('_config.db.stock_yml', stock_yml)
+        self.set_value('config.db.stock.yml', stock_yml)
         stock_folder = self.get_value('folder.stock', './')
-        self.set_value('_config.db.stock_folder', stock_folder)
+        self.set_value('config.db.stock.folder', stock_folder)

@@ -17,7 +17,19 @@ from core.finalgo import IterAlgo
 from core.manager import Collector
 
 
-_algo_folder = BillConfig().get_value('_config.db.stock_folder') + '/algo/'
+_algo_folder = BillConfig().get_value('config.db.stock.folder') + '/algo/'
+
+# with app.app_context():
+#     def url_for(endpoint, **kwargs):
+#         fn = kwargs.get('filename', None)
+#         url = BillConfig().get_value('user.url', '')
+#         if endpoint[0] == '.':
+#             endpoint = endpoint.split('.')[-1]
+#         return url+(endpoint if fn is None else (endpoint+'/'+fn))
+
+#     context = Dict()
+#     context.function.url_for = url_for
+#     print(render_template('report/notice.html', **context))
 
 
 @app.route('/bill/dashboard')

@@ -34,9 +34,9 @@ class StockItemDB(SSimpleDB):
     def factory(cls, code):
         bcfg = BillConfig()
         db_file = '{folder}/{code}.sqlite3'.format(
-            folder=bcfg.get_value('_config.db.stock_folder'), code=code)
+            folder=bcfg.get_value('config.db.stock.folder'), code=code)
         SFile.mkdir(os.path.dirname(db_file))
-        db_config = bcfg.get_value('_config.db.stock_yml')
+        db_config = bcfg.get_value('config.db.stock.yml')
         return cls(db_file=db_file, db_config=db_config)
 
     def update_candle(self, days):

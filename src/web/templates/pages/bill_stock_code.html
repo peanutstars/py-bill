@@ -303,6 +303,7 @@
           key: 6,
           data: null,
           months: null,
+          today_brief: false
         }
       },
       algo: {
@@ -454,15 +455,18 @@
       let sim_data_selector = $("#simulation-config");
       let chart_today_brief = function(data){
         // console.log(data);
-        if (data.chart.today.spoint) $('#simulation-chart-spoint').append('&nbsp;&nbsp;<span class="fa fa-star pull-right" style="color: white;"></span>').addClass('etc round bg-red');
-        if (data.chart.today.bpoint) $('#simulation-chart-bpoint').append('&nbsp;&nbsp;<span class="fa fa-star pull-right" style="color: white;"></span>').addClass('etc round bg-gray');
+        if (_data.chart.simulation.today_brief) {
+          _data.chart.simulation.today_brief = false;
+          if (data.chart.today.spoint) $('#simulation-chart-spoint').append('&nbsp;&nbsp;<span class="fa fa-star pull-right" style="color: white;"></span>').addClass('etc round bg-red');
+          if (data.chart.today.bpoint) $('#simulation-chart-bpoint').append('&nbsp;&nbsp;<span class="fa fa-star pull-right" style="color: white;"></span>').addClass('etc round bg-gray');
 
-        $('#simulation-chart-date').append('&nbsp;<span>'+data.chart.today.date+'</span>');
-        $('#simulation-chart-bavg').text(util.formatNumber(data.chart.today.bavg));
-        $('#simulation-chart-bvolume').text(util.formatNumber(data.chart.today.bvolume));
-        $('#simulation-chart-breason').text(data.chart.today.breason);
-        let profit = data.chart.today.sprofit;
-        $('#simulation-chart-sprofit').text(profit?profit+'%':'None');
+          $('#simulation-chart-date').append('&nbsp;<span>'+data.chart.today.date+'</span>');
+          $('#simulation-chart-bavg').text(util.formatNumber(data.chart.today.bavg));
+          $('#simulation-chart-bvolume').text(util.formatNumber(data.chart.today.bvolume));
+          $('#simulation-chart-breason').text(data.chart.today.breason);
+          let profit = data.chart.today.sprofit;
+          $('#simulation-chart-sprofit').text(profit?profit+'%':'None');
+        }
       };
       let do_draw = function(data){
         setTimeout(function(){
@@ -481,6 +485,7 @@
       if (_data.chart.simulation.index != index || _data.chart.simulation.months != months) {
         let options = (months) ? {months: months} : {};
         _data.chart.simulation.months = months;
+        _data.chart.simulation.today_brief = true;
         sim_data_selector.html('');
         sim_ctl_selector.each(function(i){$(this).addClass('disabled');});
         stock.query_simulation_chart(_code, index, options, do_draw);

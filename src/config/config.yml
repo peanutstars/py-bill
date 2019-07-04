@@ -7,3 +7,6 @@ folder:
     stock: /var/pybill/stock/
     cache: /var/pybill/cache/
     log: /var/pybill/log/
+
+user:
+    url:
