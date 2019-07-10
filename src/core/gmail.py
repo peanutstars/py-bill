@@ -58,11 +58,12 @@ class Gmail:
 
     @classmethod
     def send(cls, receiver, subject, msghtml, msgtext=None):
-        credentials = cls.credentials()
-        http = credentials.authorize(httplib2.Http())
-        service = discovery.build('gmail', 'v1', http=http)
-        msgchunk = cls.to_build_message(receiver, subject, msghtml, msgtext)
-        return cls.send_internal(service, "me", msgchunk)
+        if receiver:
+            credentials = cls.credentials()
+            http = credentials.authorize(httplib2.Http())
+            service = discovery.build('gmail', 'v1', http=http)
+            msgchunk = cls.to_build_message(receiver, subject, msghtml, msgtext)
+            return cls.send_internal(service, "me", msgchunk)
 
 
 if __name__ == '__main__':

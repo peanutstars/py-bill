@@ -3692,11 +3692,15 @@ input, select, textarea {
 	.etc.small {
 		font-size: 0.8em;
 	}
-	.etc.round.bg-gray {
+	.etc.round {
 		border-radius: 0.25em;
-		background-color: #B2BABB;
 	}
 	.etc.round.bg-red {
 		border-radius: 0.25em;
+	}
+	.etc.bg-gray {
+		background-color: #B2BABB;
+	}
+	.etc.bg-red {
 		background-color: #F1948A;
 	}

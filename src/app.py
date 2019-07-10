@@ -13,6 +13,7 @@ from web.model import User
 from web.view_index import index
 from web.view_account import account
 from web.view_billdashboard import bill_dashboard
+from web.report import notice
 from core.finance import BillConfig
 from core.manager import Collector
 

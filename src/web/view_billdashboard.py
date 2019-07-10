@@ -7,7 +7,7 @@ from flask_login import login_required
 
 from . import app, db
 from .account import role_required
-from .model import MStock, Reply
+from .model import User, MStock, Reply
 # from core.finance import BillConfig
 from core.model import Dict
 from core.config import BillConfig
@@ -18,18 +18,6 @@ from core.manager import Collector
 
 
 _algo_folder = BillConfig().get_value('config.db.stock.folder') + '/algo/'
-
-# with app.app_context():
-#     def url_for(endpoint, **kwargs):
-#         fn = kwargs.get('filename', None)
-#         url = BillConfig().get_value('user.url', '')
-#         if endpoint[0] == '.':
-#             endpoint = endpoint.split('.')[-1]
-#         return url+(endpoint if fn is None else (endpoint+'/'+fn))
-
-#     context = Dict()
-#     context.function.url_for = url_for
-#     print(render_template('report/notice.html', **context))
 
 
 @app.route('/bill/dashboard')

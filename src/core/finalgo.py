@@ -840,6 +840,9 @@ class IterAlgo:
             ibuycnt = data.colnames.index(CondBuy.COLNAME_BUYCNT)
             isellcnt = data.colnames.index(CondSell.COLNAME_SELL_POINT)
             isprofit = data.colnames.index(CalSell.COLNAME_SELL_PROFIT)
+            icprice = data.colnames.index('end')
+            ibprice = data.colnames.index(data.cfg.price.buy.colname)
+            isprice = data.colnames.index(data.cfg.price.sell.colname)
 
             brief = Dict()
             brief.date = lastfield[istamp]
@@ -849,6 +852,11 @@ class IterAlgo:
             brief.bpoint = 1 if lastfield[ibuycnt] else 0
             brief.spoint = 1 if lastfield[isellcnt] else 0
             brief.sprofit = lastfield[isprofit]
+            brief.cprice = lastfield[icprice]
+            brief.bprice = lastfield[ibprice]
+            brief.sprice = lastfield[isprice]
+            brief.last.colnames = data.colnames
+            brief.last.field = data.fields[-1]
             data.chart.today = brief
 
         def filter_out(cns, data):

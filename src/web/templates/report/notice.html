@@ -1,0 +1,96 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>Notice</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<style type="text/css">
+			.small { font-size: 0.9em; }
+			.htable { border-collapse:collapse; border-top: 3px solid #F4D03F; }
+			.htable th, .htable td { border:1px solid #ccc; padding: 5px; }
+			.htable th { color: #2E4053; background: #F9E79F; }
+			.htable th:first-child, .htable td:first-child { border-left: 0; }
+			.htable th:last-child, .htable td:last-child { border-right: 0; }
+			.alnright { text-align: right; }
+			.alncenter { text-align: center; }
+			.bg-red { background-color: #F1948A; }
+			.bg-gray { background-color: #B2BABB; }
+			ul.actions { display: flex; cursor: default; list-style: none; margin-left: -1em; padding-left: 0; }
+			ul.actions li { padding: 0 0 0 1em; vertical-align: middle; }
+		</style>
+	</head>
+	<body class="is-preload">
+    <!-- Wrapper -->
+	<div id="wrapper">
+		<!-- Main -->
+		<div id="main">
+			<div class="inner">
+				<!-- Header -->
+				<header id="header" style="box-sizing: inherit;margin: 0;padding: 6em 0 1em 0;border: 0;font-size: 100%;font: inherit;vertical-align: baseline;display: flex;border-bottom: solid 5px #f56a6a;position: relative;-moz-animation: none !important;-webkit-animation: none !important;-ms-animation: none !important;animation: none !important;-moz-transition: none !important;-webkit-transition: none !important;-ms-transition: none !important;transition: none !important;">
+					<a href="{{ function.url_for('') }}" class="logo" style="box-sizing: inherit;margin: 0;padding: 0;border: 0;font-size: 1.5em;font: inherit;vertical-align: baseline;-moz-transition: none !important;-webkit-transition: none !important;-ms-transition: none !important;transition: none !important;border-bottom: 0;color: inherit;text-decoration: none;-moz-flex: 1;-webkit-flex: 1;-ms-flex: 1;flex: 1;margin-bottom: 0;-moz-animation: none !important;-webkit-animation: none !important;-ms-animation: none !important;animation: none !important;"><strong style="box-sizing: inherit;margin: 0;padding: 0;border: 0;font-size: 100%;font: inherit;vertical-align: baseline;color: #3d4449;font-weight: 600;-moz-animation: none !important;-webkit-animation: none !important;-ms-animation: none !important;animation: none !important;-moz-transition: none !important;-webkit-transition: none !important;-ms-transition: none !important;transition: none !important;">Be Happy !!</strong></a>
+				</header>
+				<section>
+					<header class="main">
+						<h3>Notice</h3>
+					</header>
+					<div id="notice-area">
+						<div>
+							<div>Hi, {{user.username}}</div>
+							<ul class="row actions">
+								<li style="width: 7em;"><b>Date/Time:</b></li>
+								<li><span>{{ now.strftime('%Y-%m-%d %H:%M') }}</span></li>
+							</ul>
+						</div>
+						<table class="small htable">
+							<thead>
+								<tr>
+									<th rowspan="2" style="vertical-align:middle">Code</th>
+									<th rowspan="2" style="vertical-align:middle">Name</th>
+									<th rowspan="2" style="vertical-align:middle">Algo</th>
+									<th rowspan="2" style="vertical-align:middle">Price</th>
+									<th rowspan="2" style="vertical-align:middle">BPrice</th>
+									<th rowspan="2" style="vertical-align:middle">SPrice</th>
+									<th colspan="4">Buying</th>
+									<th colspan="2">Sell</th>
+								</tr>
+								<tr>
+									<th>Count</th>
+									<th>Average</th>
+									<th>Reason</th>
+									<th>Point</th>
+									<th>Profit</th>
+									<th>Point</th>
+								</tr>
+							</thead>
+							<tbody>
+							{% for c, v in items.items() %}
+								{% if v.chart.today.spoint %}
+								<tr class="bg-red">
+								{% elif v.chart.today.bpoint %}
+								<tr class="bg-gray">
+								{% else %}
+								<tr>
+								{% endif %}
+									<td>{{c}}</td>
+									<td><a href="{{ function.url_for('') }}bill/stock/{{c}}">{{v.name}}</a></td>
+									<td>{{v.cfg.algo.index}}</td>
+									<td class="alnright">{{function.format_number(v.chart.today.cprice)}}</td>
+									<td class="alnright">{% if v.chart.today.bpoint %}{{function.format_number(v.chart.today.bprice)}}{% endif %}</td>
+									<td class="alnright">{% if v.chart.today.spoint %}{{function.format_number(v.chart.today.sprice)}}{% endif %}</td>
+									<td class="alnright">{{function.format_number(v.chart.today.bvolume)}}</td>
+									<td class="alnright">{{function.format_number(v.chart.today.bavg)}}</td>
+									<td>{{v.chart.today.breason}}</td>
+									<td class="alncenter">{{v.chart.today.bpoint}}</td>
+									<td class="alncenter">{% if v.chart.today.sprofit %}{{v.chart.today.sprofit}}{% endif%}</td>
+									<td class="alncenter">{{v.chart.today.spoint}}</td>
+								</tr>
+							{% endfor%}
+							</tbody>
+						</table>
+					</div>
+				</section>
+			</div>
+		</div>
+	</div>
+	</body>
+</html>

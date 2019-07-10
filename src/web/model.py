@@ -124,12 +124,14 @@ class MStock(db.Model):
         raise KeyError(f'Not Matched - USER ID={user_id} and CODE={code}')
 
     @classmethod
-    def list(cls, user_id):
+    def list(cls, user_id, **kwargs):
         now = datetime.datetime.now()
-        from_date = DateTool.to_strfdate(now - relativedelta(days=30))
+        from_date = DateTool.to_strfdate(now - relativedelta(days=45))
         query = MStock.query.filter_by(user_id=int(user_id))
-        return query.filter(MStock.atime >= from_date)\
-                    .order_by(MStock.atime.desc()).all()
+        qfilter = query.filter(MStock.atime >= from_date)
+        if kwargs.get('order', None) == 'code':
+            return qfilter.order_by(MStock.code.asc()).all()
+        return qfilter.order_by(MStock.atime.desc()).all()
 
 
 class Reply:
