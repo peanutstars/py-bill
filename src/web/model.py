@@ -21,6 +21,52 @@ class Role:
         return cls.TYPE.get(required, 'NONE') >= cls.TYPE.get(user)
 
 
+class Notify:
+    ALL =               0xFFFFFFFF
+    STOCK_ALL =         0x00000003
+    STOCK_EVENT =       0x00000002
+ 
+    NAMES = {
+        'NOT_USED':         0,
+        'ALL':              ALL,
+        'STOCK_ALL':        STOCK_ALL,
+        'STOCK_EVENT':      STOCK_EVENT
+    }
+    
+    @classmethod
+    def has_notify(cls, name, notify):
+        '''Has it notify?
+        :name string|list:  Name of notification
+        :notify int:        Value of notification
+        :return boolean:
+        '''
+        if type(name) is list:
+            for n in name:
+                if cls.NAMES.get(n, 0) & notify:
+                    return True
+            return False
+        return cls.NAMES.get(name, 0) & notify
+    
+    @classmethod
+    def get_names(cls, notify):
+        '''
+        Returns all attribute names.
+        :notify int:        Value of notification
+        :return list:       All attribute names
+        '''
+        names = []
+        if notify == 0:
+            return ['NOT_USED']
+        if notify == cls.ALL:
+            return ['ALL']
+        for k, v in cls.NAMES.items():
+            if k in ['ALL', 'NOT_USED']:
+                continue
+            if notify & v:
+                names.append(k)
+        return names
+
+
 class User(UserMixin, db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
@@ -30,6 +76,7 @@ class User(UserMixin, db.Model):
     active = db.Column(db.Boolean, default=False)
     role = db.Column(db.String(32), default="BOOKMARK")
     registered_date = db.Column(db.DateTime, default=datetime.datetime.now)
+    notify = db.Column(db.Integer, nullable=False, default=0)
     stocks = db.relationship('MStock', backref='author', lazy=True)
 
     @property
@@ -87,6 +134,7 @@ class MStock(db.Model):
     atime = db.Column(db.DateTime, default=datetime.datetime.now)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     algo_index = db.Column(db.Integer)
+    algo_rrate = db.Column(db.Float, default=7.0)
     __table_args__ = (db.UniqueConstraint('user_id', 'code',
                                           name='_user_id_code'),)
 

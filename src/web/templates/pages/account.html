@@ -34,6 +34,25 @@
               <td></td>
             </tr>
             <tr>
+              <th>Notify Email</th>
+              <td id="cell-notify-email">
+                {{ ', '.join(notify) }}
+              </td>
+              <td>
+                <ul class="row actions small" style="margin-bottom: 0;">
+                  <li>
+                    <select class="etc bottom small" name="select-notify-email" id="select-notify-email" style="width: 10em;">
+                      {% for k, v in notifications.items() %}
+                      <option value="{{k}}">{{k}}</option>
+                      {% endfor%}
+                    </select>
+                  </li>
+                  <li><a href="#" class="button small notify-email green">SELECT</a></li>
+                  <li><a href="#" class="button small notify-email">REMOVE</a></li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
               <th>Registered Date</th>
               <td>{{ user.registered_date.strftime('%Y.%m.%d %H:%M') }}</td>
               <td></td>
@@ -58,6 +77,7 @@
                 <th>User Name</th>
                 <th>Active</th>
                 <th>Role</th>
+                <th>Notify</th>
                 <th>Registered Date</th>
                 <th colspan="2"></th>
               </tr>
@@ -79,6 +99,7 @@
                   {% endif %}
                 </td> -->
                 <td name="col-role">{{ user.role }}</td>
+                <td name="col-notify">{{ ', '.join(function.notify_names(user.notify)) }}</td>
                 <td name="col-regdate">{{ user.registered_date.strftime('%Y.%m.%d %H:%M') }}</td>
                 <td colspan="2">
                   {% if user.id != 1 %}
@@ -127,6 +148,19 @@
     //     ajax.delete('/ajax/account/user', {id: $(this).val()}, render_reload);
     //   });
     // });
+    $(".button.notify-email").each(function(idx){
+      $(this).on('click', function(e){
+        e.preventDefault();
+        let value = $('#select-notify-email').val();
+        let params = {
+          operate: $(this).text(),
+          notify: value,
+        }
+        ajax.patch('/ajax/account/user/notify', params, function(resp){
+          $("#cell-notify-email").text(resp.names.join(', '));
+        });
+      });
+    });
     $(".button-field-edit").each(function(idx){
       $(this).on('click', function(){
         var userid = $(this).attr('value');
@@ -161,6 +195,8 @@
         html += '    </select>';
         html += '    </div>';
         html += '  </td>';
+        // col-role
+        html += '  <td></td>';
         html += '  <td>'+$(trid+' td[name="col-regdate"]').text()+'</td>';
         html += '  <td>';
         html += '    <div><a class="icon fa-lg fa-stop button-edit-cancel" value="'+userid+'"></a></div>';
@@ -174,6 +210,7 @@
       });
     });
   }
+
   function reflact_button_edit(){
     $('.button-edit-cancel').each(function(idx){
       $(this).on('click', function(){

@@ -246,6 +246,7 @@
       opts.success = function(resp) {
         // console.log(JSON.stringify(resp));
         if (callback && resp.success) {
+          // console.log('ajax', resp);
           callback(resp.value);
           if (resp.message) {
             util.gui.flash(resp.message, 'success');

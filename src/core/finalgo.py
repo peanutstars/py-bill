@@ -772,6 +772,11 @@ class IterAlgo:
             field[iend] =   int(cs.tradePrice)
             field[ivolume] = int(cs.accTradeVolume)
 
+        now = datetime.datetime.now()
+        if now.hour in range(0, 9):
+            # Not opening the stock market.
+            return
+
         url = 'https://stock.kakao.com/api/securities/KOREA-A'+code+'.json'
         options = {
             'json':     True,

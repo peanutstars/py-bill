@@ -14,6 +14,8 @@ from dateutil.relativedelta import relativedelta
 from pysp.sbasic import SSingleton
 from pysp.serror import SCDebug
 
+from web.report import notice
+
 from core.model import Dict
 from core.config import BillConfig
 from core.finance import DataCollection
@@ -98,8 +100,8 @@ class _Scheduler(SCDebug):
     def next_hour(cls, now=None):
         if now is None:
             now = datetime.datetime.now()
-        next = now + relativedelta(minutes=(60-now.minute),
-                                   seconds=(60-now.second))
+        # next = now + relativedelta(minutes=1, seconds=(59-now.second))
+        next = now + relativedelta(minutes=(60-now.minute),seconds=(59-now.second))
         return cls.Event(cls.EVENT_HOUR, next.timestamp())
 
 
@@ -161,7 +163,10 @@ class Collector(Manager, metaclass=SSingleton):
         self.collect(None)
 
     def _do_event_hour(self):
+        now = datetime.datetime.now()
         self.iprint(f'EVENT HOUR {datetime.datetime.now()} {id(self)}')
+        if now.weekday() not in [5, 6] and now.hour in [10, 13, 16]:
+            notice()
 
     def _worker_event(self):
         curtime = time.time()

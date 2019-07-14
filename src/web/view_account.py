@@ -9,8 +9,9 @@ from wtforms.csrf.session import SessionCSRF
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from .account import role_required
-from .model import Role, User, MStock, Reply
+from .model import Role, Notify, User, MStock, Reply
 from . import app, db
+from core.model import Dict
 
 
 class FormCSRF(Form):
@@ -126,9 +127,15 @@ def account():
     user = User.query.get(int(session['user_id']))
     users = User.query.all() if user.is_authorized('ADMIN') else None
     recent_stocks = MStock.list(session['user_id'])
-    return render_template('pages/account.html',
-                           roles=Role.TYPE.keys(),
-                           user=user, users=users, recent_stocks=recent_stocks)
+    context = Dict()
+    context.roles = Role.TYPE.keys()
+    context.user = user 
+    context.users = users
+    context.notify = Notify.get_names(user.notify)
+    context.notifications = Notify.NAMES
+    context.recent_stocks = recent_stocks
+    context.function.notify_names = Notify.get_names
+    return render_template('pages/account.html', **context)
 
 
 @app.route('/account/password', methods=['GET', 'POST'])
@@ -156,6 +163,7 @@ def account_password():
 @login_required
 @role_required('ADMIN')
 def ajax_account_user():
+    '''Supervisor manage user property.'''
     if int(session['user_id']) != 1:
         return Reply.Fail(message="Not Allow Permittion")
 
@@ -163,8 +171,7 @@ def ajax_account_user():
         params = dict(request.args)
     else:
         params = request.get_json()
-    print('@@ ', params)
-    print('@@ ', request.method)
+    print('@@ ', request.method, params)
 
     if type(params) is not dict or 'id' not in params:
         return Reply.Fail(message="Invalid or Need Parameters")
@@ -178,3 +185,29 @@ def ajax_account_user():
             return Reply.Success(value=User.delete(id))
     except Exception as e:
         return Reply.Fail(message=str(e))
+
+
+@app.route('/ajax/account/user/notify', methods=['PATCH'])
+@login_required
+def ajax_account_user_notify():
+    '''Update user property yourself.'''
+    user = User.query.get(int(session['user_id']))
+    if user:
+        nname = request.get_json().get('notify', 'NOT_USED')
+        # print('B', nname, user.notify)
+        op = request.get_json().get('operate').lower()
+        if op == 'select':
+            if nname == 'NOT_USED':
+                user.notify = Notify.NAMES.get(nname)
+            else:
+                user.notify |= Notify.NAMES.get(nname)
+        else:
+            user.notify &= (Notify.ALL ^ Notify.NAMES.get(nname))
+        db.session().commit()
+        # print('A', user.notify)
+        value = Dict()
+        value.value = user.notify
+        value.names = Notify.get_names(user.notify)
+        # flash('Notify Email is Acceptance.', 'success')
+        return Reply.Success(value=value)
+    return Reply.Fail(message=f'No User: {session["user_id"]}')
