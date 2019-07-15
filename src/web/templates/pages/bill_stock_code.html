@@ -140,9 +140,15 @@
     <div>
       <h3>Simulation</h3>
       <ul class="row actions" style="margin-bottom: 0.3em;">
-        <li><a href="#" class="simulation control bottom button small" id="draw-previous">&lt;</a></li>
+        <!-- algo index -->
+        <li><a href="#" class="simulation control bottom button small" id="draw-index-previous">&lt;</a></li>
         <li><input type="text" class="simulation control small" id="simulation-index" style="width: 5.5em;" placeholder="Index"/></li>
-        <li><a href="#" class="simulation control bottom button small" id="draw-next">&gt;</a></li>
+        <li><a href="#" class="simulation control bottom button small" id="draw-index-next">&gt;</a></li>
+        <!-- return rate -->
+        <li><a href="#" class="simulation control bottom button small" id="draw-rrate-down">&lt;</a></li>
+        <li><input type="text" class="simulation control small" id="simulation-rrate" style="width: 4em;" value="7.0" placeholder="Return Rate"/></li>
+        <li><a href="#" class="simulation control bottom button small" id="draw-rrate-up">&gt;</a></li>
+        <!-- months -->
         <li><input type="text" class="simulation control small" id="simulation-months" style="width: 5.5em;" placeholder="months"/></li>
         <li><a href="#" class="simulation control bottom button small" id="draw-simulation-chart">Chart</a></li>
         <li><a href="#" class="simulation control bottom button small" id="download-simulation-csv">CSV</a></li>
@@ -303,6 +309,7 @@
           key: 6,
           data: null,
           months: null,
+          rrate: null,
           today_brief: false
         }
       },
@@ -359,12 +366,17 @@
     let sim_ctl_selector = $('.simulation.control');
     let sim_area_selector = $('.simulation.area');
     let index_selector = $("#simulation-index");
+    let rrate_selector = $("#simulation-rrate");
     let months_selector = $("#simulation-months");
     let mark_selector = $("#download-simulation-mark");
     let get_index = function(){
       let index = parseInt(index_selector.val());
       return (isNaN(index)) ? 0 : index;
     };
+    let get_rrate = function(){
+      let rrate = parseFloat(rrate_selector.val());
+      return (isNaN(rrate)) ? 7.0 : rrate;
+    }
     mark_selector.on('click', function(e){
       e.preventDefault();
       if ($(this).hasClass('blue')) {
@@ -423,8 +435,11 @@
       };
       e.preventDefault();
       sim_ctl_selector.each(function(idx){$(this).addClass('disabled');});
+      let rrate = rrate_selector.val();
+      rrate = (rrate.length > 0) ? parseFloat(rrate) : 7.0;
       let months = (months_selector.val().length > 0)?Math.max(parseInt(months_selector.val()),72):null;
-      let options = (months) ? {months: months} : {};
+      let options = {return_rate: rrate};
+      if (months) options.months = months;
       stock.query_simulation(_code, get_index(), options, to_csv);
     });
     let dump_brief = function(cfg, report) {
@@ -460,7 +475,7 @@
           if (data.chart.today.spoint) $('#simulation-chart-spoint').append('&nbsp;&nbsp;<span class="fa fa-star pull-right" style="color: white;"></span>').addClass('etc round bg-red');
           if (data.chart.today.bpoint) $('#simulation-chart-bpoint').append('&nbsp;&nbsp;<span class="fa fa-star pull-right" style="color: white;"></span>').addClass('etc round bg-gray');
 
-          $('#simulation-chart-date').append('&nbsp;<span>'+data.chart.today.date+'</span>');
+          $('#simulation-chart-date').html('&nbsp;<span>'+data.chart.today.date+'</span>');
           $('#simulation-chart-bavg').text(util.formatNumber(data.chart.today.bavg));
           $('#simulation-chart-bvolume').text(util.formatNumber(data.chart.today.bvolume));
           $('#simulation-chart-breason').text(data.chart.today.breason);
@@ -481,9 +496,12 @@
           chart_today_brief(data);
         }, 100);
       }
+      let rrate = parseFloat(rrate_selector.val());
       let months = (months_selector.val().length > 0)?Math.max(parseInt(months_selector.val()),72):null;
-      if (_data.chart.simulation.index != index || _data.chart.simulation.months != months) {
+      if (_data.chart.simulation.index != index || _data.chart.simulation.months != months || _data.chart.simulation.rrate != rrate) {
         let options = (months) ? {months: months} : {};
+        options.return_rate = rrate;
+        _data.chart.simulation.rrate = rrate;
         _data.chart.simulation.months = months;
         _data.chart.simulation.today_brief = true;
         sim_data_selector.html('');
@@ -497,13 +515,25 @@
       e.preventDefault();
       draw_chart(get_index());
     });
-    $("#draw-previous").on('click', function(e){
+    $("#draw-index-previous").on('click', function(e){
       e.preventDefault();
       draw_chart(Math.max(get_index()-1, 0));
     });
-    $("#draw-next").on('click', function(e){
+    $("#draw-index-next").on('click', function(e){
       e.preventDefault();
       draw_chart(get_index()+1);
+    });
+    $("#draw-rrate-down").on('click', function(e){
+      e.preventDefault();
+      let rrate = get_rrate() - 0.1;
+      rrate_selector.val(rrate.toFixed(1));
+      draw_chart(get_index());
+    });
+    $("#draw-rrate-up").on('click', function(e){
+      e.preventDefault();
+      let rrate = get_rrate() + 0.1;
+      rrate_selector.val(rrate.toFixed(1));
+      draw_chart(get_index());
     });
     if (_data.algo.mark) {
       setTimeout(function(){

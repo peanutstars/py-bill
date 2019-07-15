@@ -11,13 +11,15 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from apiclient import errors, discovery
 
+from pysp.serror import SCDebug
 
 
 INFO = print
 CLIENT_SECRET_FILE = 'client_secret.json'
 
 
-class Gmail:
+class Gmail(SCDebug):
+
     @classmethod
     def credentials(cls):
         home_dir = os.path.expanduser('~')
@@ -53,7 +55,7 @@ class Gmail:
     @classmethod
     def send_internal(cls, service, user_id, message):
         message = (service.users().messages().send(userId=user_id, body=message).execute())
-        INFO('Message Id: %s' % message['id'])
+        cls.dprint('@@@@@ Message Id: %s' % message['id'])
         return message
 
     @classmethod

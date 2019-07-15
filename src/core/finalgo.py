@@ -809,6 +809,7 @@ class IterAlgo:
         def_colnames = ['stamp', 'start', 'low', 'high', 'end', 'volume']
         colnames = kwargs.get('colnames', def_colnames)
         months = kwargs.get('months', 72)
+        return_rate = kwargs.get('return_rate', 7.0)
         fg_save = kwargs.get('save_file', False)
         folder = kwargs.get('folder', 'algo')
         cfg = kwargs.get('cfg', None)
@@ -824,6 +825,7 @@ class IterAlgo:
         param = it.gen_index_params(qdata, index)
         if cfg:
             param.cfg = cfg
+        param.cfg.price.sell.return_rate = return_rate
 
         data = it.calculate(param)
         if fg_save:
