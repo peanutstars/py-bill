@@ -334,10 +334,12 @@ class CondBuy(AlgoProc):
 
             if self.is_or('is_any', self.isteps, [['DN','DN','DN']], field):
                 if self.is_or('is_all', self.isteps, [['LW','DN','DN']], field):
+                    buyreason += 'B0#'
                     buycnt = self.HERE_IT_GO
             elif self.is_or('is_all', self.isteps, [['HH','UP',None]], field):
                 pass
             else:
+                buyreason += 'B1#'
                 buycnt = self.HERE_IT_GO
 
             if self.is_ge_any(self.ipercents, [90,80,None,60,60,None], field):
@@ -347,10 +349,17 @@ class CondBuy(AlgoProc):
                 break
             elif self.is_le_any(self.ipercents, [-10,-5,0,0,4,8], field):
                 # Too Low
-                buyreason += 'TL#'
-                buycnt = 0
-                break 
+                if self.is_le_all(self.ipercents, [-10,10,None,None,None,None], field) and\
+                self.is_ge_all(self.ipercents, [None,None,None,None,40,40], field):
+                    # Drop in the short time
+                    buyreason += 'B3#'
+                    buycnt = self.HERE_IT_GO
+                else:
+                    buyreason += 'TL#'
+                    buycnt = 0
+                    break 
             elif self.is_le_all(self.ipercents, [10,10,10,10,10,25], field):
+                buyreason += 'B4#'
                 buycnt = self.HERE_IT_GO
 
             if buycnt > 0:
@@ -362,7 +371,7 @@ class CondBuy(AlgoProc):
             prevfield = fields[idx-1]
             baverage = prevfield[self.ibaverage]
             if baverage and int(baverage*self.AVG_DROP_RATE) > field[self.ibprice]:
-                buyreason += 'Avg#'
+                buyreason += 'Av#'
                 buycnt = self.HERE_IT_GO
 
             break  # End of While

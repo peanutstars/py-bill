@@ -3,6 +3,7 @@
 import atexit
 import datetime
 import glob
+import traceback
 import multiprocessing
 import os
 import time
@@ -14,7 +15,7 @@ from dateutil.relativedelta import relativedelta
 from pysp.sbasic import SSingleton
 from pysp.serror import SCDebug
 
-from web.report import notice
+from web.report import Notice
 
 from core.model import Dict
 from core.config import BillConfig
@@ -166,7 +167,13 @@ class Collector(Manager, metaclass=SSingleton):
         now = datetime.datetime.now()
         self.iprint(f'EVENT HOUR {datetime.datetime.now()} {id(self)}')
         if now.weekday() not in [5, 6] and now.hour in [10, 13, 16]:
-            notice()
+            notice = Notice()
+            try:
+                notice.dispatch()
+            except:
+                self.dprint('---------------------------------------')
+                self.dprint(traceback.format_exc())
+            del notice
 
     def _worker_event(self):
         curtime = time.time()

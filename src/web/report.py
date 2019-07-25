@@ -101,4 +101,4 @@ class Notice(SCDebug):
                     Gmail.send(email, title.get(send_mode), html)
 
 
-notice = Notice()
+# notice = Notice()

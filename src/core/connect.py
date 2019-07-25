@@ -326,6 +326,7 @@ class FKrx(FSpHelper):
 
     @classmethod
     def _get_chunk_list(cls, **kwargs):
+        '''Get the stock items all from KRX.'''
         def gathering():
             params = {
                 'bld':  'COM/finder_srtisu',
@@ -357,7 +358,7 @@ class FKrx(FSpHelper):
             krxlist = Http.post(url, **pkwargs)
             return krxlist['block1']
 
-        return FCache().caching(cls.URL['query'], gathering)
+        return FCache().caching(cls.URL['query'], gathering, duration=21600)
 
     @classmethod
     def _get_chunk_shortstock(cls, **kwargs):
