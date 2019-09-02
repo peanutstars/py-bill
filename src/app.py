@@ -13,7 +13,7 @@ from web.model import User
 from web.view_index import index
 from web.view_account import account
 from web.view_billdashboard import bill_dashboard
-from web.report import Notice
+from web.report import computealgo, Notice
 from core.finance import BillConfig
 from core.manager import Collector
 
@@ -73,6 +73,7 @@ if not os.path.exists(db_file):
         db.session.add(admin)
         db.session.commit()
 
+computealgo.compute_all()
 
 if _DEBUG is False:
     init_logger(app)

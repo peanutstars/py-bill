@@ -15,7 +15,7 @@ from dateutil.relativedelta import relativedelta
 from pysp.sbasic import SSingleton
 from pysp.serror import SCDebug
 
-from web.report import Notice
+from web.report import computealgo, Notice
 
 from core.model import Dict
 from core.config import BillConfig
@@ -69,6 +69,7 @@ class _Scheduler(SCDebug):
     EVENT_HOUR = "EvtHour"
     collect_hour = 18
     collect_min = 40
+    debugging = False
 
     class Event:
         def __init__(self, event, stamp):
@@ -81,7 +82,7 @@ class _Scheduler(SCDebug):
         ecollect = cls.next_collect(now)
         ehour = cls.next_hour(now)
         event = ecollect if ecollect.stamp < ehour.stamp else ehour
-        stamp = int(time.time() - event.stamp)
+        stamp = int(now.timestamp() - event.stamp)
         cls.iprint(f'Next Event: {event.event} after {stamp} second')
         return event
 
@@ -89,8 +90,7 @@ class _Scheduler(SCDebug):
     def next_collect(cls, now=None):
         if now is None:
             now = datetime.datetime.now()
-        next = datetime.datetime(now.year, now.month, now.day,
-                                 cls.collect_hour, cls.collect_min)
+        next = datetime.datetime(now.year, now.month, now.day, cls.collect_hour, cls.collect_min)
         if (next.timestamp() - now.timestamp()) > 0:
             return cls.Event(cls.EVENT_COLLECT, next.timestamp())
 
@@ -102,7 +102,13 @@ class _Scheduler(SCDebug):
         if now is None:
             now = datetime.datetime.now()
         # next = now + relativedelta(minutes=1, seconds=(59-now.second))
-        next = now + relativedelta(minutes=(60-now.minute),seconds=(59-now.second))
+        if _Scheduler.debugging:
+            # For debugging, every 10 minutes.
+            minute = 10-(now.minute%10)
+            next = now + relativedelta(minutes=minute,seconds=(59-now.second))
+        else:
+            next = now + relativedelta(minutes=(60-now.minute),seconds=(59-now.second))
+        print('@@@', next)
         return cls.Event(cls.EVENT_HOUR, next.timestamp())
 
 
@@ -164,9 +170,7 @@ class Collector(Manager, metaclass=SSingleton):
         self.collect(None)
 
     def _do_event_hour(self):
-        now = datetime.datetime.now()
-        self.iprint(f'EVENT HOUR {datetime.datetime.now()} {id(self)}')
-        if now.weekday() not in [5, 6] and now.hour in [10, 13, 16]:
+        def do_notify():
             notice = Notice()
             try:
                 notice.dispatch()
@@ -174,6 +178,18 @@ class Collector(Manager, metaclass=SSingleton):
                 self.dprint('---------------------------------------')
                 self.dprint(traceback.format_exc())
             del notice
+
+        now = datetime.datetime.now()
+        self.iprint(f'EVENT HOUR {datetime.datetime.now()} {id(self)}')
+        if _Scheduler.debugging:
+            # For debugging, run it every 10 minutes
+            computealgo.compute_all()
+            do_notify()
+        elif now.weekday() not in [5, 6]:
+            if now.hour in range(9, 20):
+                computealgo.compute_all()
+            if now.hour in [10, 13, 16]:
+                do_notify()
 
     def _worker_event(self):
         curtime = time.time()
@@ -223,7 +239,7 @@ class Collector(Manager, metaclass=SSingleton):
                     self.state.is_run() is False or \
                     item == self.CMD_QUIT:
                 break
-
+            
             self._worker_event()
             if not item:
                 self._worker_item_process()

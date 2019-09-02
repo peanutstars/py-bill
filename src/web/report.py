@@ -10,27 +10,56 @@ from core.finance import BillConfig
 from core.gmail import Gmail
 
 from pysp.serror import SCDebug
+from pysp.sbasic import SSingleton
+
+
+class ComputeAlgo(Dict, metaclass=SSingleton):
+    # def __init__(self, *args, **kwargs):
+    #     super(ComputeAlgo, self).__init__(*args, **kwargs)
+    #     self.compute_all()
+
+    def _key(self, code, index):
+        return f'{code}:{index}'
+
+    def compute(self, code, index):
+        key = self._key(code, index)
+        data = self.get(key, None)
+        if data:
+            return data
+        self[key] = IterAlgo.compute_index_chart(code, index)
+        del self[key]['fields']
+        return self[key]
+
+    def _compute_with_user(self):
+        self.clear()
+        for user in User.query.all():
+            if not user.is_authorized('STOCK'):
+                continue
+            for stock in MStock.list(user.id, order='code'):
+                # print(user.username, stock.code)
+                index = None
+                m = MStock.query.filter_by(user_id=1, code=stock.code).first()
+                if m and m.algo_index:
+                    index = m.algo_index
+                if index:
+                    # print(user.id, stock.code, index)
+                    self.compute(stock.code, index)
+
+    def compute_all(self):
+        with app.app_context():
+            self._compute_with_user()
+
+computealgo = ComputeAlgo()
+
 
 
 class Notice(SCDebug):
     def __init__(self):
         super(Notice, self).__init__()
-        self.cache = {}
+        self.cache = computealgo
 
     def __call__(self):
         return self.dispatch()
-
-    def _key(self, code, index):
-        return f'{code}:{index}'
-
-    def _compute_algo(self, code, index):
-        key = self._key(code, index)
-        data = self.cache.get(key, None)
-        if data:
-            return data
-        self.cache[key] = IterAlgo.compute_index_chart(code, index)
-        del self.cache[key]['fields']
-        return self.cache[key]
 
     def compute_algo(self, user):
         items = {}
@@ -41,7 +70,7 @@ class Notice(SCDebug):
                 algo_index = m.algo_index
             if algo_index:
                 # print(user.id, stock.code, algo_index)
-                item = self._compute_algo(stock.code, algo_index)
+                item = self.cache.compute(stock.code, algo_index)
                 item.name = stock.name
                 items[stock.code] = item
         return items
@@ -68,7 +97,6 @@ class Notice(SCDebug):
         return render_template('report/notice.html', **context) 
 
     def dispatch(self):
-        self.caceh = {}
         with app.app_context():
             for user in User.query.all():
                 if not user.is_authorized('STOCK'):

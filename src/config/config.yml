@@ -9,7 +9,7 @@ folder:
     log: /var/pybill/log/
 
 user:
-    url:
+    url: https://example.com
 
 admin:
-    email:
+    email: admin@email.com
