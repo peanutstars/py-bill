@@ -113,15 +113,19 @@ class OpPrice(AlgoOp):
         self.spercent = cfg.price.sell.percent
 
     @classmethod
-    def to_unit_price(cls, price, roundup):
+    def to_unit_price(cls, price, roundup, updown=0):
         uprice = price
         for k, v in cls.TRADE_UNIT.items():
             if price < k:
                 mod = price % v
                 # print('@', k, v)
                 if (mod) == 0:
+                    if updown:
+                        uprice += (v*updown)
                     break
                 uprice = (price-mod+v) if roundup else (price-mod)
+                if updown:
+                    uprice += (v*updown)
                 break
         # print('@', roundup, price, uprice)
         return uprice
@@ -235,27 +239,35 @@ class OpMinMax(AlgoOp):
         colnames.append(self.maxname)
         colnames.append(self.pctname)
         self.iend = colnames.index('end')
+        self.ilow = colnames.index('low')
+        self.ihigh = colnames.index('high')
         self.imin = colnames.index(self.minname)
         self.imax = colnames.index(self.maxname)
         self.ipct = colnames.index(self.pctname)
         self.accum = accum*5*4
-        self.items = []
+        self.array = Dict()
+        self.array.low = []
+        self.array.high = []
     
     def generate(self, idx, fields):
         minvalue = None
         maxvalue = None
         percent = None
         data = fields[idx][self.iend]
-        if len(self.items) == self.accum:
-            minvalue = min(self.items)
-            maxvalue = max(self.items)
+        lowdata = fields[idx][self.ilow]
+        highdata = fields[idx][self.ihigh]
+        if len(self.array.low) == self.accum:
+            minvalue = min(self.array.low)
+            maxvalue = max(self.array.high)
             # print('@', self.pctname, minvalue, maxvalue, data)
             if minvalue == maxvalue:
-                percent = 0 if data < minvalue else 100
+                percent = 0  # if data < minvalue else 100
             else:
                 percent = int((data-minvalue)/(maxvalue-minvalue)*100)
-            self.items.pop(0)
-        self.items.append(data)
+            self.array.low.pop(0)
+            self.array.high.pop(0)
+        self.array.low.append(lowdata)
+        self.array.high.append(highdata)
         self._fill_data([self.imin, self.imax, self.ipct], 
                         [minvalue, maxvalue, percent], fields[idx])
 
@@ -264,8 +276,12 @@ class CondBuy(AlgoProc):
     COLNAME_BUYCNT =        'buycnt'
     COLNAME_BUYREASON =     'breason'
     COLNAME_AFTER_HHUPUP =  'afhuu'
-    HERE_IT_GO =            15
-    AVG_DROP_RATE =         0.95
+    COLNAME_DAYRATES =      'dayrates'
+    BUY_NORMAL =            11
+    BUY_DROPPING =          22
+    AVG_DROP_RATE =         0.925
+    DROP_RATE_1DAY =        -7      # percent
+    DROP_RATE_2DAY =        -13     # percent
 
     def __init__(self, cfg, colnames):
         super(CondBuy, self).__init__()
@@ -273,10 +289,13 @@ class CondBuy(AlgoProc):
         colnames.append(self.COLNAME_AFTER_HHUPUP)
         colnames.append(self.COLNAME_BUYCNT)
         colnames.append(self.COLNAME_BUYREASON)
+        colnames.append(self.COLNAME_DAYRATES)
+        self.iend = colnames.index('end')
         self.istamp = colnames.index('stamp')
         self.ihhupup = colnames.index(self.COLNAME_AFTER_HHUPUP)
         self.ibcnt = colnames.index(self.COLNAME_BUYCNT)
         self.ibreason = colnames.index(self.COLNAME_BUYREASON)
+        self.idayrate = colnames.index(self.COLNAME_DAYRATES)
         _curve_step = AlgoTable.get_curve_step_colname
         self.steps = [f'{_curve_step(x, accums)}Md' for x in range(len(accums))]
         self.isteps = [colnames.index(x) for x in self.steps]
@@ -297,9 +316,15 @@ class CondBuy(AlgoProc):
             return True
         return False
 
+    def get_rate(self, a, b):
+        if a == 0:
+            return 1000 * (1 if (b-a) > 0 else -1)
+        return (b-a)*100/a
+
     def process(self, cfg, idx, fields):
         buycnt = 0
         buyreason = ''
+        dayrates = ''
 
         field = fields[idx]
         fg_skip = self.is_skipped(field)
@@ -307,6 +332,11 @@ class CondBuy(AlgoProc):
         while True:
             if fg_skip:
                 break
+
+            rate_1day = self.get_rate(fields[idx-1][self.iend], fields[idx][self.iend])
+            rate_2day = self.get_rate(fields[idx-2][self.iend], fields[idx][self.iend])
+            dayrates = f'{rate_1day:.1f}:{rate_2day:.1f}'
+
             # Check Starting Condition
             if self.start is False and self.is_all(self.isteps, ['DN','DN','DN'], field):
                 self.start = True
@@ -327,6 +357,16 @@ class CondBuy(AlgoProc):
                 self.after_hhupup -= 1
                 if self.after_hhupup < 0:
                     self.after_hhupup = 0
+            
+            if (rate_1day < self.DROP_RATE_1DAY or rate_2day < self.DROP_RATE_2DAY) and\
+            self.is_le_any(self.ipercents, [None,None,None,50,55,60], field):
+            # self.is_ge_any(self.ipercents, [None,None,None,30,25,20], field) and\
+                # Dropping Highly
+                buyreason += 'BD#'
+                buycnt = self.BUY_DROPPING
+                # Adjust buy price, because the price is dropping
+                field[self.ibprice] = OpPrice.to_unit_price(field[self.iend], True, updown=2)
+                break
 
             if self.is_or(['is_all','is_any'], self.isteps, 
                           [['UP','UP','UP'], ['HH','HH','HH']], field):
@@ -335,12 +375,13 @@ class CondBuy(AlgoProc):
             if self.is_or('is_any', self.isteps, [['DN','DN','DN']], field):
                 if self.is_or('is_all', self.isteps, [['LW','DN','DN']], field):
                     buyreason += 'B0#'
-                    buycnt = self.HERE_IT_GO
-            elif self.is_or('is_all', self.isteps, [['HH','UP',None]], field):
-                pass
-            else:
-                buyreason += 'B1#'
-                buycnt = self.HERE_IT_GO
+                    buycnt = self.BUY_NORMAL
+                elif self.is_or('is_all', self.isteps, [['UP','LW','DN']], field):
+                    buyreason += 'B1#'
+                    buycnt = self.BUY_NORMAL
+            # elif self.is_or('is_all', self.isteps, [['HH','UP',None]], field):
+            #     # High point
+            #     pass
 
             if self.is_ge_any(self.ipercents, [90,80,None,60,60,None], field):
                 # Too High
@@ -349,21 +390,13 @@ class CondBuy(AlgoProc):
                 break
             elif self.is_le_any(self.ipercents, [-10,-5,0,0,4,8], field):
                 # Too Low
-                if self.is_le_all(self.ipercents, [-10,10,None,None,None,None], field) and\
-                self.is_ge_all(self.ipercents, [None,None,None,None,40,40], field):
-                    # Drop in the short time
-                    buyreason += 'B3#'
-                    buycnt = self.HERE_IT_GO
-                else:
-                    buyreason += 'TL#'
-                    buycnt = 0
-                    break 
-            elif self.is_le_all(self.ipercents, [10,10,10,10,10,25], field):
-                buyreason += 'B4#'
-                buycnt = self.HERE_IT_GO
+                buyreason += 'TL#'
+                buycnt = 0
+                break 
 
             if buycnt > 0:
                 if self.start is False or self.after_hhupup > cfg.buy.after.hhupup.thresholds:
+                    # Threshold
                     buyreason += 'TS#'
                     buycnt = 0
 
@@ -372,7 +405,7 @@ class CondBuy(AlgoProc):
             baverage = prevfield[self.ibaverage]
             if baverage and int(baverage*self.AVG_DROP_RATE) > field[self.ibprice]:
                 buyreason += 'Av#'
-                buycnt = self.HERE_IT_GO
+                buycnt = self.BUY_NORMAL
 
             break  # End of While
 
@@ -380,57 +413,105 @@ class CondBuy(AlgoProc):
             buyreason += ''.join([str(field[x]) for x in self.isteps])
             buyreason += '#'+':'.join([str(field[x]) for x in self.ipercents])
             
-        indexes = [self.ihhupup, self.ibcnt, self.ibreason]
-        values = [self.after_hhupup, buycnt, buyreason]
+        indexes = [self.ihhupup, self.ibcnt, self.ibreason, self.idayrate]
+        values = [self.after_hhupup, buycnt, buyreason, dayrates]
         self._fill_data(indexes, values, field)
 
 
 class CalBuy(AlgoProc):
-    COLNAME_BUY_VOLUME =    'bvolume'
-    COLNAME_BUY_AMOUNT =    'bamount'
-    COLNAME_BUY_AVERAGE =   'bavg'
+    COLNAME_BUY_VOLUME =        'bvolume'
+    COLNAME_BUY_AMOUNT =        'bamount'
+    COLNAME_BUY_AVERAGE =       'bavg'
+    COLNAME_BUY_DROP_VOLUME =   'bdvolume'
+    COLNAME_BUY_DROP_AMOUNT =   'bdamount'
+    COLNAME_BUY_DROP_AVERAGE =  'bdavg'
 
     def __init__(self, cfg, colnames):
         super(CalBuy, self).__init__()
         colnames.append(self.COLNAME_BUY_VOLUME)
         colnames.append(self.COLNAME_BUY_AMOUNT)
         colnames.append(self.COLNAME_BUY_AVERAGE)
+        colnames.append(self.COLNAME_BUY_DROP_VOLUME)
+        colnames.append(self.COLNAME_BUY_DROP_AMOUNT)
+        colnames.append(self.COLNAME_BUY_DROP_AVERAGE)
         self.ibcnt = colnames.index(CondBuy.COLNAME_BUYCNT)
         self.ibprice = colnames.index(cfg.price.buy.colname)
         self.ivolume = colnames.index(self.COLNAME_BUY_VOLUME)
         self.iamount = colnames.index(self.COLNAME_BUY_AMOUNT)
         self.iaverage = colnames.index(self.COLNAME_BUY_AVERAGE)
+        self.idvolume = colnames.index(self.COLNAME_BUY_DROP_VOLUME)
+        self.idamount = colnames.index(self.COLNAME_BUY_DROP_AMOUNT)
+        self.idaverage = colnames.index(self.COLNAME_BUY_DROP_AVERAGE)
+        self.volume = 0
+        self.amount = 0
+        self.average = 0
+        self.dvolume = 0
+        self.damount = 0
+        self.daverage = 0
         self.reset()
+        self.reset_bdrop()
 
     def reset(self, **kwargs):
-        self.volume = kwargs.get('volume',0)
-        self.amount = kwargs.get('amount',0)
-        self.average = kwargs.get('average',0)
+        self.volume = 0
+        self.amount = 0
+        self.average = 0
         field = kwargs.get('field', None)
         if field:
             indexes = [self.ivolume, self.iamount, self.iaverage]
             values = [self.volume, self.amount, self.average]
             self._fill_data(indexes, values, field)
 
+    def reset_bdrop(self, **kwargs):
+        field = kwargs.get('field', None)
+        sprice = kwargs.get('sprice', 0)
+        if self.volume != self.dvolume:
+            self.volume -= self.dvolume
+            self.amount -= ((self.dvolume*sprice) if sprice else self.damount)
+            self.average = int(self.amount / self.volume)
+            if field:
+                indexes = [self.ivolume, self.iamount, self.iaverage]
+                values = [self.volume, self.amount, self.average]
+                self._fill_data(indexes, values, field)
+        self.dvolume = 0
+        self.damount = 0
+        self.daverage = 0
+        if field:
+            indexes = [self.idvolume, self.idamount, self.idaverage]
+            values = [self.dvolume, self.damount, self.daverage]
+            self._fill_data(indexes, values, field)
+
+
     def process(self, cfg, idx, fields):
         field = fields[idx]
-        indexes = [self.ivolume, self.iamount, self.iaverage]
+        indexes = [self.ivolume, self.iamount, self.iaverage, 
+                   self.idvolume, self.idamount, self.idaverage]
 
         buy_count = field[self.ibcnt]
         bprice = field[self.ibprice]
-        if buy_count > 0 and bprice > 0:
-            self.volume += 1
-            self.amount += (1 * field[self.ibprice])
-            self.average = int(self.amount / self.volume)
+        if bprice > 0:
+            if buy_count == CondBuy.BUY_NORMAL:
+                self.volume += 1
+                self.amount += (1 * field[self.ibprice])
+                self.average = int(self.amount / self.volume)
+            elif buy_count == CondBuy.BUY_DROPPING:
+                self.volume += 2
+                self.amount += (2 * field[self.ibprice])
+                self.average = int(self.amount / self.volume)
+                self.dvolume += 2
+                self.damount += (2 * field[self.ibprice])
+                self.daverage = int(self.damount / self.dvolume)                
 
-        values = [self.volume, self.amount, self.average]
+        values = [self.volume, self.amount, self.average,
+                  self.dvolume, self.damount, self.daverage]
         self._fill_data(indexes, values, field)
 
 
 class CondSell(AlgoProc):
     COLNAME_SELL_POINT =    'sellcnt'
     COLNAME_SELL_REASON =   'sreason'
-    HERE_IT_GO =            15
+    SELL_NORMAL =           11
+    SELL_DROPPING =         22
+    DROP_RETURN_RATE =      1.045
 
     def __init__(self, cfg, colnames):
         super(CondSell, self).__init__()
@@ -440,8 +521,12 @@ class CondSell(AlgoProc):
         self.iscnt = colnames.index(self.COLNAME_SELL_POINT)
         self.isreason = colnames.index(self.COLNAME_SELL_REASON)
         self.isprice = colnames.index(cfg.price.sell.colname)
+        self.ihigh = colnames.index('high')
+        self.ibcnt = colnames.index(CondBuy.COLNAME_BUYCNT)
         self.ibvolume = colnames.index(CalBuy.COLNAME_BUY_VOLUME)
         self.ibaverage = colnames.index(CalBuy.COLNAME_BUY_AVERAGE)
+        self.ibdvolume = colnames.index(CalBuy.COLNAME_BUY_DROP_VOLUME)
+        self.ibdaverage = colnames.index(CalBuy.COLNAME_BUY_DROP_AVERAGE)
         _curve_step = AlgoTable.get_curve_step_colname
         self.steps = [f'{_curve_step(x, accums)}Md' for x in range(len(accums))]
         self.isteps = [colnames.index(x) for x in self.steps]
@@ -466,7 +551,7 @@ class CondSell(AlgoProc):
             #         #    if field[self.ihhupup] >= self.std_hhupup:
             #         wanted = field[self.ibaverage]*self.rrate
             #         if field[self.isprice] > wanted:
-            #             sellcnt = self.HERE_IT_GO
+            #             sellcnt = self.SELL_NORMAL
 
             # if self.method == 2:
             #     if self.is_any(self.isteps, ['HH','HH',None], field):
@@ -475,7 +560,7 @@ class CondSell(AlgoProc):
             #             if field[self.ihhupup] >= self.std_hhupup:
             #                 wanted = field[self.ibaverage]*self.rrate
             #                 if field[self.isprice] > wanted:
-            #                     sellcnt = self.HERE_IT_GO
+            #                     sellcnt = self.SELL_NORMAL
 
             if self.method == 3:
                 if self.is_any(self.isteps, ['HH','HH',None], field) or \
@@ -485,17 +570,33 @@ class CondSell(AlgoProc):
                         if field[self.ihhupup] >= self.std_hhupup:
                             wanted = field[self.ibaverage]*self.rrate
                             if field[self.isprice] > wanted:
-                                sellcnt = self.HERE_IT_GO
+                                sellcnt = self.SELL_NORMAL
+                                sreason += 'SN#'
 
             if self.method == 4:
                 if self.is_any(self.isteps, ['HH','HH',None], field) or \
                 self.is_or('is_all', self.isteps, [['DN','UP',None],['LW','UP',None],
-                                                   ['UP','LW',None],['UP','UP','UP']], field):
+                                                   ['UP','LW',None],['UP','UP',None]], field):
                     if field[self.ihhupup] >= self.std_hhupup:
                         # TODO: Add that Profit is Up Side Rapidly
                         wanted = field[self.ibaverage]*self.rrate
                         if field[self.isprice] > wanted:
-                            sellcnt = self.HERE_IT_GO
+                            sellcnt = self.SELL_NORMAL
+                            sreason += 'SN#'
+
+            # check to sell for a stock which it bought when the big drop.
+            if field[self.ibcnt] != CondBuy.BUY_DROPPING and field[self.ibdvolume] > 0:
+                wanted = field[self.ibdaverage]*self.DROP_RETURN_RATE
+                curprice = OpPrice.to_unit_price(field[self.ihigh], True, updown=-2)
+                if curprice > wanted:
+                    field[self.isprice] = curprice
+                    # check to sell everythings
+                    wanted = field[self.ibaverage]*self.rrate
+                    if field[self.isprice] > wanted:
+                        sellcnt += (self.SELL_NORMAL if sellcnt == 0 else 0)
+                        sreason += 'SN#'
+                    sellcnt += self.SELL_DROPPING
+                    sreason += 'SD#'
 
         indexes = [self.iscnt, self.isreason]
         values = [sellcnt, sreason]
@@ -516,7 +617,9 @@ class CalSell(AlgoProc):
         self.isamount = colnames.index(self.COLNAME_SELL_AMOUNT)
         self.iprofit = colnames.index(self.COLNAME_SELL_PROFIT)
         self.ibamount = colnames.index(CalBuy.COLNAME_BUY_AMOUNT)
+        self.ibdamount = colnames.index(CalBuy.COLNAME_BUY_DROP_AMOUNT)
         self.ivolume = colnames.index(CalBuy.COLNAME_BUY_VOLUME)
+        self.idvolume = colnames.index(CalBuy.COLNAME_BUY_DROP_VOLUME)
         self.iscnt = colnames.index(CondSell.COLNAME_SELL_POINT)
         self.isprice = colnames.index(cfg.price.sell.colname)
         self.investment_amount = 0
@@ -544,20 +647,60 @@ class CalSell(AlgoProc):
         amount = None
         profit = None
         field = fields[idx]
+        fg_earning = False
 
         sprice = field[self.isprice]
-        if field[self.iscnt] > 0 and sprice > 0:
-            amount = field[self.ivolume] * sprice
-            profit = '{:.2f}'.format((amount/field[self.ibamount]*100)-100)
-            self.investment_amount += field[self.ibamount]
-            self.earnings_amount += amount
+        scnt = field[self.iscnt]
+
+        if sprice > 0:
+            if scnt == (CondSell.SELL_DROPPING+CondSell.SELL_NORMAL):
+                amount = field[self.ivolume] * sprice
+                profit = '{:.2f}'.format((amount/field[self.ibamount]*100)-100)
+                self.investment_amount += field[self.ibamount]
+                self.earnings_amount += amount
+                self.calbuy.reset_bdrop(field=field, sprice=sprice)
+                self.calbuy.reset(field=field)
+                fg_earning = True
+            elif scnt == CondSell.SELL_DROPPING:
+                fg_same = field[self.idvolume] == field[self.ivolume]
+                self.calbuy.reset_bdrop(field=field, sprice=sprice)
+                amount = field[self.ivolume] * sprice
+                profit = '{:.2f}'.format((amount/field[self.ibamount]*100)-100)
+                self.investment_amount += field[self.ibamount]
+                self.earnings_amount += amount
+                if fg_same:
+                    self.calbuy.reset(field=field)
+                fg_earning = True
+            elif scnt == CondSell.SELL_NORMAL:
+                amount = field[self.ivolume] * sprice
+                profit = '{:.2f}'.format((amount/field[self.ibamount]*100)-100)
+                self.investment_amount += field[self.ibamount]
+                self.earnings_amount += amount
+                self.calbuy.reset_bdrop(field=field, sprice=sprice)
+                self.calbuy.reset(field=field)
+                fg_earning = True
+
+        if profit is None and field[self.ivolume]:
+            _amount = field[self.ivolume] * sprice
+            profit = '{:.2f}'.format((_amount/field[self.ibamount]*100)-100)
+
+        if fg_earning:
             self.earnings_count += 1
             if idx >= (len(fields)-self.WORK_DAYS_PER_YEAR):
                 self.last_earnings_count += 1
-            self.calbuy.reset(field=field)
-        elif field[self.ivolume]:
-            _amount = field[self.ivolume] * sprice
-            profit = '{:.2f}'.format((_amount/field[self.ibamount]*100)-100)
+        
+        # if field[self.iscnt] > 0 and sprice > 0:
+        #     amount = field[self.ivolume] * sprice
+        #     profit = '{:.2f}'.format((amount/field[self.ibamount]*100)-100)
+        #     self.investment_amount += field[self.ibamount]
+        #     self.earnings_amount += amount
+        #     self.earnings_count += 1
+        #     if idx >= (len(fields)-self.WORK_DAYS_PER_YEAR):
+        #         self.last_earnings_count += 1
+        #     self.calbuy.reset(field=field)
+        # elif field[self.ivolume]:
+        #     _amount = field[self.ivolume] * sprice
+        #     profit = '{:.2f}'.format((_amount/field[self.ibamount]*100)-100)
 
         if field[self.ivolume] > 0:
             self.investment_days += 1
@@ -724,7 +867,8 @@ class IterAlgo:
 
             param = Dict()
             param.cfg = cfg
-            param.data = data
+            # param.data = data
+            param.data = json.loads(json.dumps(data))
 
             yield param
 
@@ -859,6 +1003,7 @@ class IterAlgo:
             icprice = data.colnames.index('end')
             ibprice = data.colnames.index(data.cfg.price.buy.colname)
             isprice = data.colnames.index(data.cfg.price.sell.colname)
+            isreason = data.colnames.index(CondSell.COLNAME_SELL_REASON)
 
             brief = Dict()
             brief.date = lastfield[istamp]
@@ -871,6 +1016,7 @@ class IterAlgo:
             brief.cprice = lastfield[icprice]
             brief.bprice = lastfield[ibprice]
             brief.sprice = lastfield[isprice]
+            brief.sreason = lastfield[isreason]
             brief.last.colnames = data.colnames
             brief.last.field = data.fields[-1]
             data.chart.today = brief

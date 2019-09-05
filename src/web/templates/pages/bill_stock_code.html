@@ -179,6 +179,25 @@
           <ul class="row actions etc small" style="margin-bottom: 0.3em;">
             <li style="width: 6em;" id="simulation-chart-spoint"><b>Sell</b></li>
             <li><span>Profit:</span> <span id="simulation-chart-sprofit" style="color: black;"></span></li>
+            <li><span>Reason:</span> <span id="simulation-chart-sreason"></span></li>
+          </ul>
+          <ul class="row actions etc small" style="margin-bottom: 0.3em;">
+            <li style="width: 6em;"><b>Comment</b></li>
+            <li><span>B0#:</span> <span>Buy-1st Low Point</span></li>
+            <li><span>B1#:</span> <span>Buy-2nd Low Point with UP</span></li>
+            <li><span>BD#:</span> <span>Buy-High Dropping</span></li>
+            <li><span>Av#:</span> <span>Buy-Lower Average</span></li>
+          </ul>
+          <ul class="row actions etc small" style="margin-bottom: 0.3em;">
+            <li style="width: 6em;"></li>
+            <li><span>TH#:</span> <span>Too High</span></li>
+            <li><span>TL#:</span> <span>Too Low</span></li>
+            <li><span>TS#:</span> <span>Threshold of HHUPUP</span></li>
+          </ul>
+          <ul class="row actions etc small" style="margin-bottom: 0.3em;">
+            <li style="width: 6em;"></li>
+            <li><span>SN#:</span> <span>Sell Normal</span></li>
+            <li><span>SD#:</span> <span>Sell for High Dropping</span></li>
           </ul>
         </div>
       </div>
@@ -479,6 +498,7 @@
           $('#simulation-chart-bavg').text(util.formatNumber(data.chart.today.bavg));
           $('#simulation-chart-bvolume').text(util.formatNumber(data.chart.today.bvolume));
           $('#simulation-chart-breason').text(data.chart.today.breason);
+          $('#simulation-chart-sreason').text(data.chart.today.rseason);
           let profit = data.chart.today.sprofit;
           $('#simulation-chart-sprofit').text(profit?profit+'%':'None');
         }

@@ -48,7 +48,7 @@
         html += '<h4>'+char+'</h4>';
         html += '<ul class="row actions">';
       }
-      html += '<li><a href="{{ url_for('bill_stock' )}}'+code+'" class="button bottom">'+codename+'</a></li>';
+      html += '<li><a href="{{ url_for('bill_stock')}}'+code+'" class="button bottom">'+codename+'</a></li>';
     }
     html += '</ul>';
     $("#view-stock-list").append(html);
