@@ -280,8 +280,6 @@ class CondBuy(AlgoProc):
     BUY_NORMAL =            11
     BUY_DROPPING =          22
     AVG_DROP_RATE =         0.925
-    DROP_RATE_1DAY =        -7      # percent
-    DROP_RATE_2DAY =        -13     # percent
 
     def __init__(self, cfg, colnames):
         super(CondBuy, self).__init__()
@@ -304,6 +302,9 @@ class CondBuy(AlgoProc):
         self.ipercents = [colnames.index(x) for x in self.percents]
         self.after_hhupup = 0
         self.start = False
+        drop_rate = cfg.buy.dropping_rate
+        self.drop_rate_1day = drop_rate * -1
+        self.drop_rate_2day = drop_rate * -1.77
 
     def init_extra_columns(self, cfg, colnames):
         self.ibprice = colnames.index(cfg.price.buy.colname)
@@ -358,7 +359,7 @@ class CondBuy(AlgoProc):
                 if self.after_hhupup < 0:
                     self.after_hhupup = 0
             
-            if (rate_1day < self.DROP_RATE_1DAY or rate_2day < self.DROP_RATE_2DAY) and\
+            if (rate_1day < self.drop_rate_1day or rate_2day < self.drop_rate_2day) and\
             self.is_le_any(self.ipercents, [None,None,None,50,55,60], field):
             # self.is_ge_any(self.ipercents, [None,None,None,30,25,20], field) and\
                 # Dropping Highly
@@ -511,7 +512,7 @@ class CondSell(AlgoProc):
     COLNAME_SELL_REASON =   'sreason'
     SELL_NORMAL =           11
     SELL_DROPPING =         22
-    DROP_RETURN_RATE =      1.045
+    DROP_RETURN_RATE =      0.00643
 
     def __init__(self, cfg, colnames):
         super(CondSell, self).__init__()
@@ -537,6 +538,7 @@ class CondSell(AlgoProc):
         self.ihhupup = colnames.index(CondBuy.COLNAME_AFTER_HHUPUP)
         self.rrate = 1.0 + cfg.price.sell.return_rate/100.0
         self.method = cfg.sell.method
+        self.drop_return_rate = 1.0 + self.DROP_RETURN_RATE*cfg.buy.dropping_rate
 
     def process(self, cfg, idx, fields):
         sellcnt = 0
@@ -586,7 +588,7 @@ class CondSell(AlgoProc):
 
             # check to sell for a stock which it bought when the big drop.
             if field[self.ibcnt] != CondBuy.BUY_DROPPING and field[self.ibdvolume] > 0:
-                wanted = field[self.ibdaverage]*self.DROP_RETURN_RATE
+                wanted = field[self.ibdaverage]*self.drop_return_rate
                 curprice = OpPrice.to_unit_price(field[self.ihigh], True, updown=-2)
                 if curprice > wanted:
                     field[self.isprice] = curprice
@@ -663,14 +665,16 @@ class CalSell(AlgoProc):
                 fg_earning = True
             elif scnt == CondSell.SELL_DROPPING:
                 fg_same = field[self.idvolume] == field[self.ivolume]
+                self.investment_amount += field[self.ibdamount]
+                self.earnings_amount += field[self.idvolume] * sprice
                 self.calbuy.reset_bdrop(field=field, sprice=sprice)
                 amount = field[self.ivolume] * sprice
                 profit = '{:.2f}'.format((amount/field[self.ibamount]*100)-100)
-                self.investment_amount += field[self.ibamount]
-                self.earnings_amount += amount
+                # self.investment_amount += field[self.ibamount]
+                # self.earnings_amount += amount
                 if fg_same:
                     self.calbuy.reset(field=field)
-                fg_earning = True
+                    fg_earning = True
             elif scnt == CondSell.SELL_NORMAL:
                 amount = field[self.ivolume] * sprice
                 profit = '{:.2f}'.format((amount/field[self.ibamount]*100)-100)
@@ -748,6 +752,7 @@ class AlgoTable:
         cfg.price.sell.colname = 'sprice'
         cfg.price.sell.percent = 50
         cfg.price.sell.return_rate = 7              # [5..15]
+        cfg.buy.dropping_rate = 7                   # [7, 3]
         cfg.buy.after.hhupup.begin = 15             # [7..20]
         cfg.buy.after.hhupup.append = 4             # [2..8]
         cfg.buy.after.hhupup.hhup_lwhh.begin = 5    # [3..8]
@@ -810,6 +815,7 @@ class IterAlgo:
 
     CfgParam = namedtuple('CfgParam', 
                           'sell_method minmax_index '
+                          'dropping_rate '
                           'hhupup_thresholds hhupup_begin hhupup_append '
                           'hhup_lwhh_begin hhup_lwhh_append '
                           'sum_accum_index')
@@ -819,12 +825,11 @@ class IterAlgo:
         [2, 5, 10],
         [3, 5, 7], [3, 5, 9],  # [3, 5, 11],
         [3, 6, 9], [3, 6, 12],
-        [4, 5, 6], [4, 5, 10],
         [4, 6, 8], 
         [4, 7, 10],
     ]
     MINMAX_ACCUMS = [[1, 2, 3, 6, 9, 12]]  # [1, 2, 4, 8, 12, 18], 
-    COND_SELL_METHOD = [3, 4]
+    COND_SELL_METHOD = [4]
 
     def __init__(self):
         self.iterlist = []
@@ -832,15 +837,17 @@ class IterAlgo:
         self.iterlist.append(sell_method)
         minmax_index = range(len(self.MINMAX_ACCUMS))
         self.iterlist.append(minmax_index)
+        dropping_rate = [7, 3]
+        self.iterlist.append(dropping_rate)
         hhupup_thresholds = range(0, 3)
         self.iterlist.append(hhupup_thresholds)
-        hhupup_begin = range(14, 21)
+        hhupup_begin = range(14, 22, 2)
         self.iterlist.append(hhupup_begin)
         hhupup_append = range(3, 8)
         self.iterlist.append(hhupup_append)
-        hhup_lwhh_begin = range(3, 8)
+        hhup_lwhh_begin = range(3, 8, 2)
         self.iterlist.append(hhup_lwhh_begin)
-        hhup_lwhh_append = range(0, 5)
+        hhup_lwhh_append = range(0, 5, 2)
         self.iterlist.append(hhup_lwhh_append)
         sum_accum_index = range(len(self.SUM_ACCUMS))
         self.iterlist.append(sum_accum_index)
@@ -852,6 +859,7 @@ class IterAlgo:
         cfg.sum.accums = IterAlgo.SUM_ACCUMS[p.sum_accum_index]
         cfg.minmax.accums = IterAlgo.MINMAX_ACCUMS[p.minmax_index]
         cfg.curve.step = AlgoTable.get_curve_step_params(cfg.sum.accums)
+        cfg.buy.dropping_rate = p.dropping_rate
         cfg.buy.after.hhupup.begin = p.hhupup_begin
         cfg.buy.after.hhupup.append = p.hhupup_append
         cfg.buy.after.hhupup.hhup_lwhh.begin = p.hhup_lwhh_begin
@@ -1049,15 +1057,17 @@ class IterAlgo:
     @classmethod
     def dump_brief(cls, data):
         c = data.cfg
-        b = data.cfg.buy.after.hhupup
+        b = data.cfg.buy
+        h = data.cfg.buy.after.hhupup
         s = data.cfg.sell
         r = data.report
         m  = f'{c.algo.index:06d}:' if type(c.algo.index) is int else '------:'
         m += f'{" ".join([str(x) for x in c.sum.accums])}:'
         m += f'{" ".join([str(x) for x in c.minmax.accums])}:'
-        m += f'{b.begin} {b.append} '
-        m += f'{b.hhup_lwhh.begin} {b.hhup_lwhh.append} '
-        m += f'{b.thresholds}:'
+        m += f'{b.dropping_rate}:'
+        m += f'{h.begin} {h.append} '
+        m += f'{h.hhup_lwhh.begin} {h.hhup_lwhh.append} '
+        m += f'{h.thresholds}:'
         m += f'{s.method}:'
         m += f'{r.investment_amount} {r.return_rate} {r.investment_days} '
         m += f'{r.earnings_count} {r.last_earnings_count}'
@@ -1112,7 +1122,7 @@ class IterAlgo:
         folder = kwargs.get('folder', '/var/pybill/stock/algo')
 
         data = Dict()
-        data.colnames = ['index', 'sum', 'minmax', 'hhupup', 'sell', 
+        data.colnames = ['index', 'sum', 'minmax', 'droprate', 'hhupup', 'sell', 
                          'iamount', 'return', 'idays', 'ecount', 'lecount']
         data.fields = []
         data.md5sum = False
@@ -1126,7 +1136,7 @@ class IterAlgo:
             for line in fd:
                 arr = line.split(':')
                 arrc = len(arr)
-                if arrc == 6:
+                if arrc == 7:
                     data.fields.append(col_to_list(arr))
                 else:
                     if arr[0].find('MAX Earnings Count') >= 0:

@@ -221,13 +221,23 @@
     </div>
     <div id="algo-brief-area" style="display: none;">
       <div>
-        <ul class="row actions" style="margin-bottom: 0.3em;">
+        <!-- <ul class="row actions" style="margin-bottom: 0.3em;">
           <li style="width: 7.5em;"><b class="etc small">Sell Mode</b></li>
           <li>
             <select class="etc bottom small" name="algo-brief-sell" id="algo-brief-sell">
               <option value="0">All</option>
               <option value="3">SM3</option>
               <option value="4">SM4</option>
+            </select>
+          </li>
+        </ul> -->
+        <ul class="row actions" style="margin-bottom: 0.3em;">
+          <li style="width: 7.5em;"><b class="etc small">Drop Rate</b></li>
+          <li>
+            <select class="etc bottom small" name="algo-brief-droprate" id="algo-brief-droprate">
+              <option value="0">All</option>
+              <option value="7">7</option>
+              <option value="3">3</option>
             </select>
           </li>
         </ul>
@@ -278,7 +288,7 @@
           
           <table class="etc small">
           <thead>
-              <tr><th>Index</th><th>Sum</th><th>MinMax</th><th>HhUpUp</th><th>Sell</th><th>IAmount</th><th>Return</th><th>IDays</th><th>ECount</th><th>LECount</th><tr>
+              <tr><th>Index</th><th>Sum</th><th>MinMax</th><th>DRate</th><th>HhUpUp</th><th>Sell</th><th>IAmount</th><th>Return</th><th>IDays</th><th>ECount</th><th>LECount</th><tr>
             </thead>
             <tbody id="algo-brief-tbody">
             </tbody>
@@ -465,13 +475,14 @@
       let brief= [
       '<table class="etc small">',
       '  <thead>',
-      '    <tr><th>Index</th><th>Sum</th><th>MinMax</th><th>HhUpUp</th><th>Sell</th><th>IAmount</th><th>Return</th><th>IDays</th><th>ECount</th><th>LECount</th><tr>',
+      '    <tr><th>Index</th><th>Sum</th><th>MinMax</th><th>DRate</th><th>HhUpUp</th><th>Sell</th><th>IAmount</th><th>Return</th><th>IDays</th><th>ECount</th><th>LECount</th><tr>',
       '  </thead>',
       '  <tbody>',
       '    <tr>',
       '      <td>'+cfg.algo.index+'</td>',
       '      <td>'+cfg.sum.accums.join(' ')+'</td>',
       '      <td>'+cfg.minmax.accums.join(' ')+'</td>',
+      '      <td>'+cfg.buy.dropping_rate+'</td>',
       '      <td>'+cfg.buy.after.hhupup.begin+' '+cfg.buy.after.hhupup.append+' '+cfg.buy.after.hhupup.hhup_lwhh.begin+' '+cfg.buy.after.hhupup.hhup_lwhh.append+' '+cfg.buy.after.hhupup.thresholds+'</td>',
       '      <td>'+cfg.sell.method+'</td>',
       '      <td>'+report.investment_amount+'</td>',
@@ -685,15 +696,30 @@
       algo_brief.render_tbody();
     };
     algo_brief._filter_sell = function(data){
+      // Removed Sell 3 Mode, It have not items.
+      return data;
+      // let filtered = [];
+      // let selector = 'algo-brief-sell';
+      // let foSell = $('#'+selector).val();
+      // let isell = _data.algo.colnames.indexOf(selector.split('-').pop());
+      // if (foSell == 0)
+      //   return data;
+      // for (field of data) {
+      //   if (field[isell] == foSell)
+      //     filtered.push(field);
+      // }
+      // return filtered;
+    };
+    algo_brief._filter_dropping_rate = function(data){
       let filtered = [];
-      let selector = 'algo-brief-sell';
-      let foSell = $('#'+selector).val();
-      let isell = _data.algo.colnames.indexOf(selector.split('-').pop());
-      if (foSell == 0)
+      let selector = 'algo-brief-droprate';
+      let idroprate = _data.algo.colnames.indexOf(selector.split('-').pop());
+      let drate = $('#'+selector).val();
+      if (drate == 0)
         return data;
       for (field of data) {
-        if (field[isell] == foSell)
-          filtered.push(field);
+        if (field[idroprate] == drate)
+          filtered.push(field)
       }
       return filtered;
     };
@@ -733,6 +759,7 @@
       let filtered = [];
       // console.log(_data.algo.colnames);
       filtered = algo_brief._filter_sell(_data.algo.fields);
+      filtered = algo_brief._filter_dropping_rate(filtered);
       for (tag of ['return', 'idays', 'ecount', 'lecount']) {
         filtered = algo_brief._filter_range('algo-brief-'+tag, filtered);
       }
