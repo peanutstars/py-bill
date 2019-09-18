@@ -924,6 +924,19 @@ class IterAlgo:
         it.run(qdata, work_folder=folder, code=code, months=months)
 
     @classmethod
+    def compute_qdata(cls, **kwargs):
+        code = kwargs.get('code')
+        qdata = kwargs.get('qdata')
+        months = kwargs.get('months', 72)
+        folder = kwargs.get('folder', 'algo')
+        
+        if not os.path.exists(folder):
+            os.mkdir(folder)
+        
+        it = cls()
+        it.run(qdata, work_folder=folder, code=code, months=months)
+
+    @classmethod
     def current_stock(cls, code, qdata):
         def renew_last_field(field, cs):
             field[istamp] = cs.date

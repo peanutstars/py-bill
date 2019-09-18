@@ -1,7 +1,7 @@
 import time
 
 from flask import render_template, flash, redirect, url_for, session, request
-from flask_login import login_user, login_required  # current_user
+from flask_login import login_user, login_required, logout_user  # current_user
 from wtforms import Form, StringField, PasswordField, HiddenField
 from wtforms.validators import (InputRequired, Email, Length, EqualTo,
                                 DataRequired)
@@ -87,11 +87,20 @@ def account_register():
     return render_template('pages/account_register.html', form=form)
 
 
+# from pprint import pprint
+# def _obj_to_dict(obj):
+#     """Convert an object into a hash for debug."""
+#     return {key: getattr(obj, key) for key
+#             in dir(obj)
+#             if key[0] != '_' and not callable(getattr(obj, key))}
+
+
 @app.route('/account/login', methods=['GET', 'POST'])
 def account_login():
     form = LoginForm(request.form)
     if request.method == 'GET':
         form.h_next.data = request.args.get('next')
+    # pprint(_obj_to_dict(form))
     if request.method == 'POST' and form.validate():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
@@ -115,6 +124,7 @@ def account_login():
 @app.route('/account/logout')
 @login_required
 def account_logout():
+    logout_user()
     username = session['username']
     session.clear()
     flash(f'Logged out - Bye {username} !', 'success')
@@ -175,16 +185,23 @@ def ajax_account_user():
 
     if type(params) is not dict or 'id' not in params:
         return Reply.Fail(message="Invalid or Need Parameters")
-    id = params.pop('id')
+    uid = params.pop('id')
     try:
         if request.method == 'GET':
-            return Reply.Success(value=User.info(id))
+            return Reply.Success(value=User.info(uid))
         if request.method == 'PATCH':
-            return Reply.Success(value=User.update(id, **params))
+            return Reply.Success(value=User.update(uid, **params))
         if request.method == 'DELETE':
-            return Reply.Success(value=User.delete(id))
+            return Reply.Success(value=User.delete(uid))
     except Exception as e:
         return Reply.Fail(message=str(e))
+
+
+@app.route('/ajax/account/whoami', methods=['GET'])
+@login_required
+def ajax_account_whoami():
+    uid = int(session['user_id'])
+    return Reply.Success(value=User.info(uid))
 
 
 @app.route('/ajax/account/user/notify', methods=['PATCH'])
