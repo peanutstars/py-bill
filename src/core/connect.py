@@ -302,6 +302,7 @@ class FKrx(FSpHelper):
     BASE_URL = 'https://short.krx.co.kr'
     URL = {
         'otp':      BASE_URL + '/contents/COM/GenerateOTP.jspx',
+        # 'otp':      'https://short.krx.co.kr' + '/contents/COM/GenerateOTP.jspx',
         'query':    BASE_URL + '/contents/SRT/99/SRT99000001.jspx'
     }
 
@@ -328,12 +329,19 @@ class FKrx(FSpHelper):
     def _get_chunk_list(cls, **kwargs):
         '''Get the stock items all from KRX.'''
         def gathering():
+            # 2019.12.08 : Changed Format  bld=SRT/02/02010100/srt02010100&name=form
             params = {
                 'bld':  'COM/finder_srtisu',
+                # 'bld': 'SRT/02/02010100/srt02010100',
                 'name': 'form',
             }
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.36',
+            }
             url = cls.URL.get('otp')
-            key = Http.get(url, params=params)
+            key = Http.get(url, params=params, headers=headers)
+            if not key:
+                raise cls.Error('No KEY of KRX')
 
             params = {
                 'no':       'SRT2',
@@ -343,7 +351,8 @@ class FKrx(FSpHelper):
             }
             pkwargs = {
                 'params': params,
-                'json': True
+                'headers': headers,
+                'json': True,
             }
             url = cls.URL.get('query')
             # {
