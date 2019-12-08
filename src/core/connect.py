@@ -393,8 +393,13 @@ class FKrx(FSpHelper):
                 'bld':  'SRT/02/02010100/srt02010100',
                 'name': 'form',
             }
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.36',
+            }
             url = cls.URL.get('otp')
-            key = Http.get(url, params=params)
+            key = Http.get(url, params=params, headers=headers)
+            if not key:
+                raise cls.Error('No KEY of KRX')
 
             cls.dprint(f'####### S:{sdate} E:{edate}')
             params = {
@@ -407,6 +412,7 @@ class FKrx(FSpHelper):
             }
             pkwargs = {
                 'params': params,
+                'headers': headers,
                 'json': True
             }
             url = cls.URL.get('query')
