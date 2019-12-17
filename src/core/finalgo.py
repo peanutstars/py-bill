@@ -951,7 +951,8 @@ class IterAlgo:
             # Not opening the stock market.
             return
 
-        url = 'https://stock.kakao.com/api/securities/KOREA-A'+code+'.json'
+        #url = 'https://stock.kakao.com/api/securities/KOREA-A'+code+'.json'
+        url = 'https://stockplus.com/api/securities/KOREA-A'+code+'.json'
         options = {
             'json':     True,
             'duration': 90,

@@ -100,24 +100,25 @@
     }
   };
   stock = {
+    kakao: "stockplus.com",
     kakao_brief_stock: function(code, cb) {
-      var url = 'https://stock.kakao.com/api/securities/KOREA-A'+code+'.json';
+      var url = 'https://'+this.kakao+'/api/securities/KOREA-A'+code+'.json';
       var params = {method: 'GET', url: url, datatype: 'json', duration: 90};
       ajax.post('/ajax/proxy', params, function(resp){cb(resp.recentSecurity);});
     },
     kakao_brief_company: function(code, cb) {
-      var url = 'https://stock.kakao.com/api/companies/KOREA-A'+code+'.json';
+      var url = 'https://'+this.kakao+'/api/companies/KOREA-A'+code+'.json';
       var params = {method: 'GET', url: url, datatype: 'json', duration: 3600};
       ajax.post('/ajax/proxy', params, function(resp){cb(resp.company);});
     },
     kakao_assets: function(codes, cb) {
-      var url = 'https://stock.kakao.com/api/assets.json';
+      var url = 'https://'+this.kakao+'/api/assets.json';
       var data = codes.map(function(el){return 'KOREA-A'+el});
       var params = {method: 'GET', url: url, datatype: 'json', params: {ids: data.join()}, duration: 30};
       ajax.post('/ajax/proxy', params, function(resp){cb(resp.assets);});
     },
     kakao_overseas: function(cb) {
-      let url = 'https://stock.kakao.com/api/securities.json';
+      let url = 'https://'+this.kakao+'/api/securities.json';
       let data = ['USA-DJI', 'USA-COMP']
       let params = {method: 'GET', url: url, datatype: 'json', params: {ids: data.join()}, duration: 120};
       ajax.post('/ajax/proxy', params, function(resp){cb(resp.recentSecurities);});

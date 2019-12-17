@@ -5,7 +5,7 @@
   <header class="main">
     <div class="row pull-right">
       <div class="btn-group">
-        <a type="button" class="button bottom small yellow" href="https://stock.kakao.com/m">K</a>
+        <a type="button" class="button bottom small yellow" href="https://stockplus.com/m">K</a>
         <a type="button" class="button bottom small green" href="https://m.stock.naver.com/index.nhn">N</a>
       </div>
     </div>
@@ -76,7 +76,7 @@
   $(function(){
     _data = {recent: {}}
     recent_stocks(render_recent_stocks);
-    // KOSPI, KOSDAQ https://stock.kakao.com/api/securities.json?ids=KOREA-D0011001%2CKOREA-E4012001
+    // KOSPI, KOSDAQ https://stockplus.com/api/securities.json?ids=KOREA-D0011001%2CKOREA-E4012001
     $(".update-recent-stocks").each(function(idx){
       $(this).on('click', function(){
         recent_stocks(render_recent_stocks);
