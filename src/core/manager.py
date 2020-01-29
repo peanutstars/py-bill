@@ -68,7 +68,7 @@ class _Scheduler(SCDebug):
     EVENT_COLLECT = "EvtCollect"
     EVENT_HOUR = "EvtHour"
     collect_hour = 18
-    collect_min = 40
+    collect_min = 35
     debugging = False
 
     class Event:
@@ -167,13 +167,17 @@ class Collector(Manager, metaclass=SSingleton):
         return False
 
     def _do_event_collect(self):
+        self.dprint("### [START] collect")
         self.collect(None)
+        self.dprint("### [E N D] collect")
 
     def _do_event_hour(self):
         def do_notify():
             notice = Notice()
             try:
+                self.dprint("### [START] notice")
                 notice.dispatch()
+                self.dprint("### [E N D] notice")
             except:
                 self.dprint('---------------------------------------')
                 self.dprint(traceback.format_exc())
@@ -187,7 +191,9 @@ class Collector(Manager, metaclass=SSingleton):
             do_notify()
         elif now.weekday() not in [5, 6]:
             if now.hour in range(9, 20):
+                self.dprint("### [START] computalgo")
                 computealgo.compute_all()
+                self.dprint("### [E N D] computalgo")
             if now.hour in [10, 13, 16]:
                 do_notify()
 

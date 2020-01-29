@@ -3,6 +3,7 @@
 import datetime
 import html2text
 import requests
+import time
 
 from pysp.serror import SCDebug
 from pysp.sjson import SJson
@@ -25,21 +26,27 @@ class Http(SCDebug):
         json = kwargs.get('json', False)
         params = kwargs.get('params', {})
         headers = kwargs.get('headers', {})
-        try:
-            r = method(url, params=params, headers=headers)
-        except requests.exceptions.ConnectionError as e:
-            raise cls.Error('Failed To Connect: {err}'.format(err=str(e)))
+        for rcnt in range(3):
+            try:
+                r = method(url, params=params, headers=headers)
+            except requests.exceptions.ConnectionError as e:
+                raise cls.Error('Failed To Connect: {err}'.format(err=str(e)))
 
-        if r.status_code == 200:
-            if text:
-                h = html2text.HTML2Text()
-                h.ignore_links = True
-                return h.handle(r.text)
-            if json:
-                return SJson.to_deserial(r.text)
-            return r.text
-
-        raise cls.Error('Unknown HTTP Status: {err}'.format(err=r.status_code))
+            if r.status_code == 200:
+                if text:
+                    h = html2text.HTML2Text()
+                    h.ignore_links = True
+                    return h.handle(r.text)
+                if json:
+                    return SJson.to_deserial(r.text)
+                return r.text
+            elif r.status_code == 504:
+                time.sleep(1)
+                cls.dprint('504 Timeout - Retry(%d)' % (rcnt+1))
+                continue
+            else:
+                cls.dprint('Error - Unknown HTTP Status[%d] Retry(%d)' % (r.status_code, rcnt+1))
+                raise cls.Error('Unknown HTTP Status: {err}'.format(err=r.status_code))
 
     @classmethod
     def get(cls, url, **kwargs):
@@ -109,6 +116,15 @@ class FDaum(FSpHelper):
 
     @classmethod
     def get_url(cls, key, **kwargs):
+        '''
+        Generate URL
+        Args
+            : key :
+        Kwargs:
+            : code string : String number of Stock Code
+            : page number : Index of Web Page.
+        Return (URL)
+        '''
         code = kwargs.get('code')
         page = kwargs.get('page', 0)
         if page > 0:
@@ -117,6 +133,7 @@ class FDaum(FSpHelper):
 
     @classmethod
     def get_chunk(cls, key, **kwargs):
+        '''Getting Chunk'''
         GET_CHUNK = {
             'day': cls._get_chunk_day,
         }
@@ -129,6 +146,9 @@ class FDaum(FSpHelper):
 
     @classmethod
     def _parse_day(cls, chunk):
+        '''
+        Parse a chunk which it is the crawling content of the web page.
+        '''
         class ColIdx:
             SEPERATOR = '|'
             COL_LENGTH = 8

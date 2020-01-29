@@ -21,6 +21,9 @@ from core.model import (StockDayInvestor, StockDayShort,
 
 
 class StockItemDB(SSimpleDB):
+    '''
+    Stock Item Database - It manage the db.
+    '''
     class Error(Exception):
         pass
     # SQL_ECHO = True
@@ -32,6 +35,7 @@ class StockItemDB(SSimpleDB):
 
     @classmethod
     def factory(cls, code):
+        '''Get handler of the db of Stock Code.'''
         bcfg = BillConfig()
         db_file = '{folder}/{code}.sqlite3'.format(
             folder=bcfg.get_value('config.db.stock.folder'), code=code)
@@ -40,6 +44,17 @@ class StockItemDB(SSimpleDB):
         return cls(db_file=db_file, db_config=db_config)
 
     def update_candle(self, days):
+        '''
+        Update the candle data of stock.
+        The columns are stamp, finance, start, end, high, low and volume.
+            stamp - YYYY-MM-DD
+            finance - Company name of finance.
+            start - Start Price
+            end - End Price
+            high - High Price
+            low - Low Price
+            volume - Trading Volume
+        '''
         if len(days) == 0:
             return False
         data = []
@@ -61,6 +76,15 @@ class StockItemDB(SSimpleDB):
         return self.upsert_array('stock_day', **param)
 
     def update_investor(self, days):
+        '''
+        Update the investor data of stock.
+        The columns are stamp, foreigner, frate, institute and person.
+            stamp - YYYY-MM-DD
+            foreigner - Trading volume of Foreigner
+            frate - The retention rate of Foreigner in the whole, Unit is percent.
+            institute - Trading volume of Institute
+            person - Trading volume of Person
+        '''
         if len(days) == 0:
             return False
         data = []
@@ -88,6 +112,13 @@ class StockItemDB(SSimpleDB):
         return self.upsert_array('stock_day', data=data)
 
     def update_shortstock(self, days):
+        '''
+        Update short-stock data.
+        The columns are stamp, short and shortamount.
+            stamp - YYYY-MM-DD
+            short - Trading volume of Short-Stock
+            shortamount - Accumulation amount of Short-Stock
+        '''
         if len(days) == 0:
             return False
         data = []
@@ -110,6 +141,21 @@ class StockItemDB(SSimpleDB):
         return self.upsert_array('stock_day', data=data)
 
     def adjust_split_stock(self, ratio, sdate, **kwargs):
+        '''
+        Modify/Adjust each Stock columns due to stock split.
+
+        Args
+            :ratio integer/float: Split ratio
+            :sdate string-date: Splitted date, YYYY-MM-DD
+
+        Stock A is 1000 won yesterday, but now is 100 won, the whole volume increased 10 times.
+        ratio is 10, sdate is YYYY-MM-DD
+
+        start, end, high, low 
+            - Divide a ratio value to each columns which applied before YYYY-MM-DD date.
+        volume, foreigner, institute, person, short, shortamount 
+            - Multiply a ratio value to each columns which applied before YYYY-MM-DD date.
+        '''
         def adjust_data(idivs, imuls, field):
             for i in range(len(field)):
                 if i in idivs:
@@ -178,13 +224,22 @@ class DataCollection:
 
     @classmethod
     def collect_candle(cls, sp, **kwargs):
+        '''
+        Collecting the candle data table from the web page.
+        The index of table is started from 1 to end of page or until duplicate data.
+
+        Args
+            :sp object: DataCollection.PROVIDER element
+        Kwargs
+            :wkstate object: worker state object - in case call this function by worker.
+        '''
         page = 0
         loop = True
-        wstate = kwargs.get('wstate', None)
+        wkstate = kwargs.get('wkstate', None)
         provider = cls.get_provider(sp)
         sidb = StockItemDB.factory(sp.code)
         while loop:
-            if wstate and wstate.is_run() is False:
+            if wkstate and wkstate.is_run() is False:
                 break
             page += 1
             chunk = provider.get_chunk('day', code=sp.code, page=page)
@@ -192,13 +247,22 @@ class DataCollection:
 
     @classmethod
     def collect_investor(cls, sp, **kwargs):
+        '''
+        Collecting the investor data table from the web page.
+        The index of table is started from 1 to end of page or until duplicate data.
+
+        Args
+            :sp object: DataCollection.PROVIDER element
+        Kwargs
+            :wkstate object: worker state object - in case call this function by worker.
+        '''
         page = 0
         loop = True
-        wstate = kwargs.get('wstate', None)
+        wkstate = kwargs.get('wkstate', None)
         provider = cls.get_provider(sp)
         sidb = StockItemDB.factory(sp.code)
         while loop:
-            if wstate and wstate.is_run() is False:
+            if wkstate and wkstate.is_run() is False:
                 break
             page += 1
             chunk = provider.get_chunk('dayinvestor', code=sp.code, page=page)
@@ -206,16 +270,25 @@ class DataCollection:
 
     @classmethod
     def collect_shortstock(cls, sp, **kwargs):
+        '''
+        Collecting the short-stock data table from the web page.
+        The index of table is started from 1 to end of page or until duplicate data.
+
+        Args
+            :sp object: DataCollection.PROVIDER element
+        Kwargs
+            :wkstate object: worker state object - in case call this function by worker.
+        '''
         page = 0
         loop = True
-        wstate = kwargs.get('wstate', None)
+        wkstate = kwargs.get('wkstate', None)
         provider = cls.get_provider(sp)
         sidb = StockItemDB.factory(sp.code)
         codepool = provider.get_chunk('list')
         shortcode = 'A'+sp.code
         fullcode = provider.get_fullcode(codepool, shortcode)
         while loop:
-            if wstate and wstate.is_run() is False:
+            if wkstate and wkstate.is_run() is False:
                 break
             page += 1
             params = {
@@ -228,6 +301,13 @@ class DataCollection:
 
     @classmethod
     def factory_provider(cls, code, pname):
+        '''
+        Return ServiceProvider with code and provider name.
+
+        Args
+            :code String: String of Stock Code
+            :pname String: Provider name
+        '''
         items = FKrx.get_chunk('list')
         acode = 'A'+str(code)
         if pname not in cls.PROVIDER:
@@ -240,6 +320,7 @@ class DataCollection:
 
     @classmethod
     def get_name_of_code(cls, code):
+        '''Convert the code number to the code name(Stock Name).'''
         sp = cls.factory_provider(code, 'krx')
         provider = cls.get_provider(sp)
         shortcode = 'A'+code
@@ -250,6 +331,7 @@ class DataCollection:
 
     @classmethod
     def collect(cls, code, **kwargs):
+        '''Collecting Data of Stock Code to all data or until duplicate data.'''
         print('@@ S', code)
         sp = cls.factory_provider(code, 'naver')
         cls.collect_candle(sp, **kwargs)
@@ -261,6 +343,7 @@ class DataCollection:
 
     @classmethod
     def multiprocess_collect(cls, param):
+        '''Calling DataCollection.collect function to use in multiprocess mode.'''
         return cls.collect(param.code, **param.kwargs)
 
 
@@ -271,29 +354,40 @@ class StockQuery:
     class ExceptionEndOfData(Exception):
         pass
 
-    class TradingAccumulator:
-        def __init__(self, items, colnames, **kwargs):
+    class AccumulVary:
+        '''
+        AccumulVary use to convert data - Accmulating and Variation
+
+        Example)
+            Convert the trands of investors to show trends for foreigner, institute and person.
+                         None     Acc          Acc          Acc       Very           None
+            colnames = ['stamp', 'foreigner', 'institute', 'person', 'shortamount', 'end']
+            varycolname = 'shortamount'
+
+        '''
+        def __init__(self, colns, fieldcolns, **kwargs):
             '''
-            :param items:       It is accumulator List to use,
+            :param colns:  Column names of field
                                 the first one is not accumulated and
                                 the last one is the tread amount of short stock
-            :param colnames:    It is the column names of the field.
+            :param fieldcolns:  Column names of field
             --------------------------------------------------------
-            example) amount_colname = 'D'
+            example) varycolname = 'D'
                 original:               Result:
-                A  B  C  D  E           A  B  C  D  E
-                1, 2, 3, 4, 5           1, 2, 3, N, 5
-                1, 1, 1, 3, 8           2, 3, 4,-1, 8
-               -1, 0, 1, 6, 7           1, 3, 5, 2, 7
+                                             Acc  Acc  Acc  Very
+                A  B  C  D  E  F        A    B    C    D    E    F
+                S1,1, 2, 3, 4, 5        S1,  1,   2,   3,   N,   5
+                S2,1, 1, 1, 3, 8        S1,  2,   3,   4,  -1,   8
+                S3,-1,0, 1, 6, 7        S1,  1,   3,   5,   2,   7
             '''
             self.val_ilist = []
-            self.amount_colname = kwargs.get('amount_colname', None)
-            self.amount_idx = len(items) - 1
-            if self.amount_colname is not None:
-                self.amount_idx = items.index(self.amount_colname)
+            varycolname = kwargs.get('varycolname', None)
+            self.amount_idx = len(colns) - 1
+            if varycolname is not None:
+                self.amount_idx = colns.index(varycolname)
             # print('amount_idx @', self.amount_idx)
-            for iname in items:
-                self.val_ilist.append(colnames.index(iname))
+            for name in colns:
+                self.val_ilist.append(fieldcolns.index(name))
             self.rows = None
             self.amount_value = None
 
@@ -397,9 +491,8 @@ class StockQuery:
         qdata = cls.raw_data(sidb, colnames=colnames, **kwargs)
         if kwargs.get('accmulator', False):
             tradedata = QueryData(colnames=colnames, sql=qdata.sql)
-            tacc = cls.TradingAccumulator(
-                            tradedata.colnames, qdata.colnames,
-                            amount_colname='shortamount')
+            tacc = cls.AccumulVary(tradedata.colnames, qdata.colnames,
+                                   varycolname='shortamount')
             for field in qdata.fields:
                 try:
                     tradedata.fields.append(tacc.update(field))

@@ -10,7 +10,7 @@ import os
 
 from collections import namedtuple
 
-from pysp.serror import SDebug
+from pysp.serror import SDebug, SCDebug
 
 from core.model import Dict
 from core.connect import Http
@@ -809,7 +809,9 @@ class AlgoTable:
         return pdata
 
 
-class IterAlgo:
+class IterAlgo(SCDebug):
+    DEBUG = True
+
     class Error(Exception):
         pass
 
@@ -989,15 +991,20 @@ class IterAlgo:
         folder = kwargs.get('folder', 'algo')
         cfg = kwargs.get('cfg', None)
 
+        cls.dprint('[START] compute_index')
         sidb = StockItemDB.factory(code)
         qdata = StockQuery.raw_data_of_each_colnames(sidb, colnames, months=months)
         # print(qdata.fields[-1])
+        cls.dprint('[START] compute_index-current_stock')
         cls.current_stock(code, qdata)
+        cls.dprint('[E N D] compute_index-current_stock')
         # print(qdata.fields[-1])
         it = IterAlgo()
 
         index = int(index)
+        cls.dprint('[START] compute_index-gen_index_params')
         param = it.gen_index_params(qdata, index)
+        cls.dprint('[START] compute_index-gen_index_params')
         if cfg:
             param.cfg = cfg
         param.cfg.price.sell.return_rate = return_rate
@@ -1009,6 +1016,7 @@ class IterAlgo:
             fname = f'{folder}/index-{code}-{index:06d}.log'
             cls.save_data(fname, data)
 
+        cls.dprint('[E N D] compute_index')
         return data
 
     @classmethod

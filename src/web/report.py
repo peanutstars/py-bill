@@ -106,6 +106,10 @@ class Notice(SCDebug):
 
                 send_mode = 0
                 items = self.compute_algo(user)
+                if not items:
+                    # The user has not list, who no visit during 45 days.
+                    continue
+
                 html = self.render_html(items, user)
                 email = user.email
                 if user.email == 'admin':
