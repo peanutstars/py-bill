@@ -31,11 +31,6 @@
 <script type="text/javascript">
   $(function() {
     content_bookmark = null;
-    {# document.oncontextmenu = function(e){ 
-      $(e.target).click(); 
-      e.preventDefault(); 
-      return false; 
-    } #}
 
     ajax.get('/ajax/bookmark', {}, render_bookmark);
     $('#edit-button').click(function(){
@@ -73,14 +68,14 @@
     content_bookmark = jsyaml.safeDump(json, lineWidth=160)
     $('#edit-bookmark').text('');
     $('#edit-bookmark').append(content_bookmark);
-    $(".bookmark").each(function(i){
-      let eclick = function(e) {
-        e.preventDefault();
-        console.log(i, e.which, this, e);
-      };
-      $(this).on('click', eclick);
-      $(this).on('contextmenu', eclick);
-    });
+    // $(".bookmark").each(function(i){
+    //   let eclick = function(e) {
+    //     e.preventDefault();
+    //     console.log(i, e.which, this, e);
+    //   };
+    //   $(this).on('click', eclick);
+    //   $(this).on('contextmenu', eclick);
+    // });
 
   }
   function verify_bookmark_content() {
