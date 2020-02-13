@@ -221,7 +221,7 @@ if __name__ == '__main__':
     params = Dict()
     params.url = 'http://localhost:8000'
     params.user = 'admin'
-    params.passwd = 'nicelee!274'
+    params.passwd = 'admin'
 
     client = PbClient.handle(**params)
     data = client.query('/bill/stock/010140', method='get')

@@ -1,13 +1,25 @@
 (function() {
   util = {
     gui: {
-      flash: function(message, category) {
-        console.log(category+'@'+message);
-        $('#flash-message').text('');
-        if (message && category) {
-          var msg_block = '<div class="box '+category+'">'+message+'</div>';
-          $("#flash-message").append(msg_block);
+      _flash_tid: null,
+      _flashsel: $('#flash-message'),
+      flash: function(message, category="danger") {
+        console.log(`flash: ${category}@${message}`);
+        util.gui._flashsel.html('');
+        if (message) {
+          util.gui._flashsel.html(`<div class="flash-message box tada animated ${category}"><b>${message}</b></div>`);
+
+          // Calculating the middle position
+          $('#flash-message div').css('left', ($(window).width()-$('#flash-message div').width())/2);
+
+          util.flash_hide();
         }
+      },
+      flash_hide: function() {
+        if (util.gui._flash_tid) {
+          clearTimeout(util.gui._flash_tid);
+        }
+        util.gui._flash_tid = setTimeout(() => { util.gui._flashsel.html(''); util.gui._flash_tid=null; }, 2000);
       },
       show: {
         buttons: function(shows, hides) {
@@ -40,7 +52,38 @@
         if (duration > 0) {
           setTimeout(function(){$(selector).html('')}, duration*1000);
         }
-      }
+      },
+      dialog: function(kwargs={}) {
+        let s = {
+          dialog:  $("#dialog-box"),
+          title:   $("#dialog-box-title"),
+          message: $("#dialog-box-content"),
+          yes:     $("#dialog-box-yes"),
+          no:      $("#dialog-box-no"),
+          okay:    $("#dialog-box-okay"),
+        };
+        let _close = () => {s.dialog.hide();};
+        let _click = (e) => { _close(); if('data' in e){e.data();} }
+
+        if ('title' in kwargs)   { s.title.text(kwargs.title) }
+        if ('message' in kwargs) { s.message.html(kwargs.message.replace(/(?:\r\n|\r|\n)/g, '<br>')); }
+        if ('no' in kwargs && kwargs.no) {
+          s.no.off('click');
+          s.no.on('click', 'cb_no' in kwargs ? kwargs.cb_no : null, _click);
+          s.no.show();
+        }
+        if ('yes' in kwargs && kwargs.yes) {
+          s.yes.off('click');
+          s.yes.on('click', 'cb_yes' in kwargs ? kwargs.cb_yes : null, _click);
+          s.yes.show();
+        }
+        if ('okay' in kwargs && kwargs.okay) {
+          s.okay.off('click');
+          s.okay.on('click', 'cb_okay' in kwargs ? kwargs.cb_okay : null, _click);
+          s.okay.show();
+        }
+        s.dialog.show();
+      },
     },
     file: {
       downloadCSV: function (filename, content) {
@@ -276,4 +319,6 @@
       });
     });
   });
+  // Flash-message
+  util.gui.flash_hide();
 })();

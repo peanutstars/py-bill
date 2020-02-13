@@ -3,16 +3,34 @@
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
     {% for category, message in messages %}
-      <div class="box flash {{ category }}">{{ message }}</div>
+      <div class="flash-message box {{ category }} tada animated"><b>{{ message }}</b></div>
     {% endfor %}
   {% endif %}
 {% endwith %}
 
 {% if error %}
-  <div class="box danger">{{error}}</div>
+  <div class="flash-message box danger tada animated">{{error}}</div>
 {% endif %}
 
 {% if msg %}
-  <div class="box success">{{msg}}</div>
+  <div class="flash-message box success tada animated">{{msg}}</div>
 {% endif %}
+</div>
+
+<div id="dialog-box" class="modal-dialog">
+  <div class="box gray modal-dialog-content">
+    <div class="row">
+      <label id="dialog-box-title"></label>
+    </div>
+    <div class="row">
+      <div>
+        <label id="dialog-box-content" style="font-weight: 100;"></label>
+        <ul class="actions pull-right">
+          <li><button id="dialog-box-yes" class="hide small primary">Yes</button></li>
+          <li><button id="dialog-box-no" class="hide small">No</button></li>
+          <li><button id="dialog-box-okay" class="hide small">OK</button></li>
+        </ul>
+      </div>
+    </div>
+  </div>
 </div>

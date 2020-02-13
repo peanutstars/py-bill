@@ -68,7 +68,7 @@ class _Scheduler(SCDebug):
     EVENT_COLLECT = "EvtCollect"
     EVENT_HOUR = "EvtHour"
     collect_hour = 18
-    collect_min = 35
+    collect_min = 45
     debugging = False
 
     class Event:

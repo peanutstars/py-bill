@@ -2,7 +2,7 @@
 
 {% block content %}
 {% if session.user_id and current_user.is_authorized('BOOKMARK') %}
-  <p/>
+  <p></p>
   <div>
     <div class="row pull-right">
       <span id="btn-group-none" >
@@ -31,6 +31,12 @@
 <script type="text/javascript">
   $(function() {
     content_bookmark = null;
+    {# document.oncontextmenu = function(e){ 
+      $(e.target).click(); 
+      e.preventDefault(); 
+      return false; 
+    } #}
+
     ajax.get('/ajax/bookmark', {}, render_bookmark);
     $('#edit-button').click(function(){
       if (content_bookmark) {
@@ -52,11 +58,11 @@
       var group = json.bookmark[i];
       // var html = '<div class="jumbotron">';
       var html = '<div>';
-      html += '<h3>'+group.name+'</h3>';
+      html += `<h3>${group.name}</h3>`;
       html += '<ul class="row actions">'
       for (var x in group.list) {
         var item = group.list[x];
-        html += '<li><a href="'+item.link+'" class="button bottom small">'+item.title+'</a></li>';
+        html += `<li><a href="${item.link}" xpath="${i}.${x}" class="bookmark button bottom small">${item.title}</a></li>`;
         // html += '<a href="'+item.link+'" class="btn btn-default btn-space">'+item.title+'</a>'
       }
       html += '</ul>';
@@ -67,6 +73,15 @@
     content_bookmark = jsyaml.safeDump(json, lineWidth=160)
     $('#edit-bookmark').text('');
     $('#edit-bookmark').append(content_bookmark);
+    $(".bookmark").each(function(i){
+      let eclick = function(e) {
+        e.preventDefault();
+        console.log(i, e.which, this, e);
+      };
+      $(this).on('click', eclick);
+      $(this).on('contextmenu', eclick);
+    });
+
   }
   function verify_bookmark_content() {
     var content = $('#edit-bookmark').val();

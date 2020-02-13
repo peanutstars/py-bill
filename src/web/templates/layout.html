@@ -10,6 +10,7 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="{{ url_for('.static', filename='assets/css/main.css') }}" />
+		<link rel="stylesheet" href="{{ url_for('.static', filename='assets/css/anitada.css') }}" />
 	</head>
 	<body class="is-preload">
     <!-- Wrapper -->
@@ -55,7 +56,8 @@
 		<script src="{{ url_for('.static', filename='assets/js/breakpoints.min.js') }}"></script>
 		<script src="{{ url_for('.static', filename='assets/js/util.js') }}"></script>
 		<script src="{{ url_for('.static', filename='assets/js/main.js') }}"></script>
-    <script src="{{ url_for('.static', filename='assets/js/psutil.js') }}"></script>
+		<script src="{{ url_for('.static', filename='assets/js/psutil.js') }}"></script>
+
     {% block bodyscript %}{% endblock %}
 	</body>
 </html>

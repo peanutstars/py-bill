@@ -26,7 +26,7 @@ class Http(SCDebug):
         json = kwargs.get('json', False)
         params = kwargs.get('params', {})
         headers = kwargs.get('headers', {})
-        for rcnt in range(3):
+        for rcnt in range(1, 4):
             try:
                 r = method(url, params=params, headers=headers)
             except requests.exceptions.ConnectionError as e:
@@ -40,12 +40,12 @@ class Http(SCDebug):
                 if json:
                     return SJson.to_deserial(r.text)
                 return r.text
-            elif r.status_code == 504:
+            elif r.status_code in [502, 503, 504]:
+                cls.dprint('StatusCode[{}] - retry({})'.format(r.status_code, rcnt))
                 time.sleep(1)
-                cls.dprint('504 Timeout - Retry(%d)' % (rcnt+1))
                 continue
             else:
-                cls.dprint('Error - Unknown HTTP Status[%d] Retry(%d)' % (r.status_code, rcnt+1))
+                cls.dprint('Error - Unknown HTTP Status[%d] Retry(%d)' % (r.status_code, rcnt))
                 raise cls.Error('Unknown HTTP Status: {err}'.format(err=r.status_code))
 
     @classmethod
