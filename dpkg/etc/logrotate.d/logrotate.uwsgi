@@ -1,0 +1,14 @@
+/var/pybill/log/*-log {
+    su www-data www-data
+    daily
+    missingok
+    size 5M
+    rotate 6
+    compress
+    delaycompress
+    notifempty
+    create 0644 www-data www-data
+    copytruncate
+    sharedscripts
+}
+

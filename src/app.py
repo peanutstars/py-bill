@@ -24,17 +24,19 @@ if 'DEBUG_PYTHON' in os.environ:
 
 
 def init_logger(app):
-    log_dir = BillConfig().get_value('folder.log')
-    log_file = 'web-app-log'
     log_level = logging.DEBUG
-    log_format = '%(asctime)s] %(message)s'
-    log_bytes = 5*1024*1024
-    log_count = 10
+    # log_dir = BillConfig().get_value('folder.log')
+    # log_file = 'web-app-log'
+    # log_format = '%(asctime)s] %(message)s'
+    # log_bytes = 5*1024*1024
+    # log_count = 10
 
-    hdl = RotatingFileHandler(log_dir+log_file,
-                              maxBytes=log_bytes, backupCount=log_count)
-    hdl.setFormatter(logging.Formatter(log_format))
-    # hdl.setLevel(log_level)
+    # hdl = RotatingFileHandler(log_dir+log_file,
+    #                           maxBytes=log_bytes, backupCount=log_count)
+    # hdl.setFormatter(logging.Formatter(log_format))
+    # # hdl.setLevel(log_level)
+
+    hdl = logging.StreamHandler()
 
     log = logging.getLogger()
     log.handers = []
@@ -77,6 +79,7 @@ computealgo.compute_all()
 
 if _DEBUG is False:
     init_logger(app)
+
 
 # Manager
 # XXX: Issue One
