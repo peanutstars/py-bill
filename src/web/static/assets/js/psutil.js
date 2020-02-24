@@ -9,17 +9,28 @@
         if (message) {
           util.gui._flashsel.html(`<div class="flash-message box tada animated ${category}"><b>${message}</b></div>`);
 
-          // Calculating the middle position
-          $('#flash-message div').css('left', ($(window).width()-$('#flash-message div').width())/2);
+          // // Calculating the middle position
+          // let selfmbox = $('div.flash-message.box');
+          // let seldi = $('div.inner');
+          // let viewwidth = seldi.width()+2*parseInt(seldi.css('padding-left'));
+          // let msgwidth = selfmbox.width()+2*parseInt(selfmbox.css('padding-left'));
+          // selfmbox.css('left', (viewwidth - msgwidth)/2);
 
           util.flash_hide();
         }
       },
-      flash_hide: function() {
+      flash_hide: function(duration=3500) {
+        // Calculate center position of holizontal
+        let viewwidth = $(window).width()
+        let mbwidth = $('.flash-message').width()+2*parseInt($('.flash-message').css('padding-left'))
+        let left = (viewwidth - mbwidth)/2;
+        console.log(viewwidth, mbwidth, left);
+        $('.flash-message').css('left', left);
+
         if (util.gui._flash_tid) {
           clearTimeout(util.gui._flash_tid);
         }
-        util.gui._flash_tid = setTimeout(() => { util.gui._flashsel.html(''); util.gui._flash_tid=null; }, 2000);
+        util.gui._flash_tid = setTimeout(() => { util.gui._flashsel.html(''); util.gui._flash_tid=null; }, duration);
       },
       show: {
         buttons: function(shows, hides) {
@@ -320,5 +331,5 @@
     });
   });
   // Flash-message
-  util.gui.flash_hide();
+  util.gui.flash_hide();  
 })();

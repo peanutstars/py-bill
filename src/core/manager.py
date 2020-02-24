@@ -114,10 +114,13 @@ class _Scheduler(SCDebug):
 
 class Collector(Manager, metaclass=SSingleton):
     DEBUG = True
-    INIT_NO_COLLECT = "NO_COLLECT"
-    CMD_QUIT = 'quit'
-    QUEUE_SIZE = 1000
+    INIT_NO_COLLECT =   "NO_COLLECT"
+    CMD_QUIT =          'quit'
+    QUEUE_SIZE =        1000
     QUEUE_TIMEOUT_SEC = 1
+    HOLIDAYS =          [5, 6]
+    NOTIFY_HOURS =      [10, 13, 16]
+    WORK_HOURS =        range(9, 20)
     # class
     # State = _State
     Scheduler = _Scheduler
@@ -126,6 +129,7 @@ class Collector(Manager, metaclass=SSingleton):
         super(Collector, self).__init__(*args, **kwargs)
         self.stock_folder = BillConfig().get_value('config.db.stock.folder')
         self._q = queue.Queue()
+        self.need_notify = False
         self.state = _State()
         self._thread = threading.Thread(target=self.worker)
         self._thread.start()
@@ -189,13 +193,21 @@ class Collector(Manager, metaclass=SSingleton):
             # For debugging, run it every 10 minutes
             computealgo.compute_all()
             do_notify()
-        elif now.weekday() not in [5, 6]:
-            if now.hour in range(9, 20):
+        elif now.weekday() not in self.HOLIDAYS:
+            if now.hour in self.NOTIFY_HOURS:
+                self.need_notify = True
+            if now.hour in self.WORK_HOURS:
                 self.dprint("### [START] computalgo")
-                computealgo.compute_all()
+                try:
+                    computealgo.compute_all()
+                except Exception as e:
+                    self.dprint(f'Skip to Compute Algo, Error[{str(e)}]')
+                    return
                 self.dprint("### [E N D] computalgo")
-            if now.hour in [10, 13, 16]:
+            if self.need_notify:
+                # go to do this, even if it has an error previously in computing algo.
                 do_notify()
+                self.need_notify = False
 
     def _worker_event(self):
         curtime = time.time()
