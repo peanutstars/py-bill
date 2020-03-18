@@ -3,15 +3,14 @@ import time
 from flask import render_template, flash, redirect, url_for, session, request
 from flask_login import login_user, login_required, logout_user  # current_user
 from wtforms import Form, StringField, PasswordField, HiddenField
-from wtforms.validators import (InputRequired, Email, Length, EqualTo,
-                                DataRequired)
+from wtforms.validators import (InputRequired, Email, Length, EqualTo, DataRequired)
 from wtforms.csrf.session import SessionCSRF
 from werkzeug.security import generate_password_hash, check_password_hash
+from pysp.sbasic import Dict
 
 from .account import role_required
 from .model import Role, Notify, User, MStock, Reply
 from . import app, db
-from core.model import Dict
 
 
 class FormCSRF(Form):

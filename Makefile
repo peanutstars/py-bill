@@ -1,7 +1,7 @@
 SHELL   := /bin/bash
 NULL    := /dev/null
 STAMP   := $(shell date +%Y%m%d-%H%M)
-ZIP_FILE:= $(shell basename $(CURDIR))-$(STAMP).zip
+ZIP_FILE:= $(shell basename $(CURDIR))-$(STAMP).7z
 APP_DIR	:= $(CURDIR)/dpkg/opt/psapps/pybill
 
 REQUIRE_TXT	:= requirements.txt

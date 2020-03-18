@@ -6,18 +6,19 @@ import glob
 import traceback
 import multiprocessing
 import os
+import sys
 import time
 import queue
 import threading
 
 from dateutil.relativedelta import relativedelta
+from collections import namedtuple
 
-from pysp.sbasic import SSingleton
+from pysp.sbasic import SSingleton, Dict
 from pysp.serror import SCDebug
 
 from web.report import computealgo, Notice
 
-from core.model import Dict
 from core.config import BillConfig
 from core.finance import DataCollection
 
@@ -65,51 +66,77 @@ class _State(SCDebug):
 
 
 class _Scheduler(SCDebug):
-    EVENT_COLLECT = "EvtCollect"
-    EVENT_HOUR = "EvtHour"
-    collect_hour = 18
-    collect_min = 45
-    debugging = False
+    DEBUG = True
 
-    class Event:
-        def __init__(self, event, stamp):
+    class Event(Dict):
+        def __init__(self, event, stamp, offset, time):
             self.event = event
             self.stamp = stamp
+            self.offset = offset
+            self.time = time
+
+    Time = namedtuple('Time', 'hour min')
+
+    EVENT_HOUR        = "EvtHour"
+    EVENT_NOTIFY      = "EvtNotify"
+    EVENT_COLLECT     = "EvtCollect"
+
+    event = Dict()
+    event.EvtHour =    [Time(9,  5), Time(10,  5), Time(11,  5), Time(12,  5), Time(13, 5),
+                        Time(14, 5), Time(15,  5), Time(16,  5), Time(17,  5), Time(18, 5)]
+    event.EvtNotify =  [Time(9, 30), Time(11, 30), Time(13, 30), Time(16, 45)]
+    event.EvtCollect = [Time(4, 30), Time(18, 55)]
 
     @classmethod
-    def next(cls):
-        now = datetime.datetime.now()
-        ecollect = cls.next_collect(now)
-        ehour = cls.next_hour(now)
-        event = ecollect if ecollect.stamp < ehour.stamp else ehour
-        stamp = int(now.timestamp() - event.stamp)
-        cls.iprint(f'Next Event: {event.event} after {stamp} second')
-        return event
+    def skip_timestamp(cls, nowstamp, edt):
+        '''
+        Get timestamp to skip holidays
+        
+        Args
+            :nowstamp int/float:  Value of now.timestamp()
+            :edt      datetime:   datetime object for event
+
+        Return
+            :int/float: timestamp to have skipped holidays
+        '''
+        evtstamp = edt.timestamp()
+        while (evtstamp - nowstamp) < 0 or edt.weekday() in [5, 6]:
+            edt = edt + datetime.timedelta(days=1)
+            evtstamp = edt.timestamp()
+        return edt.timestamp()
 
     @classmethod
-    def next_collect(cls, now=None):
-        if now is None:
-            now = datetime.datetime.now()
-        next = datetime.datetime(now.year, now.month, now.day, cls.collect_hour, cls.collect_min)
-        if (next.timestamp() - now.timestamp()) > 0:
-            return cls.Event(cls.EVENT_COLLECT, next.timestamp())
+    def next(cls, now):
+        '''
+        Get the event which has an event name and a timestamp.
 
-        next = next + relativedelta(days=1)
-        return cls.Event(cls.EVENT_COLLECT, next.timestamp())
-
-    @classmethod
-    def next_hour(cls, now=None):
-        if now is None:
-            now = datetime.datetime.now()
-        # next = now + relativedelta(minutes=1, seconds=(59-now.second))
-        if _Scheduler.debugging:
-            # For debugging, every 10 minutes.
-            minute = 10-(now.minute%10)
-            next = now + relativedelta(minutes=minute,seconds=(59-now.second))
-        else:
-            next = now + relativedelta(minutes=(60-now.minute),seconds=(59-now.second))
-        print('@@@', next)
-        return cls.Event(cls.EVENT_HOUR, next.timestamp())
+        Args
+            :now datetime:      object datetime.now()
+        
+        Return
+            :Event:             return cls.Event
+        '''
+        nstamp = now.timestamp()
+        nexti = cls.Event(None, None, sys.maxsize, None)
+        for evt, items in cls.event.items():
+            for t in items:
+                edt = datetime.datetime(now.year, now.month, now.day, t.hour, t.min)
+                tstamp = cls.skip_timestamp(nstamp, edt)               
+                if not nexti.stamp:
+                    nexti.event = evt
+                    nexti.stamp = tstamp
+                    logmsg = "{} {} {} {} {} : {}".format(nexti.offset, nstamp, nexti.stamp, tstamp, t, tstamp - nstamp)
+                    cls.dprint(logmsg)
+                    continue
+                if (tstamp - nstamp) < nexti.offset:
+                    nexti.stamp = tstamp
+                    nexti.event = evt
+                    nexti.offset = tstamp - nstamp
+                    nexti.time = t
+                logmsg = "{} {} {} {} {} : {}".format(nexti.offset, nstamp, nexti.stamp, tstamp, t, tstamp - nstamp)
+                cls.dprint(logmsg)
+        cls.dprint("--------->>>", str(nexti))
+        return nexti
 
 
 class Collector(Manager, metaclass=SSingleton):
@@ -175,50 +202,76 @@ class Collector(Manager, metaclass=SSingleton):
         self.collect(None)
         self.dprint("### [E N D] collect")
 
-    def _do_event_hour(self):
-        def do_notify():
-            notice = Notice()
-            try:
-                self.dprint("### [START] notice")
-                notice.dispatch()
-                self.dprint("### [E N D] notice")
-            except:
-                self.dprint('---------------------------------------')
-                self.dprint(traceback.format_exc())
-            del notice
+    # def _do_event_hour(self):
+    #     def do_notify():
+    #         notice = Notice()
+    #         try:
+    #             self.dprint("### [START] notice")
+    #             notice.dispatch()
+    #             self.dprint("### [E N D] notice")
+    #         except:
+    #             self.dprint('---------------------------------------')
+    #             self.dprint(traceback.format_exc())
+    #         del notice
 
-        now = datetime.datetime.now()
+    #     now = datetime.datetime.now()
+    #     self.iprint(f'EVENT HOUR {datetime.datetime.now()} {id(self)}')
+    #     if _Scheduler.debug:
+    #         # For debugging, run it every 10 minutes
+    #         computealgo.compute_all()
+    #         do_notify()
+    #     elif now.weekday() not in self.HOLIDAYS:
+    #         if now.hour in self.NOTIFY_HOURS:
+    #             self.need_notify = True
+    #         if now.hour in self.WORK_HOURS:
+    #             self.dprint("### [START] computalgo")
+    #             try:
+    #                 computealgo.compute_all()
+    #             except Exception as e:
+    #                 self.dprint(f'Skip to Compute Algo, Error[{str(e)}]')
+    #                 return
+    #             self.dprint("### [E N D] computalgo")
+    #         if self.need_notify:
+    #             # go to do this, even if it has an error previously in computing algo.
+    #             do_notify()
+    #             self.need_notify = False
+
+    def _do_event_hour(self):
         self.iprint(f'EVENT HOUR {datetime.datetime.now()} {id(self)}')
-        if _Scheduler.debugging:
-            # For debugging, run it every 10 minutes
+        self.dprint("### [START] computalgo")
+        try:
             computealgo.compute_all()
-            do_notify()
-        elif now.weekday() not in self.HOLIDAYS:
-            if now.hour in self.NOTIFY_HOURS:
-                self.need_notify = True
-            if now.hour in self.WORK_HOURS:
-                self.dprint("### [START] computalgo")
-                try:
-                    computealgo.compute_all()
-                except Exception as e:
-                    self.dprint(f'Skip to Compute Algo, Error[{str(e)}]')
-                    return
-                self.dprint("### [E N D] computalgo")
-            if self.need_notify:
-                # go to do this, even if it has an error previously in computing algo.
-                do_notify()
-                self.need_notify = False
+        except Exception as e:
+            self.dprint(f'### [ERROR] Skip to Compute Algo - {str(e)}')
+            return
+        self.dprint("### [E N D] computalgo")
+
+    def _do_event_notify(self):
+        notice = Notice()
+        self.dprint("### [START] notice")
+        try:
+            self.need_notify = True
+            notice.dispatch()
+        except:
+            self.dprint('[ERROR] notice.dispatch')
+            self.dprint(traceback.format_exc())
+        self.dprint("### [E N D] notice")
+        self.need_notify = False
+        del notice
+        
 
     def _worker_event(self):
         curtime = time.time()
         # print(self.event.stamp, curtime)
         if self.event.stamp < curtime:
-            event = self.Scheduler.next()
+            event = self.Scheduler.next(datetime.datetime.now())
             self.iprint(f'EVENT@{self.event.event}')
             if self.event.event == self.Scheduler.EVENT_COLLECT:
                 self._do_event_collect()
-            if self.event.event == self.Scheduler.EVENT_HOUR:
+            if self.event.event in [self.Scheduler.EVENT_HOUR, self.Scheduler.EVENT_NOTIFY]:
                 self._do_event_hour()
+            if self.need_notify or self.event.event == self.Scheduler.EVENT_NOTIFY:
+                self._do_event_notify()
             self.event = event
 
     def _worker_item(self, code):
@@ -245,7 +298,7 @@ class Collector(Manager, metaclass=SSingleton):
 
     def worker(self, *args):
         self.dprint("<Collector::worker(begin)>")
-        self.event = self.Scheduler.next()
+        self.event = self.Scheduler.next(datetime.datetime.now())
 
         while self.state.is_run():
             try:

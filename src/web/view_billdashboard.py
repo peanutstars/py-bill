@@ -4,12 +4,12 @@ import datetime
 
 from flask import render_template, flash, abort, session, request
 from flask_login import login_required
+from pysp.sbasic import Dict
 
 from . import app, db
 from .account import role_required
 from .model import User, MStock, Reply
 # from core.finance import BillConfig
-from core.model import Dict
 from core.config import BillConfig
 from core.connect import FKrx, Http
 from core.finance import DataCollection, StockItemDB, StockQuery

@@ -3,14 +3,13 @@ import json
 
 from web import app
 from web.model import Notify, User, MStock
-from core.model import Dict
 from flask import render_template
 from core.finalgo import IterAlgo
 from core.finance import BillConfig
 from core.gmail import Gmail
 
 from pysp.serror import SCDebug
-from pysp.sbasic import SSingleton
+from pysp.sbasic import SSingleton, Dict
 
 
 class ComputeAlgo(Dict, metaclass=SSingleton):

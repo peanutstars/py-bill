@@ -1,19 +1,6 @@
 # -*- coding: utf-8 -*-
 
-class Dict(dict):
-
-    def __getattr__(self, name):
-        try:
-            attr = self[name]
-        except KeyError:
-            self[name] = Dict()
-            attr = self[name]
-        return attr
-    def __setattr__(self, k, v):
-        self[k] = v
-    
-    def __reduce__(self):
-        return Dict, (dict(self),)
+from pysp.sbasic import Dict
 
 
 class DictHelper(Dict):

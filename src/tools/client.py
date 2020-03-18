@@ -7,9 +7,7 @@ import os
 import requests
 
 from xml.dom import minidom
-from pysp.sbasic import SFile
-
-from core.model import Dict
+from pysp.sbasic import SFile, Dict
 
 
 ENABLE_LOG = True

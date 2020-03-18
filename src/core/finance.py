@@ -16,8 +16,18 @@ from core.helper import DateTool
 from core.cache import FCache
 from core.config import BillConfig
 from core.connect import FDaum, FNaver, FKrx, FUnknown
-from core.model import (StockDayInvestor, StockDayShort,
-                        ServiceProvider, QueryData)
+from core.model import (StockDayInvestor, StockDayShort, ServiceProvider, QueryData)
+
+
+class DataETF(dict):
+    '''
+    ETF List
+    '''
+    def __init__(self, *args, **kwargs):
+        super(DataETF, self).__init__(*args, **kwargs)
+        self['069500'] = ServiceProvider(name='naver', codename='KODEX 200', code='069500')
+
+_DataETF = DataETF()
 
 
 class StockItemDB(SSimpleDB):
@@ -103,7 +113,7 @@ class StockItemDB(SSimpleDB):
                 }
                 rv = self.query('stock_day', *cols, **options)
                 if not rv:
-                    emsg = 'No Data, day field: {}'.format(item.get('stamp'))
+                    emsg = f'No Data, day field: {item.get("stamp")} - {self.db_file}'
                     raise StockItemDB.Error(emsg)
                 inv = StockDayInvestor.from_list(*rv[0])
                 if inv.foreigner == d.foreigner and inv.person == d.person:
@@ -279,6 +289,9 @@ class DataCollection:
         Kwargs
             :wkstate object: worker state object - in case call this function by worker.
         '''
+        if _DataETF.get(sp.code, None):
+            # ETF have not the short stock.
+            return
         page = 0
         loop = True
         wkstate = kwargs.get('wkstate', None)
@@ -308,6 +321,11 @@ class DataCollection:
             :code String: String of Stock Code
             :pname String: Provider name
         '''
+
+        provider = _DataETF.get(code, None)
+        if provider:
+            return provider
+
         items = FKrx.get_chunk('list')
         acode = 'A'+str(code)
         if pname not in cls.PROVIDER:

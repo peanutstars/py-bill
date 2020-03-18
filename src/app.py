@@ -25,9 +25,9 @@ if 'DEBUG_PYTHON' in os.environ:
 
 def init_logger(app):
     log_level = logging.DEBUG
+    log_format = '%(asctime)s] %(message)s'
     # log_dir = BillConfig().get_value('folder.log')
     # log_file = 'web-app-log'
-    # log_format = '%(asctime)s] %(message)s'
     # log_bytes = 5*1024*1024
     # log_count = 10
 
@@ -37,6 +37,7 @@ def init_logger(app):
     # # hdl.setLevel(log_level)
 
     hdl = logging.StreamHandler()
+    hdl.setFormatter(logging.Formatter(log_format))
 
     log = logging.getLogger()
     log.handers = []
@@ -77,8 +78,7 @@ if not os.path.exists(db_file):
 
 computealgo.compute_all()
 
-if _DEBUG is False:
-    init_logger(app)
+init_logger(app)
 
 
 # Manager

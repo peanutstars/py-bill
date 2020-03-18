@@ -11,8 +11,8 @@ import os
 from collections import namedtuple
 
 from pysp.serror import SDebug, SCDebug
+from pysp.sbasic import Dict
 
-from core.model import Dict
 from core.connect import Http
 from core.finance import StockItemDB, StockQuery
 
@@ -1004,7 +1004,7 @@ class IterAlgo(SCDebug):
         index = int(index)
         cls.dprint('[START] compute_index-gen_index_params')
         param = it.gen_index_params(qdata, index)
-        cls.dprint('[START] compute_index-gen_index_params')
+        cls.dprint('[E N D] compute_index-gen_index_params')
         if cfg:
             param.cfg = cfg
         param.cfg.price.sell.return_rate = return_rate
