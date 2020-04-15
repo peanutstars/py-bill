@@ -48,7 +48,7 @@
           <ul class="area">
             <li class="item">
               <div class="stock text">Item</div>
-              <div>&nbsp;</div>
+              <div class="align-right">Market Vol.</div>
               <div class="stock text align-right">Start</div>
             </li>
             <li class="item">
@@ -139,7 +139,7 @@
         '    <ul class="area">',
         '      <li class="item">',
         '        <div class="stock text">'+brief.name+'</div>',
-        '        <div>&nbsp;</div>',
+        '        <div class="align-right">'+util.formatNumber(Math.ceil(brief.totalMarketValue/100000000))+' 억</div>',
         '        <div class="stock text align-right '+stock.text_compare_color(brief.prevClosingPrice, brief.openingPrice)+'">'+util.formatNumber(brief.openingPrice)+'</div>',
         '      </li>',
         '      <li class="item">',

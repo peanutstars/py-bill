@@ -65,6 +65,9 @@ class _State(SCDebug):
             self.wcode.pop(idx)
         self.dprint('## A clear_work_code', str(self.wcode))
 
+    def get_work_codes(self):
+        return list(self.wcode)
+
 
 class _Scheduler(SCDebug):
     DEBUG = True
@@ -282,7 +285,7 @@ class Collector(Manager, metaclass=SSingleton):
 
     def _worker_item_process(self):
         def gen_params():
-            for code in self.state.wcode:
+            for code in wcodes:
                 param = Dict()
                 param.code = code
                 param.kwargs.wstate = self.state
@@ -290,6 +293,7 @@ class Collector(Manager, metaclass=SSingleton):
             return []
 
         if self._q.empty() and self.state.wcode:
+            wcodes = self.state.get_work_codes()
             cpu = multiprocessing.cpu_count()
             pool = multiprocessing.Pool(processes=cpu)
             for code in pool.imap(DataCollection.multiprocess_collect, gen_params()):
