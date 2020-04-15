@@ -7,6 +7,7 @@ import traceback
 import multiprocessing
 import os
 import sys
+import signal
 import time
 import queue
 import threading
@@ -161,7 +162,7 @@ class Collector(Manager, metaclass=SSingleton):
         self._thread = threading.Thread(target=self.worker)
         self._thread.start()
         if self.INIT_NO_COLLECT not in args:
-            if 'DEBUG_PYTHON' not in os.environ:
+            if 'DEBUG' not in os.environ:
                 self.collect(None)
 
     def push(self, code):
@@ -311,10 +312,13 @@ class Collector(Manager, metaclass=SSingleton):
                     item == self.CMD_QUIT:
                 break
             
-            self._worker_event()
-            if not item:
-                self._worker_item_process()
-            else:
-                self._worker_item(item)
+            try:
+                self._worker_event()
+                if not item:
+                    self._worker_item_process()
+                else:
+                    self._worker_item(item)
+            except Exception:
+                os.kill(os.getpid(), signal.SIGHUP)
 
         self.dprint("<Collector::worker(end)>")

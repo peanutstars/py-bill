@@ -1134,6 +1134,7 @@ class IterAlgo(SCDebug):
             logfd.write(f'MD5SUM: {md5.hexdigest()}')
             logfd.close()
 
+        del pool
         return sim
     
     @classmethod

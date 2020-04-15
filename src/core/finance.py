@@ -25,7 +25,8 @@ class DataETF(dict):
     '''
     def __init__(self, *args, **kwargs):
         super(DataETF, self).__init__(*args, **kwargs)
-        self['069500'] = ServiceProvider(name='naver', codename='KODEX 200', code='069500')
+        self['069500'] = ServiceProvider(name='naver', codename='KODEX 200',   code='069500')
+        self['114800'] = ServiceProvider(name='naver', codename='KODEX 인버스', code='114800')
 
 _DataETF = DataETF()
 
