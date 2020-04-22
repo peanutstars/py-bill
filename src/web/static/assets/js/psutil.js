@@ -44,8 +44,9 @@
             $(shows[i]).show();
           }
         },
-        area: function(eventId, iconId, areaId) {
-          $(eventId).on("click", function(){
+        area: function(eventId, iconId, areaId, isShow=null, update=null) {
+          let showArea = function() {
+            console.log(isShow());
             if($(areaId).is(":visible")) {
               $(iconId).removeClass("fa-caret-down").addClass("fa-caret-right");
               $(areaId).hide();
@@ -53,8 +54,14 @@
               $(iconId).removeClass("fa-caret-right").addClass("fa-caret-down");
               $(areaId).show();
             }
-            // util.file.downloadCSV('aaa.csv', '1,2,3,');
-          });      
+            if (update) {
+              update();
+            }  
+          }
+          if (isShow && isShow() == false) {
+            showArea();
+          }
+          $(eventId).on("click", showArea);      
         }
       },
       spot_flash: function(selector, msg, color, duration) {
@@ -173,7 +180,7 @@
     },
     kakao_overseas: function(cb) {
       let url = 'https://'+this.kakao+'/api/securities.json';
-      let data = ['USA-DJI', 'USA-COMP']
+      let data = ['USA-DJI', 'USA-COMP', 'KOREA-D0011001', 'KOREA-E4012001']
       let params = {method: 'GET', url: url, datatype: 'json', params: {ids: data.join()}, duration: 120};
       ajax.post('/ajax/proxy', params, function(resp){cb(resp.recentSecurities);});
     },
@@ -321,6 +328,28 @@
       $.ajax(opts);
     },
   };
+  storage = {
+    instance: window.sessionStorage,
+    dashboard: {
+      indicator: {
+        stamp: 0,
+        interval: 3600*6,
+        isShow: function() {
+          let now = new Date();
+          let prev = new Date(storage.dashboard.indicator.stamp);
+          let interval = (now.getTime() - prev.getTime())/1000;
+          // console.log(now, prev, interval);
+          return (now.getDate() != prev.getDate() || interval > storage.dashboard.indicator.interval) ? true : false;
+        },
+        update: function() {
+          storage.instance.setItem('pybill.dashboard.indicator.stamp', new Date().getTime());
+        }
+      },
+    },
+    init: function() {
+      storage.dashboard.indicator.stamp = parseInt(storage.instance.getItem('pybill.dashboard.indicator.stamp')) || 0;
+    }
+  };
   // Sidebar Menu Function
   $(".recent-stock-delete").each(function(idx){
     $(this).on('click', function(){
@@ -331,5 +360,6 @@
     });
   });
   // Flash-message
-  util.gui.flash_hide();  
+  util.gui.flash_hide();
+  storage.init();
 })();

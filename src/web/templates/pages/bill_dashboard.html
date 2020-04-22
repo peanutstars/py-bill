@@ -15,16 +15,29 @@
     <h3 id="indicator-area"><span class="fa fa-caret-down"></span> Indicator</h3>
     <div class="row" id="indicator-area-table">
       <div class="col-4 col-6-medium col-6-small">
+        <label class="mb-zero" id="indicator-kospi">Kospi Day</label>
+        <img id="indicator-kospi-day" src="https://fn-chart.dunamu.com/images/kr/stock/d/D0011001.png" style="width: 100%; height: 160px;"/>
+      </div>
+      <div class="col-4 col-6-medium col-6-small">
+        <label class="mb-zero" id="indicator-kosdaq">Kospi Day</label>
+        <img id="indicator-kosdaq-day" src="https://fn-chart.dunamu.com/images/kr/stock/d/E4012001.png" style="width: 100%; height: 160px;"/>
+      </div>
+      <div class="col-4 col-6-medium col-6-small">
         <label class="mb-zero" id="indicator-dji">DJI Day</label>
-        <img id="indicator-dji-day" src="https://ssl.pstatic.net/imgfinance/chart/world/continent/DJI@DJI.png" style="width: 100%; height: 160px;"/>
+        <img id="indicator-dji-day" src="https://fn-chart.dunamu.com/images/us/stock/d/DJI.png" style="width: 100%; height: 160px;"/>
       </div>
       <div class="col-4 col-6-medium col-6-small">
         <label class="mb-zero" id="indicator-nas">NAS Day</label>
-        <img id="indicator-nas-day" src="https://ssl.pstatic.net/imgfinance/chart/world/continent/NAS@IXIC.png" style="width: 100%; height: 160px;"/>
+        <img id="indicator-nas-day" src="https://fn-chart.dunamu.com/images/us/stock/d/COMP.png" style="width: 100%; height: 160px;"/>
+      </div>
+
+      <div class="col-4 col-6-medium col-6-small">
+        <label class="mb-zero">Kospi 3M</label>
+        <img id="indicator-kospi-month3" src="https://fn-chart.dunamu.com/images/kr/stock/m3/D0011001.png" style="width: 100%; height: 160px;"/>
       </div>
       <div class="col-4 col-6-medium col-6-small">
         <label>DJI 3Ms</label>
-        <img id="indicator-dji-month3" src="https://ssl.pstatic.net/imgfinance/chart/mobile/world/area/month3/DJI@DJI_end.png" style="width: 100%; height: 160px;"/>
+        <img id="indicator-dji-month3" src="https://fn-chart.dunamu.com/images/us/stock/m3/DJI.png" style="width: 100%; height: 160px;"/>
       </div>
       <div class="col-4 col-6-medium col-6-small">
         <label>Dollar</label>
@@ -84,7 +97,8 @@
     });
 
     stock.kakao_overseas(render_overseas_indicator);
-    util.gui.show.area("#indicator-area", "#indicator-area span", "#indicator-area-table");
+    util.gui.show.area("#indicator-area", "#indicator-area span", "#indicator-area-table", 
+                       storage.dashboard.indicator.isShow, storage.dashboard.indicator.update);
   });
 
   function render_overseas_indicator(data) {
@@ -92,11 +106,18 @@
       let item = data[i];
       let percent = item.changePriceRate*100;
       let color = (percent > 0) ? 'color-up' : 'color-down';
+      console.log(item.code);
       if (item.code == 'US.DJI') {
         $("#indicator-dji").append('<div class="small stock text align-center '+color+'">'+util.formatNumber(item.displayedPrice)+' / '+percent.toFixed(2)+'%</div>');
       }
       else if (item.code == 'US.COMP') {
         $("#indicator-nas").append('<div class="small stock text align-center '+color+'">'+util.formatNumber(item.displayedPrice)+' / '+percent.toFixed(2)+'%</div>');
+      }
+      else if (item.code == 'D0011001') {
+        $("#indicator-kospi").append('<div class="small stock text align-center '+color+'">'+util.formatNumber(item.displayedPrice)+' / '+percent.toFixed(2)+'%</div>');
+      }
+      else if (item.code == 'E4012001') {
+        $("#indicator-kosdaq").append('<div class="small stock text align-center '+color+'">'+util.formatNumber(item.displayedPrice)+' / '+percent.toFixed(2)+'%</div>');
       }
     }
   }
