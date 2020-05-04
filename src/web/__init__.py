@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 
 app = Flask(__name__)
-db = SQLAlchemy()
+db = SQLAlchemy(app)
 login_manager = LoginManager()
 
 

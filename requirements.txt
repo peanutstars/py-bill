@@ -2,6 +2,8 @@ Flask==1.0.2
 Flask-DebugToolbar==0.10.1
 Flask-Login==0.4.1
 Flask-SQLAlchemy==2.3.2
+Flask-Migrate
+Flask-Script
 hexdump==3.3
 html2text==2018.1.9
 SQLAlchemy==1.3.0

@@ -5,6 +5,8 @@ import sys
 
 from logging.handlers import RotatingFileHandler
 from flask_debugtoolbar import DebugToolbarExtension
+from flask_script import Manager
+from flask_migrate import Migrate, MigrateCommand
 from werkzeug.security import generate_password_hash
 from pysp.sbasic import SFile
 
@@ -16,11 +18,6 @@ from web.view_billdashboard import bill_dashboard
 from web.report import computealgo, Notice
 from core.finance import BillConfig
 from core.manager import Collector
-
-
-_DEBUG = False
-if 'DEBUG_PYTHON' in os.environ:
-    _DEBUG = True
 
 
 def init_logger(app):
@@ -60,6 +57,10 @@ db.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = 'account_login'
 
+migrate = Migrate(app, db)
+manager = Manager(app)
+manager.add_command('db', MigrateCommand)
+
 bcfg = BillConfig()
 bcfg.set_value('folder.config', cur_dir+'/config/')
 SFile.mkdir(bcfg.get_value('folder.user_config'))
@@ -81,25 +82,29 @@ computealgo.compute_all()
 init_logger(app)
 
 
-# Manager
-# XXX: Issue One
-# Collector has thread and it is executed in the initialization process.
-# If executed the user thread before uwsgi is to done initialization.
-# The user thread is something wrong, it is as if two objects were created.
-# XXX: Issue Two
-# Value of option threads of uwsgi is to set 1 over,
-# the Collector object is created as much as that vlaue.
-# Solved Issue - run uwsgi with lazy-apps option.
-Collector()
-
-
 if __name__ == '__main__':
-    if _DEBUG is True:
+    # run test this
+    # uwsgi --ini uwsgi.debug.ini
+
+    # run test this with debug
+    # DEBUG=1 uwsgi --ini uwsgi.debug.ini
+
+    # run cli command for db migrate
+    manager.run()
+else:
+    # Manager
+    # XXX: Issue One
+    # Collector has thread and it is executed in the initialization process.
+    # If executed the user thread before uwsgi is to done initialization.
+    # The user thread is something wrong, it is as if two objects were created.
+    # XXX: Issue Two
+    # Value of option threads of uwsgi is to set 1 over,
+    # the Collector object is created as much as that vlaue.
+    # Solved Issue - run uwsgi with lazy-apps option.
+    Collector()
+
+    # Debug Mode
+    if 'DEBUG' in os.environ:
         app.debug = True
         app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
-        DebugToolbarExtension(app)
-
-    try:
-        app.run(host='0.0.0.0', port=8000, use_reloader=False)
-    finally:
-        Collector().quit()
+        DebugToolbarExtension(app)      

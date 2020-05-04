@@ -25,3 +25,14 @@ It needs /var/pybill/config/config.yml file for the user configuration.
 
     admin:
         email: your_email_address
+
+
+## DB
+
+#### Migration
+It applied Flask-Migrate and Flask-Script after v0.3-7-g073ac87. It need the follow process, if schema of database changed .
+
+    #> sudo systemctl stop uwsgi-py-bill.service
+    #> cd /opt/psapps/pybill
+    #> sudo -u www-data python3 app.py db upgrade
+    #> sudo systemctl start uwsgi-py-bill.service
