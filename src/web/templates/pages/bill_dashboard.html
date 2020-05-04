@@ -19,7 +19,7 @@
         <img id="indicator-kospi-day" src="https://fn-chart.dunamu.com/images/kr/stock/d/D0011001.png" style="width: 100%; height: 160px;"/>
       </div>
       <div class="col-4 col-6-medium col-6-small">
-        <label class="mb-zero" id="indicator-kosdaq">Kospi Day</label>
+        <label class="mb-zero" id="indicator-kosdaq">Kosdaq Day</label>
         <img id="indicator-kosdaq-day" src="https://fn-chart.dunamu.com/images/kr/stock/d/E4012001.png" style="width: 100%; height: 160px;"/>
       </div>
       <div class="col-4 col-6-medium col-6-small">
@@ -106,18 +106,16 @@
       let item = data[i];
       let percent = item.changePriceRate*100;
       let color = (percent > 0) ? 'color-up' : 'color-down';
-      console.log(item.code);
-      if (item.code == 'US.DJI') {
-        $("#indicator-dji").append('<div class="small stock text align-center '+color+'">'+util.formatNumber(item.displayedPrice)+' / '+percent.toFixed(2)+'%</div>');
-      }
-      else if (item.code == 'US.COMP') {
-        $("#indicator-nas").append('<div class="small stock text align-center '+color+'">'+util.formatNumber(item.displayedPrice)+' / '+percent.toFixed(2)+'%</div>');
-      }
-      else if (item.code == 'D0011001') {
-        $("#indicator-kospi").append('<div class="small stock text align-center '+color+'">'+util.formatNumber(item.displayedPrice)+' / '+percent.toFixed(2)+'%</div>');
-      }
-      else if (item.code == 'E4012001') {
-        $("#indicator-kosdaq").append('<div class="small stock text align-center '+color+'">'+util.formatNumber(item.displayedPrice)+' / '+percent.toFixed(2)+'%</div>');
+      // console.log(item.code);
+      let itemCode = {
+        'US.DJI':   '#indicator-dji',
+        'US.COMP':  '#indicator-nas',
+        'D0011001': '#indicator-kospi',
+        'E4012001': '#indicator-kosdaq'
+      };
+      let selector = itemCode[item.code];
+      if (selector) {
+        $(selector).append('<div class="small stock text align-center '+color+'">'+util.formatNumber(item.displayedPrice)+' / '+percent.toFixed(2)+'%</div>');        
       }
     }
   }

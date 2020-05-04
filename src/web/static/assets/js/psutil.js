@@ -46,7 +46,7 @@
         },
         area: function(eventId, iconId, areaId, isShow=null, update=null) {
           let showArea = function() {
-            console.log(isShow());
+            // console.log(isShow());
             if($(areaId).is(":visible")) {
               $(iconId).removeClass("fa-caret-down").addClass("fa-caret-right");
               $(areaId).hide();
@@ -143,11 +143,15 @@
       },
     },
     formatNumber: function(num) {
-      return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
+      return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
     },
     paddingNumber: function(num, length) {
       let s = '0000000000000000'+parseInt(num);
       return s.substr(s.length-length);
+    },
+    getPercent: function(v, b, fixed=1, string=false) {
+      let p = ((v - b)/b * 100).toFixed(fixed); 
+      return (string) ? ''+p : p;
     },
     isValidDate: function(dstr) {
       let darr = dstr.split('-').map(function(e){
