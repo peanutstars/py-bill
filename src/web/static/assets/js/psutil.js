@@ -76,29 +76,48 @@
           dialog:  $("#dialog-box"),
           title:   $("#dialog-box-title"),
           message: $("#dialog-box-content"),
+          set:     $("#dialog-box-set"),
+          clear:   $("#dialog-box-clear"),
+          cancel:  $("#dialog-box-cancel"),
           yes:     $("#dialog-box-yes"),
           no:      $("#dialog-box-no"),
           okay:    $("#dialog-box-okay"),
         };
         let _close = () => {s.dialog.hide();};
-        let _click = (e) => { _close(); if('data' in e){e.data();} }
+        let _click = (e) => { console.log('event'); _close(); if('data' in e && e.data){ e.data();} }
 
         if ('title' in kwargs)   { s.title.text(kwargs.title) }
         if ('message' in kwargs) { s.message.html(kwargs.message.replace(/(?:\r\n|\r|\n)/g, '<br>')); }
+        console.log(kwargs);
+        if ('set' in kwargs && kwargs.set) {
+          s.set.off('click');
+          s.set.on('click', 'cb_set' in kwargs ? kwargs.cb_set : null, _click);
+          s.set.parent().show();
+        }
+        if ('clear' in kwargs && kwargs.clear) {
+          s.clear.off('click');
+          s.clear.on('click', 'cb_clear' in kwargs ? kwargs.cb_clear : null, _click);
+          s.clear.parent().show();
+        }
+        if ('cancel' in kwargs && kwargs.clear) {
+          s.cancel.off('click');
+          s.cancel.on('click', 'cb_cancel' in kwargs ? kwargs.cb_cancel : null, _click);
+          s.cancel.parent().show();
+        }
         if ('no' in kwargs && kwargs.no) {
           s.no.off('click');
           s.no.on('click', 'cb_no' in kwargs ? kwargs.cb_no : null, _click);
-          s.no.show();
+          s.no.parent().show();
         }
         if ('yes' in kwargs && kwargs.yes) {
           s.yes.off('click');
           s.yes.on('click', 'cb_yes' in kwargs ? kwargs.cb_yes : null, _click);
-          s.yes.show();
+          s.yes.parent().show();
         }
         if ('okay' in kwargs && kwargs.okay) {
           s.okay.off('click');
           s.okay.on('click', 'cb_okay' in kwargs ? kwargs.cb_okay : null, _click);
-          s.okay.show();
+          s.okay.parent().show();
         }
         s.dialog.show();
       },

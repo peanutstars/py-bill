@@ -30,7 +30,7 @@ It needs /var/pybill/config/config.yml file for the user configuration.
 ## DB
 
 #### Migration
-It applied Flask-Migrate and Flask-Script after v0.3-7-g073ac87. It need the follow process, if schema of database changed .
+It applied Flask-Migrate and Flask-Script after tag of v0.4. It need the follow process, if schema of database changed .
 
     #> sudo systemctl stop uwsgi-py-bill.service
     #> cd /opt/psapps/pybill

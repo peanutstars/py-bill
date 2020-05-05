@@ -155,7 +155,7 @@
         <li><a href="#" class="simulation control bottom button small" id="download-simulation-csv">CSV</a></li>
         <li><a href="#" class="simulation control bottom button small" id="download-simulation-mark">MARK</a></li>
       </ul>
-      <span class="etc small">MARK - Click & Click to SET, Double-Click & Click to RESET</span>
+      <!-- <span class="etc small">MARK - Click & Click to SET, Double-Click & Click to RESET</span> -->
       <ul class="row actions">
         <li><a href="#" class="simulation control button small gray button-simulation" value="6">6M</a></li>
         <li><a href="#" class="simulation control button small button-simulation" value="12">1Y</a></li>
@@ -409,18 +409,16 @@
     }
     mark_selector.on('click', function(e){
       e.preventDefault();
-      if ($(this).hasClass('blue')) {
-        $(this).removeClass('blue').removeClass('red').text('MARK');
-        stock.query_algo_index_mark(_code, index_selector.val(), function(resp){});
-      } else if($(this).hasClass('red')){
-        $(this).removeClass('blue').removeClass('red').text('MARK');
-        stock.query_algo_index_mark(_code, null, function(resp){});
-      } else {
-        $(this).addClass('blue').text('SET');
-      }
-    }).on('dblclick', function(e){
-      e.preventDefault();
-      $(this).removeClass('blue').addClass('red').text('CLEAR');
+      $("#dialog-box").show();
+      util.gui.dialog({
+        title: "Verify",
+        message: "Select operation of mark?" ,
+        set: true,
+        cb_set: () => { console.log('set'); stock.query_algo_index_mark(_code, index_selector.val(), function(resp){});},
+        clear: true,
+        cb_clear: () => {console.log('clear'); stock.query_algo_index_mark(_code, null, function(resp){});},
+        cancel: true
+      });
     });
     $(".button-simulation").each(function(idx){
       $(this).on("click", function(e){

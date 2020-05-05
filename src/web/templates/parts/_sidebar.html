@@ -12,7 +12,8 @@
       </header>
       <ul>
         {% if session.user_id and current_user.is_authorized('STOCK') %}
-          <li><a href="{{ url_for('bill_dashboard' )}}">Bill Dashboard</a></li>
+          <li><a href="{{ url_for('bill_dashboard' )}}">Dashboard</a></li>
+          <li><a href="{{ url_for('bill_simulation')}}">Simulation</a></li>
           <li><a href="{{ url_for('bill_stock' )}}">Stock Index</a></li>
           <li>
               <span class="opener active">Recent View</span>
@@ -27,6 +28,13 @@
                 {% endfor %}
               </ul>
           </li>
+        {% else %}
+          {% if current_user.is_active %}
+          <li><a href="{{ url_for('account_logout') }}" class="icon fa-sign-out"> Sign Out</a></li>
+          {% else %}
+          <li><a href="{{ url_for('account_register') }}" class="icon fa-address-card-o"> Sign Up</a></li>
+          <li><a href="{{ url_for('account_login') }}" class="icon fa-sign-in"> Sign In</a></li>
+          {% endif %}
         {% endif %}
       </ul>
   </nav>

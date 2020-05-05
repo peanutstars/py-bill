@@ -3670,6 +3670,9 @@ input, select, textarea {
 	}
 
 	/* etc */
+	.hide {
+		display: none;
+	}
 	ul.area {
 		display: flex;
 		padding: 0;
@@ -3698,9 +3701,9 @@ input, select, textarea {
 	.etc.round.bg-red {
 		border-radius: 0.25em;
 	}
-	.etc.bg-gray {
+	.bg-gray {
 		background-color: #B2BABB;
 	}
-	.etc.bg-red {
+	.bg-red {
 		background-color: #F1948A;
 	}

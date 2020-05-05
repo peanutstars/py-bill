@@ -29,6 +29,15 @@ def bill_dashboard():
                            recent_stocks=recent_stocks)
 
 
+@app.route('/bill/simulation')
+@login_required
+@role_required('STOCK')
+def bill_simulation():
+    recent_stocks = MStock.list(session['user_id'])
+    return render_template('pages/bill_simulation.html',
+                           recent_stocks=recent_stocks)
+
+
 @app.route('/bill/stock/', defaults={"code": None})
 @app.route('/bill/stock/<code>')
 @login_required
