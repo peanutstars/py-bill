@@ -12,10 +12,7 @@ from pysp.sbasic import SFile
 
 from web import app, db, login_manager
 from web.model import User
-from web.view_index import index
-from web.view_account import account
-from web.view_billdashboard import bill_dashboard
-from web.report import computealgo, Notice
+from web.report import computealgo
 from core.finance import BillConfig
 from core.manager import Collector
 

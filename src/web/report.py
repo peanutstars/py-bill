@@ -13,9 +13,9 @@ from pysp.sbasic import SSingleton, Dict
 
 
 class ComputeAlgo(Dict, metaclass=SSingleton):
-    # def __init__(self, *args, **kwargs):
-    #     super(ComputeAlgo, self).__init__(*args, **kwargs)
-    #     self.compute_all()
+    def __init__(self, *args, **kwargs):
+        super(ComputeAlgo, self).__init__(*args, **kwargs)
+        self.stamp = datetime.datetime.now()
 
     def _key(self, code, index):
         return f'{code}:{index}'
@@ -31,6 +31,7 @@ class ComputeAlgo(Dict, metaclass=SSingleton):
 
     def _compute_with_user(self):
         self.clear()
+        self.stamp = datetime.datetime.now()
         for user in User.query.all():
             if not user.is_authorized('STOCK'):
                 continue
@@ -47,6 +48,7 @@ class ComputeAlgo(Dict, metaclass=SSingleton):
     def compute_all(self):
         with app.app_context():
             self._compute_with_user()
+    
 
 computealgo = ComputeAlgo()
 
@@ -73,10 +75,14 @@ class Notice(SCDebug):
                 item.name = stock.name
                 items[stock.code] = item
         return items
+    
+    def stamp(self):
+        return self.cache.stamp
 
     def render_html(self, items, user):
         # Convert CSS to inline CSS
         # Refer to https://templates.mailchimp.com/resources/inline-css/
+        
         def url_for(endpoint, **kwargs):
             fn = kwargs.get('filename', None)
             url = BillConfig().get_value('user.url', '')
@@ -106,7 +112,7 @@ class Notice(SCDebug):
                 send_mode = 0
                 items = self.compute_algo(user)
                 if not items:
-                    # The user has not list, who no visit during 45 days.
+                    # The user has no list, who no visit during 45 days.
                     continue
 
                 html = self.render_html(items, user)

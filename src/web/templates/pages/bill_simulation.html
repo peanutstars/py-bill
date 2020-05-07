@@ -5,12 +5,84 @@
   <header class="main">
     <div class="row pull-right">
       <div class="btn-group">
-        <a type="button" class="button bottom small yellow" href="https://stockplus.com/m">K</a>
-        <a type="button" class="button bottom small green" href="https://m.stock.naver.com/index.nhn">N</a>
+        <a type="button" class="button bottom small" href="{{ url_for('bill_dashboard' )}}">Dashboard</a>
       </div>
     </div>
     <h2>Simulation</h2>
   </header>
+  <div>
+    Stamp : <span>{{ stamp.strftime('%Y-%m-%d %H:%M') }}</span>
+  </div>
+  <div>
+    <table class="alt etc small" style="color: black">
+      <thead>
+        <tr>
+          <th rowspan="2" style="vertical-align: middle">Code</th>
+          <th rowspan="2" style="vertical-align: middle">Name</th>
+          <th rowspan="2" style="vertical-align: middle">Algo</th>
+          <th rowspan="2" style="vertical-align: middle">Price</th>
+          <th rowspan="2" style="vertical-align: middle">BPrice</th>
+          <th rowspan="2" style="vertical-align: middle">SPrice</th>
+          <th colspan="4" class="align-center">Buy</th>
+          <th colspan="3" class="align-center">Sell</th>
+        </tr>
+        <tr>
+          <th>Count</th>
+          <th>Average</th>
+          <th>Reason</th>
+          <th>Point</th>
+          <th>Profit</th>
+          <th>Point</th>
+          <th>Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for c, v in items.items() %}
+        {% if v.chart.today.spoint %}
+        <tr class="etc bg-red">
+        {% elif v.chart.today.bpoint %}
+        <tr class="etc bg-gray">
+        {% else %}
+        <tr>
+        {% endif %}
+          <td>{{c}}</td>
+          <td><a href="{{ url_for('bill_stock') }}{{c}}" style="color: #3498DB">{{v.name}}</a></td>
+          <td>{{v.cfg.algo.index}}</td>
+          <td class="align-right">{{function.format_number(v.chart.today.cprice)}}</td>
+          <td class="align-right">{% if v.chart.today.bpoint %}{{function.format_number(v.chart.today.bprice)}}{% endif %}</td>
+          <td class="align-right">{% if v.chart.today.spoint %}{{function.format_number(v.chart.today.sprice)}}{% endif %}</td>
+          <td class="align-right">{{function.format_number(v.chart.today.bvolume)}}</td>
+          <td class="align-right">{{function.format_number(v.chart.today.bavg)}}</td>
+          <td>{{v.chart.today.breason}}</td>
+          <td class="align-center">{{v.chart.today.bpoint}}</td>
+          <td class="align-center">{% if v.chart.today.sprofit %}{{v.chart.today.sprofit}}{% endif%}</td>
+          <td class="align-center">{{v.chart.today.spoint}}</td>
+          <td>{{v.chart.today.sreason}}</td>
+        </tr>
+      {% endfor%}
+      </tbody>
+    </table>
+  </div>
+  <div class="etc small">
+    <ul class="row actions etc bottom">
+      <li style="width: 6em;"><b>Comment</b></li>
+      <li><span><b>B0#:</b></span> <span>Buy-1st Low Point</span></li>
+      <li><span><b>B1#:</b></span> <span>Buy-2nd Low Point with UP</span></li>
+      <li><span><b>BD#:</b></span> <span>Buy-High Dropping</span></li>
+      <li><span><b>Av#:</b></span> <span>Buy-Lower Average</span></li>
+    </ul>
+    <ul class="row actions etc bottom">
+      <li style="width: 6em;"></li>
+      <li><span><b>TH#:</b></span> <span>Too High</span></li>
+      <li><span><b>TL#:</b></span> <span>Too Low</span></li>
+      <li><span><b>TS#:</b></span> <span>Threshold of HHUPUP</span></li>
+    </ul>
+    <ul class="row actions etc bottom">
+      <li style="width: 6em;"></li>
+      <li><span><b>SN#:</b></span> <span>Sell Normal</span></li>
+      <li><span><b>SD#:</b></span> <span>Sell for High Dropping</span></li>
+    </ul>				
+  </div>
 </section>
 {% endblock %}
 

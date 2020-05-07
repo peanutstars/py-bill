@@ -16,6 +16,7 @@ from core.finance import DataCollection, StockItemDB, StockQuery
 from core.finalgo import IterAlgo
 from core.manager import Collector
 
+from web.report import computealgo, Notice
 
 _algo_folder = BillConfig().get_value('config.db.stock.folder') + '/algo/'
 
@@ -33,9 +34,23 @@ def bill_dashboard():
 @login_required
 @role_required('STOCK')
 def bill_simulation():
-    recent_stocks = MStock.list(session['user_id'])
+
+    def format_number(num):
+        return f'{num:,}'
+
+    user_id = session['user_id']
+    user = User.query.get(int(user_id))
+    recent_stocks = MStock.list(user_id)
+    notice = Notice()
+
+    context = Dict()
+    context.function.format_number = format_number
+    context.stamp = notice.stamp()
+    context.items = notice.compute_algo(user)
+    context.user = user
+
     return render_template('pages/bill_simulation.html',
-                           recent_stocks=recent_stocks)
+                           recent_stocks=recent_stocks, **context)
 
 
 @app.route('/bill/stock/', defaults={"code": None})

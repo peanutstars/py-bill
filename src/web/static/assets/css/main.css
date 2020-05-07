@@ -2447,6 +2447,16 @@ input, select, textarea {
 			border-collapse: separate;
 		}
 
+		table.alt thead tr th {
+			border: solid 1px rgba(210, 215, 217, 0.75);
+			border-left-width: 0;
+			border-top-width: 0;
+		}
+
+		table.alt thead tr th:last-child {
+			border-right-width: 0px;
+		}
+
 			table.alt tbody tr td {
 				border: solid 1px rgba(210, 215, 217, 0.75);
 				border-left-width: 0;
@@ -3701,9 +3711,9 @@ input, select, textarea {
 	.etc.round.bg-red {
 		border-radius: 0.25em;
 	}
-	.bg-gray {
+	.etc.bg-gray {
 		background-color: #B2BABB;
 	}
-	.bg-red {
+	.etc.bg-red {
 		background-color: #F1948A;
 	}
