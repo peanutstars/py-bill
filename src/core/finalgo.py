@@ -509,6 +509,7 @@ class CalBuy(AlgoProc):
 
 class CondSell(AlgoProc):
     COLNAME_SELL_POINT =    'sellcnt'
+    COLNAME_AFTER_SELLING = 'afsell'
     COLNAME_SELL_REASON =   'sreason'
     SELL_NORMAL =           11
     SELL_DROPPING =         22
@@ -518,8 +519,11 @@ class CondSell(AlgoProc):
         super(CondSell, self).__init__()
         accums = cfg.sum.accums
         colnames.append(self.COLNAME_SELL_POINT)
+        colnames.append(self.COLNAME_AFTER_SELLING)
         colnames.append(self.COLNAME_SELL_REASON)
         self.iscnt = colnames.index(self.COLNAME_SELL_POINT)
+        self.iafsell = colnames.index(self.COLNAME_AFTER_SELLING)
+        self.afsell = 0
         self.isreason = colnames.index(self.COLNAME_SELL_REASON)
         self.isprice = colnames.index(cfg.price.sell.colname)
         self.ihigh = colnames.index('high')
@@ -540,12 +544,17 @@ class CondSell(AlgoProc):
         self.method = cfg.sell.method
         self.drop_return_rate = 1.0 + self.DROP_RETURN_RATE*cfg.buy.dropping_rate
 
+    def apply_after_selling_period(self):
+        self.afsell = max(self.afsell-2, 0)
+
     def process(self, cfg, idx, fields):
         sellcnt = 0
         sreason = ''
         field = fields[idx]
+        self.apply_after_selling_period()
 
         if field[self.ibvolume] > 0:
+
             # if self.method == 1:
             #     if self.is_any(self.isteps, ['HH','HH',None], field):
             #         # XXX: Added New Condition
@@ -574,6 +583,7 @@ class CondSell(AlgoProc):
                             if field[self.isprice] > wanted:
                                 sellcnt = self.SELL_NORMAL
                                 sreason += 'SN#'
+                                self.afsell = 100
 
             if self.method == 4:
                 if self.is_any(self.isteps, ['HH','HH',None], field) or \
@@ -585,6 +595,7 @@ class CondSell(AlgoProc):
                         if field[self.isprice] > wanted:
                             sellcnt = self.SELL_NORMAL
                             sreason += 'SN#'
+                            self.afsell = 100
 
             # check to sell for a stock which it bought when the big drop.
             if field[self.ibcnt] != CondBuy.BUY_DROPPING and field[self.ibdvolume] > 0:
@@ -597,11 +608,13 @@ class CondSell(AlgoProc):
                     if field[self.isprice] > wanted:
                         sellcnt += (self.SELL_NORMAL if sellcnt == 0 else 0)
                         sreason += 'SN#'
+                        if (field[self.ibvolume] - field[self.ibdvolume]) > 0:
+                            self.afsell = 100
                     sellcnt += self.SELL_DROPPING
                     sreason += 'SD#'
 
-        indexes = [self.iscnt, self.isreason]
-        values = [sellcnt, sreason]
+        indexes = [self.iscnt, self.iafsell, self.isreason]
+        values = [sellcnt, self.afsell, sreason]
         self._fill_data(indexes, values, field)
 
 
@@ -1029,6 +1042,7 @@ class IterAlgo(SCDebug):
             ibavg = data.colnames.index(CalBuy.COLNAME_BUY_AVERAGE)
             ibuycnt = data.colnames.index(CondBuy.COLNAME_BUYCNT)
             isellcnt = data.colnames.index(CondSell.COLNAME_SELL_POINT)
+            iafsell = data.colnames.index(CondSell.COLNAME_AFTER_SELLING)
             isprofit = data.colnames.index(CalSell.COLNAME_SELL_PROFIT)
             icprice = data.colnames.index('end')
             ibprice = data.colnames.index(data.cfg.price.buy.colname)
@@ -1047,8 +1061,9 @@ class IterAlgo(SCDebug):
             brief.bprice = lastfield[ibprice]
             brief.sprice = lastfield[isprice]
             brief.sreason = lastfield[isreason]
+            brief.afsell = lastfield[iafsell]
             brief.last.colnames = data.colnames
-            brief.last.field = data.fields[-1]
+            brief.last.field = lastfield
             data.chart.today = brief
 
         def filter_out(cns, data):

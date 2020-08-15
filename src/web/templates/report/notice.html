@@ -51,16 +51,19 @@
 									<th rowspan="2" style="vertical-align:middle">BPrice</th>
 									<th rowspan="2" style="vertical-align:middle">SPrice</th>
 									<th colspan="4">Buying</th>
-									<th colspan="3">Sell</th>
+									<th colspan="4">Sell</th>
 								</tr>
 								<tr>
+									<!-- Buy -->
 									<th>Count</th>
 									<th>Average</th>
 									<th>Reason</th>
 									<th>Point</th>
+									<!-- Sell -->
 									<th>Profit</th>
 									<th>Point</th>
 									<th>Reason</th>
+									<th>After</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -78,13 +81,16 @@
 									<td class="alnright">{{function.format_number(v.chart.today.cprice)}}</td>
 									<td class="alnright">{% if v.chart.today.bpoint %}{{function.format_number(v.chart.today.bprice)}}{% endif %}</td>
 									<td class="alnright">{% if v.chart.today.spoint %}{{function.format_number(v.chart.today.sprice)}}{% endif %}</td>
+									<!-- Buy -->
 									<td class="alnright">{{function.format_number(v.chart.today.bvolume)}}</td>
 									<td class="alnright">{{function.format_number(v.chart.today.bavg)}}</td>
 									<td>{{v.chart.today.breason}}</td>
 									<td class="alncenter">{{v.chart.today.bpoint}}</td>
+									<!-- Sell -->
 									<td class="alncenter">{% if v.chart.today.sprofit %}{{v.chart.today.sprofit}}{% endif%}</td>
 									<td class="alncenter">{{v.chart.today.spoint}}</td>
 									<td>{{v.chart.today.sreason}}</td>
+									<td class="alncenter">{{v.chart.today.afsell}}</td>
 								</tr>
 							{% endfor%}
 							</tbody>

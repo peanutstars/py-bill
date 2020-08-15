@@ -31,7 +31,6 @@ class DataETF(dict):
     def get(self, name, defval):
         for code in self:
             item = self[code]
-            print('@@@', item)
             if name == item.code or name == item.codename:
                 return item
         return defval
@@ -322,6 +321,7 @@ class DataCollection:
             chunk = provider.get_chunk('shortstock', **params)
             loop = sidb.update_shortstock(chunk)
 
+
     @classmethod
     def factory_provider(cls, code, pname):
         '''
@@ -349,6 +349,7 @@ class DataCollection:
                 return ServiceProvider(name=pname, codename=item['codeName'], code=item['short_code'][1:])
         
         raise cls.Error(f'Not Exist Code: {code}')
+
 
     @classmethod
     def get_name_of_code(cls, code):
