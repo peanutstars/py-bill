@@ -255,6 +255,17 @@ def ajax_stock_simulation_chart(code, index):
         return Reply.Success(value=Reply.Data(pdata))        
 
 
+@app.route('/ajax/stock/simulation', methods=['GET', 'POST'])
+@login_required
+@role_required('STOCK')
+def ajax_stock_simulation():
+    user_id = session['user_id']
+    user = User.query.get(int(user_id))
+    notice = Notice()
+    items = notice.compute_algo(user)
+    return Reply.Success(value=items)
+
+
 @app.route('/ajax/proxy', methods=['POST'])
 @login_required
 def ajax_proxy():

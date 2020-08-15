@@ -222,6 +222,9 @@
     query_simulation_chart: function(code, index, params, cb) {
       ajax.post('/ajax/stock/item/'+code+'/simulation-chart/'+index, params, cb);
     },
+    query_simulation_all: function(params, cb) {
+      ajax.post('/ajax/stock/simulation', params, cb);
+    },
     query_investors_graph: function(code, months, cb) {
       var params = {
           colnames: ['stamp', 'foreigner', 'institute', 'person', 'shortamount', 'end'],

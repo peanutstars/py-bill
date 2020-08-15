@@ -63,6 +63,7 @@
             <li class="item">
               <div class="stock text">Item</div>
               <div class="align-right">Market Vol.</div>
+              <div class="stock text align-right">Prev.Day</div>
               <div class="stock text align-right">Start</div>
             </li>
             <li class="item">
@@ -74,6 +75,7 @@
               <div class="stock text align-right">Up/Down</div>
               <div class="stock align-right">Percent</div>
               <div class="stock text align-right">High</div>
+              <div class="stock text align-right">After Sell</div>
             </li>
           </ul>
         </div>
@@ -88,8 +90,8 @@
 {% block bodyscript %}
 <script type="text/javascript">
   $(function(){
-    _data = {recent: {}}
-    recent_stocks(render_recent_stocks);
+    _data = {recent: {}, sim: null}
+    stock.query_simulation_all({}, init_data);
     // KOSPI, KOSDAQ https://stockplus.com/api/securities.json?ids=KOREA-D0011001%2CKOREA-E4012001
     $(".update-recent-stocks").each(function(idx){
       $(this).on('click', function(){
@@ -101,6 +103,11 @@
     util.gui.show.area("#indicator-area", "#indicator-area span", "#indicator-area-table", 
                        storage.dashboard.indicator.isShow, storage.dashboard.indicator.update);
   });
+
+  function init_data(data) {
+    _data.sim = data;
+    recent_stocks(render_recent_stocks);
+  }
 
   function render_overseas_indicator(data) {
     for (let i in data) {
@@ -151,15 +158,18 @@
       }
       var html = '';
       for (var i in stocks) {
-        var brief = find_item(stocks[i], fields);
-        var chgcolor = brief.change=='RISE'?'color-up':brief.change=='FALL'?'color-down':'';
-        var item = [
+        let brief = find_item(stocks[i], fields);
+        let code = brief.shortCode.substring(1);
+        let afsell = (code in _data.sim) ? _data.sim[code].chart.today.afsell : 0;
+        let chgcolor = brief.change=='RISE'?'color-up':brief.change=='FALL'?'color-down':'';
+        let item = [
         '<div class="col-6 col-12-medium">',
-        '  <div class="box stock recent" value="'+brief.shortCode.substring(1)+'">',
+        '  <div class="box stock recent" value="'+code+'">',
         '    <ul class="area">',
         '      <li class="item">',
         '        <div class="stock text">'+brief.name+'</div>',
         '        <div class="align-right">'+util.formatNumber(Math.ceil(brief.totalMarketValue/100000000))+' 억</div>',
+        '        <div class="stock text align-right">'+util.formatNumber(brief.prevClosingPrice)+'</div>',
         '        <div class="stock text align-right '+stock.text_compare_color(brief.prevClosingPrice, brief.openingPrice)+'">'+util.formatNumber(brief.openingPrice)+'</div>',
         '      </li>',
         '      <li class="item">',
@@ -171,6 +181,7 @@
         '        <div class="stock text align-right '+chgcolor+'">'+util.formatNumber(brief.changePrice)+'</div>',
         '        <div class="stock align-right '+chgcolor+'">'+(brief.changePriceRate*100).toFixed(2)+'%</div>',
         '        <div class="stock text align-right '+stock.text_compare_color(brief.prevClosingPrice, brief.highPrice)+'">'+util.formatNumber(brief.highPrice)+'</div>',
+        '        <div class="text align-right">AF'+afsell+'</div>',
         '      </li>',
         '    </ul>',
         '  </div>',
