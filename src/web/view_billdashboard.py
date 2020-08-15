@@ -64,6 +64,10 @@ def bill_stock(code):
                                recent_stocks=recent_stocks)
     try:
         provider = DataCollection.factory_provider(code, 'krx')
+        ## code has two types. 
+        ## First is string number of the stock code. Second is stock name
+        ## At below logics, MUST be used a string number for 'code' of the variable.
+        code = provider.get('code')
     except DataCollection.Error:
         abort(404)
 

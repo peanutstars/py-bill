@@ -25,8 +25,17 @@ class DataETF(dict):
     '''
     def __init__(self, *args, **kwargs):
         super(DataETF, self).__init__(*args, **kwargs)
-        self['069500'] = ServiceProvider(name='naver', codename='KODEX 200',   code='069500')
-        self['114800'] = ServiceProvider(name='naver', codename='KODEX 인버스', code='114800')
+        self['069500'] = ServiceProvider(name='naver', codename='KODEX200',   code='069500')
+        self['114800'] = ServiceProvider(name='naver', codename='KODEX인버스', code='114800')
+    
+    def get(self, name, defval):
+        for code in self:
+            item = self[code]
+            print('@@@', item)
+            if name == item.code or name == item.codename:
+                return item
+        return defval
+
 
 _DataETF = DataETF()
 
@@ -319,7 +328,7 @@ class DataCollection:
         Return ServiceProvider with code and provider name.
 
         Args
-            :code String: String of Stock Code
+            :code String: String number of Stock Code or Stock Name
             :pname String: Provider name
         '''
 
@@ -327,14 +336,18 @@ class DataCollection:
         if provider:
             return provider
 
+        ## Number Form : 001800
         items = FKrx.get_chunk('list')
         acode = 'A'+str(code)
         if pname not in cls.PROVIDER:
             cls.Error(f'Not Exist Provider Name: {pname}')
         for item in items:
+            ## item : {'full_code': 'KR7001800002', 'short_code': 'A001800', 'codeName': '오리온홀딩스', 'marketName': 'KOSPI'}
             if acode == item['short_code']:
-                return ServiceProvider(name=pname,
-                                       codename=item['codeName'], code=code)
+                return ServiceProvider(name=pname, codename=item['codeName'], code=code)
+            if code == item['codeName']:
+                return ServiceProvider(name=pname, codename=item['codeName'], code=item['short_code'][1:])
+        
         raise cls.Error(f'Not Exist Code: {code}')
 
     @classmethod

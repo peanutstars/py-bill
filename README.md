@@ -10,6 +10,11 @@ Test Code
 + https://webcodr.io/2018/02/nginx-reverse-proxy-on-raspberry-pi-with-lets-encrypt/
 
 
+## Run with the debug mode
+
+    DEBUG=1 uwsgi --ini uwsgi.debug.ini
+
+
 
 ## Setup for sending email with GMail
 
