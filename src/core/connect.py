@@ -318,7 +318,7 @@ class FNaver(FSpHelper):
 
 class FKrx(FSpHelper):
     # DEBUG = True
-    BASE_URL = 'https://short.krx.co.kr'
+    BASE_URL = 'http://short.krx.co.kr'
     URL = {
         'otp':      BASE_URL + '/contents/COM/GenerateOTP.jspx',
         # 'otp':      'https://short.krx.co.kr' + '/contents/COM/GenerateOTP.jspx',
@@ -349,6 +349,7 @@ class FKrx(FSpHelper):
         '''Get the stock items all from KRX.'''
         def gathering():
             # 2019.12.08 : Changed Format  bld=SRT/02/02010100/srt02010100&name=form
+            #                              bld=COM%2Ffinder_srtisu&name=form&_=1598445064686
             params = {
                 'bld':  'COM/finder_srtisu',
                 # 'bld': 'SRT/02/02010100/srt02010100',
@@ -359,6 +360,7 @@ class FKrx(FSpHelper):
             }
             url = cls.URL.get('otp')
             key = Http.get(url, params=params, headers=headers)
+            # print("@@@ key", key)
             if not key:
                 raise cls.Error('No KEY of KRX')
 
@@ -373,6 +375,14 @@ class FKrx(FSpHelper):
                 'headers': headers,
                 'json': True,
             }
+            # 2020.8.26 - http://short.krx.co.kr/contents/SRT/99/SRT99000001.jspx
+            #             isuCd: 
+            #             no: SRT1
+            #             mktsel: ALL
+            #             searchText: 
+            #             pagePath: /contents/COM/FinderSrtIsu.jsp
+            #             code: eVFB5hUBz/faln/rO3oMzxzGBUiMNQaIxzoncA/23mraxAscUyC5TmMRWs0Gqcz23ayGEP0buYIOmBCHkun+/JI5U4dqVZA5zqbAC8dcrgI4BWYZW3ggeu6L7/+zGLLIiGwWCfTT/TTDMu/wvEaFKi6HHlkht4FwI7uNXq/YxgI=
+            #             pageFirstCall: Y
             url = cls.URL.get('query')
             # {
             #   "block1": [
@@ -384,6 +394,7 @@ class FKrx(FSpHelper):
             #     },
             #  }
             krxlist = Http.post(url, **pkwargs)
+            # print("########### 1", krxlist['block1'])
             return krxlist['block1']
 
         return FCache().caching(cls.URL['query'], gathering, duration=21600)
@@ -408,8 +419,17 @@ class FKrx(FSpHelper):
         keywords = ['krx.short.stock', fullcode, shortcode, sdate, edate]
 
         def gathering():
+            # params = {
+            #     'bld':  'SRT/02/02010100/srt02010100',
+            #     'name': 'form',
+            # }
+            # headers = {
+            #     # 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.36',
+            # }
+            # 2020.8.26 - http://short.krx.co.kr/contents/COM/GenerateOTP.jspx?bld=COM%2Ffinder_srtisu&name=form&_=1598445064686
             params = {
-                'bld':  'SRT/02/02010100/srt02010100',
+                # 'bld':  'COM/finder_srtisu',
+                'bld': 'SRT/02/02010100/srt02010100',
                 'name': 'form',
             }
             headers = {
@@ -460,6 +480,7 @@ class FKrx(FSpHelper):
                         shortamount=None if amount == '-' else int(amount)))
             for day in days:
                 cls.dprint(day)
+            # print("########### 2", days)
             return days
 
         return FCache().caching(','.join(keywords), gathering,

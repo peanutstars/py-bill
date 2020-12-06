@@ -180,6 +180,7 @@
           <ul class="row actions etc small" style="margin-bottom: 0.3em;">
             <li style="width: 6em;" id="simulation-chart-spoint"><b>Sell</b></li>
             <li><span>Profit:</span> <span id="simulation-chart-sprofit" style="color: black;"></span></li>
+            <li><span>After Sell:</span> <span id="simulation-chart-afsell" style="color: black;"></span></li>
             <li><span>Reason:</span> <span id="simulation-chart-sreason"></span></li>
           </ul>
           <ul class="row actions etc small" style="margin-bottom: 0.3em;">
@@ -508,6 +509,7 @@
           $('#simulation-chart-bavg').text(util.formatNumber(data.chart.today.bavg));
           $('#simulation-chart-bvolume').text(util.formatNumber(data.chart.today.bvolume));
           $('#simulation-chart-breason').text(data.chart.today.breason);
+          $('#simulation-chart-afsell').text(data.chart.today.afsell);
           $('#simulation-chart-sreason').text(data.chart.today.rseason);
           let profit = data.chart.today.sprofit;
           $('#simulation-chart-sprofit').text(profit?profit+'%':'None');

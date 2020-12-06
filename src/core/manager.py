@@ -324,6 +324,7 @@ class Collector(Manager, metaclass=SSingleton):
                     self._worker_item(item)
             except Exception:
                 self.dprint("<< Exception Occured >>")
+                self.dprint(traceback.format_exc())
                 os.kill(os.getpid(), signal.SIGHUP)
 
         self.dprint("<Collector::worker(end)>")

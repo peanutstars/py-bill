@@ -972,6 +972,7 @@ class IterAlgo(SCDebug):
             'json':     True,
             'duration': 90,
         }
+        print("###", url)
         cstock = Http.proxy('GET', url, **options)
         if cstock:
             cstock = Dict(cstock['recentSecurity'])
