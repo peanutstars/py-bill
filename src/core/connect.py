@@ -26,6 +26,9 @@ class Http(SCDebug):
         json = kwargs.get('json', False)
         params = kwargs.get('params', {})
         headers = kwargs.get('headers', {})
+        headers.update({
+                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.36',
+            })
         for rcnt in range(1, 6):
             try:
                 r = method(url, params=params, headers=headers)
@@ -355,11 +358,8 @@ class FKrx(FSpHelper):
                 # 'bld': 'SRT/02/02010100/srt02010100',
                 'name': 'form',
             }
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.36',
-            }
             url = cls.URL.get('otp')
-            key = Http.get(url, params=params, headers=headers)
+            key = Http.get(url, params=params)
             # print("@@@ key", key)
             if not key:
                 raise cls.Error('No KEY of KRX')
@@ -372,7 +372,6 @@ class FKrx(FSpHelper):
             }
             pkwargs = {
                 'params': params,
-                'headers': headers,
                 'json': True,
             }
             # 2020.8.26 - http://short.krx.co.kr/contents/SRT/99/SRT99000001.jspx
@@ -432,11 +431,8 @@ class FKrx(FSpHelper):
                 'bld': 'SRT/02/02010100/srt02010100',
                 'name': 'form',
             }
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.36',
-            }
             url = cls.URL.get('otp')
-            key = Http.get(url, params=params, headers=headers)
+            key = Http.get(url, params=params)
             if not key:
                 raise cls.Error('No KEY of KRX')
 
@@ -451,7 +447,6 @@ class FKrx(FSpHelper):
             }
             pkwargs = {
                 'params': params,
-                'headers': headers,
                 'json': True
             }
             url = cls.URL.get('query')
