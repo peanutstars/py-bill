@@ -37,7 +37,9 @@
     _data.stockList = list;
     for (var i in list) {
       var codename = list[i].codeName;
-      var code = list[i].short_code.substring(1);
+      // var code = list[i].short_code.substring(1);
+      var code = list[i].short_code;
+      console.log("["+code+"]");
       char = get_first_character(codename);
       if (char != pchar) {
         pchar = char;

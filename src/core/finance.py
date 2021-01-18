@@ -262,6 +262,8 @@ class DataCollection:
                 break
             page += 1
             chunk = provider.get_chunk('day', code=sp.code, page=page)
+            if page == 1 and not chunk:
+                print(f'[[FAIL]] Getting Day Data of Stock')
             loop = sidb.update_candle(chunk)
 
     @classmethod
@@ -307,8 +309,9 @@ class DataCollection:
         provider = cls.get_provider(sp)
         sidb = StockItemDB.factory(sp.code)
         codepool = provider.get_chunk('list')
-        shortcode = 'A'+sp.code
+        shortcode = sp.code # 'A'+sp.code
         fullcode = provider.get_fullcode(codepool, shortcode)
+        codename = provider.get_codeName(codepool, shortcode)
         while loop:
             if wkstate and wkstate.is_run() is False:
                 break
@@ -316,9 +319,12 @@ class DataCollection:
             params = {
                 'fcode': fullcode,
                 'scode': shortcode,
+                'codeName': codename,
                 'page':  page,
             }
             chunk = provider.get_chunk('shortstock', **params)
+            if page == 1 and not chunk:
+                print(f'[[FAIL]] Getting Day Data of Short Stock')
             loop = sidb.update_shortstock(chunk)
 
 
@@ -338,15 +344,19 @@ class DataCollection:
 
         ## Number Form : 001800
         items = FKrx.get_chunk('list')
-        acode = 'A'+str(code)
+        # acode = 'A'+str(code)
+        acode = str(code)
         if pname not in cls.PROVIDER:
             cls.Error(f'Not Exist Provider Name: {pname}')
+        print(f"######## CODE {code}")
         for item in items:
-            ## item : {'full_code': 'KR7001800002', 'short_code': 'A001800', 'codeName': '오리온홀딩스', 'marketName': 'KOSPI'}
+            ## item 2019.     : {'full_code': 'KR7001800002', 'short_code': 'A001800', 'codeName': '오리온홀딩스', 'marketName': 'KOSPI'}
+            ## item 2021.1.17 : {'full_code': 'KR7030200000', 'short_code': '030200',  'codeName': 'KT', 'marketCode': 'STK', 'marketName': 'KOSPI'}
             if acode == item['short_code']:
                 return ServiceProvider(name=pname, codename=item['codeName'], code=code)
             if code == item['codeName']:
-                return ServiceProvider(name=pname, codename=item['codeName'], code=item['short_code'][1:])
+                # return ServiceProvider(name=pname, codename=item['codeName'], code=item['short_code'][1:])
+                return ServiceProvider(name=pname, codename=item['codeName'], code=item['short_code'])
         
         raise cls.Error(f'Not Exist Code: {code}')
 
@@ -356,7 +366,7 @@ class DataCollection:
         '''Convert the code number to the code name(Stock Name).'''
         sp = cls.factory_provider(code, 'krx')
         provider = cls.get_provider(sp)
-        shortcode = 'A'+code
+        shortcode = code # 'A'+code
         for item in provider.get_chunk('list'):
             if item['short_code'] == shortcode:
                 return item['codeName']
@@ -370,7 +380,7 @@ class DataCollection:
         cls.collect_candle(sp, **kwargs)
         cls.collect_investor(sp, **kwargs)
         sp = cls.factory_provider(code, 'krx')
-        cls.collect_shortstock(sp, **kwargs)
+        cls.collect_shortstock(sp, **kwargs) ## debug
         print('@@ E', code)
         return code
 

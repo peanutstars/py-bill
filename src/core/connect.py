@@ -30,6 +30,7 @@ class Http(SCDebug):
                 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.36',
             })
         for rcnt in range(1, 6):
+            print(f'HTTP({rcnt}): text({text}) json({json}) {url}')
             try:
                 r = method(url, params=params, headers=headers)
             except requests.exceptions.ConnectionError as e:
@@ -321,11 +322,9 @@ class FNaver(FSpHelper):
 
 class FKrx(FSpHelper):
     # DEBUG = True
-    BASE_URL = 'http://short.krx.co.kr'
+    BASE_URL = 'https://data.krx.co.kr'
     URL = {
-        'otp':      BASE_URL + '/contents/COM/GenerateOTP.jspx',
-        # 'otp':      'https://short.krx.co.kr' + '/contents/COM/GenerateOTP.jspx',
-        'query':    BASE_URL + '/contents/SRT/99/SRT99000001.jspx'
+        'query':    BASE_URL + '/comm/bldAttendant/getJsonData.cmd'
     }
 
     @classmethod
@@ -338,7 +337,8 @@ class FKrx(FSpHelper):
 
     @classmethod
     def get_fullcode(cls, pool, code, default=None):
-        short_code = code if code[0] == 'A' else ('A'+code)
+        # print("@@ get_fullcode")
+        short_code = code #if code[0] == 'A' else ('A'+code)
         # for item in pool['block1']:
         for item in pool:
             if item['short_code'] == short_code:
@@ -348,50 +348,33 @@ class FKrx(FSpHelper):
         return default
 
     @classmethod
+    def get_codeName(cls, pool, code, default=None):
+        # print("@@ get_codeName")
+        for item in pool:
+            if item['short_code'] == code:
+                return item['codeName']
+        if default is None:
+            raise cls.Error(f'Unknown Short Code: {code}')
+        return default
+
+    @classmethod
     def _get_chunk_list(cls, **kwargs):
         '''Get the stock items all from KRX.'''
+        print("@@ _get_chunk_list")
+
         def gathering():
-            # 2019.12.08 : Changed Format  bld=SRT/02/02010100/srt02010100&name=form
-            #                              bld=COM%2Ffinder_srtisu&name=form&_=1598445064686
-            params = {
-                'bld':  'COM/finder_srtisu',
-                # 'bld': 'SRT/02/02010100/srt02010100',
-                'name': 'form',
-            }
-            url = cls.URL.get('otp')
-            key = Http.get(url, params=params)
-            # print("@@@ key", key)
-            if not key:
-                raise cls.Error('No KEY of KRX')
+            # https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd
+            url = cls.URL.get('query')
 
             params = {
-                'no':       'SRT2',
-                'mktsel':   'ALL',
-                'pagePath': '/contents/COM/FinderSrtIsu.jsp',
-                'code':     key,
+                'mktsel': 'ALL',
+                'searchText': '',
+                'bld': 'dbms/comm/finder/finder_srtisu'
             }
             pkwargs = {
                 'params': params,
                 'json': True,
             }
-            # 2020.8.26 - http://short.krx.co.kr/contents/SRT/99/SRT99000001.jspx
-            #             isuCd: 
-            #             no: SRT1
-            #             mktsel: ALL
-            #             searchText: 
-            #             pagePath: /contents/COM/FinderSrtIsu.jsp
-            #             code: eVFB5hUBz/faln/rO3oMzxzGBUiMNQaIxzoncA/23mraxAscUyC5TmMRWs0Gqcz23ayGEP0buYIOmBCHkun+/JI5U4dqVZA5zqbAC8dcrgI4BWYZW3ggeu6L7/+zGLLIiGwWCfTT/TTDMu/wvEaFKi6HHlkht4FwI7uNXq/YxgI=
-            #             pageFirstCall: Y
-            url = cls.URL.get('query')
-            # {
-            #   "block1": [
-            #     {
-            #       "full_code": "KR7060310000",
-            #       "short_code": "A060310",
-            #       "codeName": "3S",
-            #       "marketName": "KOSDAQ"
-            #     },
-            #  }
             krxlist = Http.post(url, **pkwargs)
             # print("########### 1", krxlist['block1'])
             return krxlist['block1']
@@ -415,64 +398,71 @@ class FKrx(FSpHelper):
 
         fullcode = kwargs.get('fcode')
         shortcode = kwargs.get('scode')
+        codename = kwargs.get('codename')
         keywords = ['krx.short.stock', fullcode, shortcode, sdate, edate]
 
-        def gathering():
-            # params = {
-            #     'bld':  'SRT/02/02010100/srt02010100',
-            #     'name': 'form',
-            # }
-            # headers = {
-            #     # 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.36',
-            # }
-            # 2020.8.26 - http://short.krx.co.kr/contents/COM/GenerateOTP.jspx?bld=COM%2Ffinder_srtisu&name=form&_=1598445064686
-            params = {
-                # 'bld':  'COM/finder_srtisu',
-                'bld': 'SRT/02/02010100/srt02010100',
-                'name': 'form',
-            }
-            url = cls.URL.get('otp')
-            key = Http.get(url, params=params)
-            if not key:
-                raise cls.Error('No KEY of KRX')
+        ## Example Values for KT
+        # fullcode: KR7030200000, shortcode: 030200, sdate: 20210118, edate: 20200120
 
-            cls.dprint(f'####### S:{sdate} E:{edate}')
+        print("@@ _get_chunk_shortstock")
+        print(f'@@ {fullcode} {shortcode} {sdate} {edate} - {type(sdate)}')
+
+        def gathering():
+            # https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd
+            url = cls.URL.get('query')
+
+            ## POST Parameters
+            # bld: dbms/MDC/STAT/srt/MDCSTAT30001
+            # tboxisuCd_finder_srtisu0: 030200/KT
+            # isuCd: KR7030200000
+            # isuCd2: 
+            # codeNmisuCd_finder_srtisu0: KT
+            # param1isuCd_finder_srtisu0: 
+            # strtDd: 20201215
+            # endDd: 20210115
+            # share: 1
+            # money: 1
+            # csvxls_isNo: false
+
             params = {
-                'isu_cd':       fullcode,
-                'isu_srt_cd':   shortcode,
-                'strt_dd':      edate,
-                'end_dd':       sdate,
-                'pagePath':     '/contents/SRT/02/02010100/SRT02010100.jsp',
-                'code':         key,
+                'bld': 'dbms/MDC/STAT/srt/MDCSTAT30001',
+                'tboxisuCd_finder_srtisu0': f'{shortcode}/{codename}',
+                'isuCd': fullcode,
+                'isuCd2': None,
+                'codeNmisuCd_finder_srtisu0': codename,
+                'param1isuCd_finder_srtisu0': None,
+                'strtDd': int(edate),
+                'endDd': int(sdate),
+                'share': 1,
+                'money': 1,
+                'csvxls_isNo': False
             }
+
             pkwargs = {
                 'params': params,
                 'json': True
             }
-            url = cls.URL.get('query')
             data = Http.post(url, **pkwargs)
+
             days = []
-            # {
-            #   "block1": [
-            #     {
-            #       "totCnt": "241",
-            #       "rn": "1",
-            #       "trd_dd": "2019/02/14",
-            #       "isu_cd": "KR7035720002",
-            #       "isu_abbrv": "\uce74\uce74\uc624",
-            #       "cvsrtsell_trdvol": "75,749",
-            #       "str_const_val1": "-",
-            #       "cvsrtsell_trdval": "7,475,106,600",
-            #       "str_const_val2": "-"
-            #     },
-            # }
-            if type(data) is dict and 'block1' in data:
-                for item in data['block1']:
-                    amount = item['str_const_val1'].replace(',', '')
+            if type(data) is dict and 'OutBlock_1' in data:
+                for item in data['OutBlock_1']:
+                    ## item values
+                    # CVSRTSELL_TRDVAL: "65,366,800"
+                    # CVSRTSELL_TRDVOL: "2,728"
+                    # STR_CONST_VAL1: "2,241,264"
+                    # STR_CONST_VAL2: "53,678,272,800"
+                    # TRD_DD: "2021/01/12"
+
+                    stamp = item['TRD_DD']
+                    short = item['CVSRTSELL_TRDVOL'].replace(',', '')
+                    amount = item['STR_CONST_VAL1'].replace(',', '')
+
                     days.append(StockDayShort(
-                        stamp=item['trd_dd'],
-                        short=int(item['cvsrtsell_trdvol'].replace(',', '')),
+                        stamp=stamp,
+                        short=int(short),
                         shortamount=None if amount == '-' else int(amount)))
+
             for day in days:
                 cls.dprint(day)
             # print("########### 2", days)
